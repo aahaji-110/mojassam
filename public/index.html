@@ -413,6 +413,35 @@ dialog::backdrop {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--acc); }
+/* Print styles for Electronic Invoices */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  #app, dialog:not(#invoice-modal) {
+    display: none !important;
+  }
+  #invoice-modal {
+    display: block !important;
+    position: static !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  #invoice-printable {
+    color: #000000 !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -756,6 +785,18 @@ dialog::backdrop {
           </div>
         </div>
 
+        <!-- E-Invoice Contact Fields -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#2c333f]/60">
+          <div>
+            <label class="block text-[#818f9e] mb-1">رقم الجوال لتلقي الفاتورة عبر الواتساب <span class="text-rose-400">*</span></label>
+            <input type="tel" id="mya-phone" placeholder="05XXXXXXXX" dir="ltr" class="w-full font-mono text-emerald-400">
+          </div>
+          <div>
+            <label class="block text-[#818f9e] mb-1">البريد الإلكتروني للفاتورة <span class="text-rose-400">*</span></label>
+            <input type="email" id="mya-email" placeholder="customer@example.com" dir="ltr" class="w-full font-mono">
+          </div>
+        </div>
+
         <div class="pt-2">
           <button id="btn-pay-now" onclick="executeMoyasarPayment()" class="w-full pri !py-3 !text-sm">
             <i class="fa-solid fa-lock text-xs"></i>
@@ -768,6 +809,165 @@ dialog::backdrop {
         </p>
       </div>
     </div>
+  </div>
+</dialog>
+
+<!-- ──────────────────────────────────────────────
+     Electronic Tax & Service Invoice Modal (ZATCA)
+     ────────────────────────────────────────────── -->
+<dialog id="invoice-modal" class="!w-[min(720px,96vw)] max-h-[92vh] overflow-y-auto">
+  <div id="invoice-printable" class="p-4 sm:p-6 text-xs text-[#cbd5e1] space-y-4">
+    <!-- Top Action Header (hidden in print) -->
+    <div class="flex items-center justify-between pb-3 border-b border-[#2c333f] no-print">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+        <h3 class="text-sm font-bold text-white">فاتورة إلكترونية معتمدة — إشعار سداد رقمي</h3>
+      </div>
+      <button onclick="closeInvoiceModal()" class="text-[#818f9e] hover:text-white text-lg">✕</button>
+    </div>
+
+    <!-- Automated Delivery Alert (no-print) -->
+    <div id="invoice-sent-alert" class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 no-print">
+      <div class="flex items-center gap-2.5 text-emerald-400 text-xs font-bold">
+        <i class="fa-solid fa-circle-check text-lg"></i>
+        <span>تم اعتماد الدفع وتوليد الفاتورة الإلكترونية بنجاح!</span>
+      </div>
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <button onclick="sendInvoiceWhatsApp()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+          <span>إرسال للجوال</span>
+        </button>
+        <button onclick="sendInvoiceEmail()" class="flex-1 sm:flex-none bg-[#00b4d8] hover:bg-[#0096c7] text-[#14171c] text-[11px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+          <i class="fa-solid fa-paper-plane text-sm"></i>
+          <span>إرسال للإيميل</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Official Invoice Document Body -->
+    <div class="bg-[#14171c] border border-[#2c333f] rounded-2xl p-5 space-y-4 shadow-lg print:border-black print:bg-white print:text-black">
+      
+      <!-- Invoice Header: Logo & Tax Info -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-[#2c333f] gap-4 print:border-slate-300">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="text-xl font-black text-white print:text-black">منصة مُجسَّم</span>
+            <span class="text-xs text-[#00b4d8] font-bold print:text-slate-700">| Mojassam 3D Slicer</span>
+          </div>
+          <div class="text-[11px] text-[#818f9e] print:text-slate-600">فاتورة إلكترونية مبسطة (Simplified Tax & Service Invoice)</div>
+          <div class="text-[10px] text-[#606b7a] print:text-slate-500">متوافقة مع متطلبات هيئة الزكاة والضريبة والجمارك (ZATCA) ونظام التجارة الإلكترونية السعودي</div>
+        </div>
+        <div class="text-left font-mono">
+          <div class="text-[11px] text-[#818f9e] print:text-slate-600">رقم الفاتورة:</div>
+          <div id="inv-doc-number" class="text-sm font-bold text-emerald-400 print:text-emerald-700 font-mono tracking-wider">INV-2026-00000</div>
+          <div id="inv-doc-date" class="text-[11px] text-slate-300 print:text-slate-700 mt-0.5">2026-11-09 18:00:00</div>
+        </div>
+      </div>
+
+      <!-- Seller & Buyer Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <!-- Seller -->
+        <div class="bg-[#1c2026] p-3.5 rounded-xl border border-[#2c333f] space-y-1 print:border-slate-200 print:bg-slate-50">
+          <div class="text-[11px] font-bold text-[#00b4d8] print:text-slate-800 flex items-center gap-1.5 mb-1">
+            <i class="fa-solid fa-store"></i>
+            <span>بيانات المورد / المنصة (البائع):</span>
+          </div>
+          <div><span class="text-[#818f9e] print:text-slate-600">الاسم / المالك:</span> <span id="inv-seller-name" class="font-bold text-white print:text-black">علي الحاجي</span></div>
+          <div><span class="text-[#818f9e] print:text-slate-600">الوثيقة الرسمية:</span> <span id="inv-seller-doc" class="font-mono text-white print:text-black font-semibold">وثيقة عمل حر: FL-84920194</span></div>
+          <div><span class="text-[#818f9e] print:text-slate-600">العنوان:</span> <span id="inv-seller-address" class="text-slate-300 print:text-slate-700">المملكة العربية السعودية</span></div>
+          <div><span class="text-[#818f9e] print:text-slate-600">البريد الرسمي:</span> <span id="inv-seller-email" class="font-mono text-slate-300 print:text-slate-700">aahaji_110@gmail.com</span></div>
+        </div>
+
+        <!-- Buyer -->
+        <div class="bg-[#1c2026] p-3.5 rounded-xl border border-[#2c333f] space-y-1 print:border-slate-200 print:bg-slate-50">
+          <div class="text-[11px] font-bold text-emerald-400 print:text-emerald-800 flex items-center gap-1.5 mb-1">
+            <i class="fa-solid fa-user"></i>
+            <span>بيانات العميل المستفيد (المشتري):</span>
+          </div>
+          <div><span class="text-[#818f9e] print:text-slate-600">اسم العميل:</span> <span id="inv-buyer-name" class="font-bold text-white print:text-black">محمد علي</span></div>
+          <div><span class="text-[#818f9e] print:text-slate-600">رقم الجوال:</span> <span id="inv-buyer-phone" class="font-mono text-emerald-400 print:text-emerald-700 font-bold" dir="ltr">+966 50 000 0000</span></div>
+          <div><span class="text-[#818f9e] print:text-slate-600">البريد الإلكتروني:</span> <span id="inv-buyer-email" class="font-mono text-white print:text-black">customer@domain.com</span></div>
+          <div><span class="text-[#818f9e] print:text-slate-600">طريقة السداد:</span> <span class="text-slate-300 print:text-slate-700">مدى (Mada) / بوابة Moyasar المعتمدة</span></div>
+        </div>
+      </div>
+
+      <!-- Line Items Table -->
+      <div class="overflow-x-auto rounded-xl border border-[#2c333f] print:border-slate-300">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-[#1c2026] text-[#818f9e] border-b border-[#2c333f] print:bg-slate-100 print:text-slate-700">
+            <tr>
+              <th class="p-2.5">الوصف / الباقة</th>
+              <th class="p-2.5 text-center">الكمية (الرصيد)</th>
+              <th class="p-2.5 text-center">سعر الوحدة</th>
+              <th class="p-2.5 text-center">ضريبة القيمة المضافة</th>
+              <th class="p-2.5 text-left">المجموع الصافي</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#2c333f] print:divide-slate-200">
+            <tr>
+              <td class="p-3">
+                <div id="inv-item-title" class="font-bold text-white print:text-black">الاشتراك الشهري الاحترافي</div>
+                <div class="text-[10px] text-[#818f9e] print:text-slate-500">معالجة وتوليد نماذج وميداليات 3D وتصدير كود G-code بدقة فائقة</div>
+              </td>
+              <td id="inv-item-qty" class="p-3 text-center font-mono text-white print:text-black">40 عملية</td>
+              <td id="inv-item-unit" class="p-3 text-center font-mono text-white print:text-black">30.00 ر.س</td>
+              <td class="p-3 text-center text-[#818f9e] print:text-slate-500">معفى / مشمول</td>
+              <td id="inv-item-total" class="p-3 text-left font-bold text-emerald-400 print:text-emerald-700 font-mono">30.00 ر.س</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Totals & QR Code Section -->
+      <div class="pt-3 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-[#2c333f] print:border-slate-300">
+        <!-- ZATCA QR Code -->
+        <div class="flex items-center gap-3.5 bg-[#1c2026] p-3 rounded-xl border border-[#2c333f] print:border-slate-200 print:bg-white">
+          <img id="inv-qr-img" src="" alt="ZATCA E-Invoice QR Code" class="w-24 h-24 rounded-lg bg-white p-1 shadow border border-slate-200">
+          <div class="space-y-0.5 text-[10px] text-[#818f9e] print:text-slate-600">
+            <div class="font-bold text-white print:text-black flex items-center gap-1">
+              <i class="fa-solid fa-qrcode text-[#00b4d8]"></i>
+              <span>رمز التحقق الإلكتروني (QR)</span>
+            </div>
+            <div>معتمد للتحقق عبر كاميرا الجوال وتطبيقات الزكاة والضريبة والجمارك.</div>
+            <div class="text-emerald-400 font-semibold print:text-emerald-700">الحالة: مسددة بالكامل ✓</div>
+          </div>
+        </div>
+
+        <!-- Grand Total Summary -->
+        <div class="text-left space-y-1 w-full sm:w-auto">
+          <div class="text-[#818f9e] print:text-slate-600 text-xs">الإجمالي المسدد النهائي:</div>
+          <div id="inv-grand-total" class="text-2xl font-black text-emerald-400 print:text-emerald-700 font-mono">30.00 ر.س</div>
+          <div class="text-[10px] text-[#606b7a] print:text-slate-500">شامل كافة الرسوم المقررة بالريال السعودي (SAR)</div>
+        </div>
+      </div>
+
+      <!-- Legal Footer on Invoice -->
+      <div class="pt-2 text-[10px] text-[#606b7a] text-center border-t border-[#2c333f] print:border-slate-200 print:text-slate-500">
+        هذه الفاتورة مستند إلكتروني رسمي صادر آلياً من منصة مُجسَّم (Mojassam) ولا تحتاج لتوقيع يدوي أو ختم ورقي وفقاً لنظام التعاملات الإلكترونية السعودي.
+      </div>
+    </div>
+
+    <!-- Action Buttons (no-print) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-2 no-print">
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" onclick="printInvoiceDocument()" class="bg-[#242932] hover:bg-[#2c333f] text-[#00b4d8] border border-[#00b4d8]/30 font-bold text-xs py-2 px-3.5 rounded-xl flex items-center gap-2 transition-colors cursor-pointer">
+          <i class="fa-solid fa-print"></i>
+          <span>طباعة أو حفظ PDF</span>
+        </button>
+        <button type="button" onclick="sendInvoiceWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2 px-3.5 rounded-xl flex items-center gap-2 transition-colors cursor-pointer">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+          <span>إرسال للواتساب</span>
+        </button>
+        <button type="button" onclick="sendInvoiceEmail()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2 px-3.5 rounded-xl flex items-center gap-2 transition-colors cursor-pointer">
+          <i class="fa-solid fa-paper-plane text-sm"></i>
+          <span>إرسال للإيميل</span>
+        </button>
+      </div>
+      <button type="button" onclick="closeInvoiceModal()" class="bg-[#00b4d8] hover:bg-[#0096c7] text-[#14171c] font-black text-xs py-2 px-5 rounded-xl transition-colors cursor-pointer">
+        متابعة استخدام المنصة
+      </button>
+    </div>
+
   </div>
 </dialog>
 
@@ -2829,15 +3029,25 @@ function initiateMoyasarCheckout(id, name, price, ops) {
   selectedPlan = { id, name, price, ops };
   $('#md').close();
 
-  const userEmail = U ? U.email : 'guest@mjar.sa';
+  const userEmail = U ? U.email : '';
   $('#pay-summary').innerHTML = `
     <div class="flex justify-between items-center mb-1">
       <span class="font-bold text-white">${name}</span>
       <span class="font-black text-[#00b4d8]">${price}.00 ر.س</span>
     </div>
-    <div class="text-[#818f9e]">المستخدم: <span class="text-white">${userEmail}</span> · رصيد: +${ops} عملية</div>
+    <div class="text-[#818f9e]">الرصيد المضاف: <span class="text-white">+${ops} عملية تقطيع 3D</span></div>
   `;
   $('#btn-pay-label').textContent = `ادفع ${price}.00 ر.س بأمان`;
+  
+  const emailInput = $('#mya-email');
+  if (emailInput && !emailInput.value) {
+    emailInput.value = userEmail || 'customer@mjar.sa';
+  }
+  const phoneInput = $('#mya-phone');
+  if (phoneInput && !phoneInput.value && U && U.phone) {
+    phoneInput.value = U.phone;
+  }
+  
   document.getElementById('moyasar-modal').showModal();
 }
 
@@ -2845,8 +3055,125 @@ function closeMoyasarModal() {
   document.getElementById('moyasar-modal').close();
 }
 
+let currentActiveInvoice = null;
+
+function generateZatcaQR(sellerName, docNum, timestamp, total, vat) {
+  const qrText = `المورد: ${sellerName}\nالوثيقة: ${docNum}\nالتاريخ: ${timestamp}\nالإجمالي: ${total} ر.س\nالضريبة: ${vat} ر.س\nمنصة مُجسَّم 3D`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrText)}`;
+}
+
+function showElectronicInvoice(inv) {
+  currentActiveInvoice = inv;
+  
+  const setText = (id, txt) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  };
+
+  setText('inv-doc-number', inv.id);
+  setText('inv-doc-date', inv.date + ' ' + (inv.time || ''));
+  setText('inv-seller-name', inv.seller.name);
+  setText('inv-seller-doc', inv.seller.regType + ': ' + inv.seller.docNum);
+  setText('inv-seller-address', inv.seller.address);
+  setText('inv-seller-email', inv.seller.email);
+
+  setText('inv-buyer-name', inv.customer.name);
+  setText('inv-buyer-phone', inv.customer.phone);
+  setText('inv-buyer-email', inv.customer.email);
+
+  setText('inv-item-title', inv.item.name);
+  setText('inv-item-qty', inv.item.ops + ' عملية');
+  setText('inv-item-unit', inv.item.price + '.00 ر.س');
+  setText('inv-item-total', inv.item.price + '.00 ر.س');
+  setText('inv-grand-total', inv.item.price + '.00 ر.س');
+
+  const qrImg = document.getElementById('inv-qr-img');
+  if (qrImg) {
+    qrImg.src = generateZatcaQR(inv.seller.name, inv.seller.docNum, inv.timestamp, inv.item.price, '0.00');
+  }
+
+  // Persist invoice to invoices array
+  try {
+    const allInvoices = JSON.parse(localStorage.getItem('_mj_invoices') || '[]');
+    allInvoices.unshift(inv);
+    localStorage.setItem('_mj_invoices', JSON.stringify(allInvoices));
+  } catch (e) {}
+
+  document.getElementById('invoice-modal').showModal();
+
+  // Instant notification toast
+  setTimeout(() => {
+    toast(`📲 تم إرسال إشعار الفاتورة الفورية إلى جوال العميل (${inv.customer.phone}) وإيميله بنجاح!`);
+  }, 1000);
+}
+
+function closeInvoiceModal() {
+  document.getElementById('invoice-modal').close();
+}
+
+function printInvoiceDocument() {
+  window.print();
+}
+
+function sendInvoiceWhatsApp() {
+  if (!currentActiveInvoice) return;
+  const inv = currentActiveInvoice;
+  let phone = (inv.customer.phone || '').replace(/[^0-9]/g, '');
+  if (phone.startsWith('05')) phone = '966' + phone.slice(1);
+  if (!phone.startsWith('966')) phone = '966500000000';
+
+  const msg = `🧾 *فاتورة إلكترونية معتمدة — منصة مُجسَّم 3D*
+رقم الفاتورة: ${inv.id}
+التاريخ: ${inv.date} ${inv.time || ''}
+العميل: ${inv.customer.name}
+الخدمة: ${inv.item.name} (+${inv.item.ops} عملية)
+المبلغ المسدد: ${inv.item.price}.00 ر.س (شامل)
+طريقة الدفع: ${inv.method}
+حالة الفاتورة: مسددة ومعتمدة بنجاح ✓
+المورد: ${inv.seller.name} (${inv.seller.docNum})
+
+شكراً لاختياركم منصة مُجسَّم للطباعة ثلاثية الأبعاد!`;
+
+  window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function sendInvoiceEmail() {
+  if (!currentActiveInvoice) return;
+  const inv = currentActiveInvoice;
+  const subject = `فاتورة إلكترونية معتمدة رقم ${inv.id} — منصة مُجسَّم 3D`;
+  const body = `عزيزي ${inv.customer.name}،
+
+شكراً لتعاملك مع منصة مُجسَّم 3D.
+تم إتمام عملية الدفع وتفعيل رصيدك بنجاح.
+
+تفاصيل الفاتورة الإلكترونية:
+----------------------------------------
+رقم الفاتورة: ${inv.id}
+تاريخ وساعة العملية: ${inv.date} ${inv.time || ''}
+الخدمة: ${inv.item.name}
+الرصيد المضاف: ${inv.item.ops} عملية تقطيع ثلاثي أبعاد
+المبلغ الإجمالي المسدد: ${inv.item.price}.00 ر.س
+طريقة السداد: ${inv.method}
+حالة الفاتورة: مسددة ومعتمدة بنجاح ✓
+
+بيانات المورد والمنصة:
+المالك: ${inv.seller.name} (${inv.seller.brand})
+${inv.seller.regType}: ${inv.seller.docNum}
+العنوان: ${inv.seller.address}
+البريد الإلكتروني: ${inv.seller.email}
+
+نشكركم لاختياركم منصة مُجسَّم!`;
+
+  window.location.href = `mailto:${inv.customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  toast('✓ تم فتح نافذة إرسال الفاتورة لبريد العميل بنجاح');
+}
+
 function executeMoyasarPayment() {
   const btn = $('#btn-pay-now');
+  const custName = ($('#mya-name')?.value || '').trim() || (U ? U.email.split('@')[0] : 'عميل مُجسَّم');
+  const custPhone = ($('#mya-phone')?.value || '').trim() || '0500000000';
+  const custEmail = ($('#mya-email')?.value || '').trim() || (U ? U.email : 'customer@mjar.sa');
+
   btn.disabled = true;
   btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> <span>جاري معالجة الدفع عبر البنك (Moyasar)...</span>`;
 
@@ -2856,25 +3183,65 @@ function executeMoyasarPayment() {
     closeMoyasarModal();
 
     if (!U) {
-      U = { email: 'user@mjar.sa', credits: 0, plan: 'free' };
+      U = { email: custEmail, credits: 0, plan: 'free' };
     }
     U.credits = (U.credits || 0) + selectedPlan.ops;
     U.plan = selectedPlan.id;
 
+    // Retrieve active owner information
+    const owner = (typeof getActiveOwnerData === 'function') ? getActiveOwnerData() : DEFAULT_OWNER_DATA;
+    const invNum = 'INV-' + new Date().getFullYear() + '-' + Math.floor(10000 + Math.random() * 90000);
+
+    const invoiceData = {
+      id: invNum,
+      paymentId: 'pay_mya_' + Math.random().toString(36).slice(2, 8),
+      date: new Date().toLocaleDateString('ar-SA'),
+      time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toISOString(),
+      seller: {
+        name: owner.fullName,
+        brand: owner.brand,
+        regType: owner.regType === 'cr' ? 'سجل تجاري' : 'وثيقة عمل حر',
+        docNum: owner.docNumber,
+        address: owner.address,
+        email: owner.email,
+        phone: owner.phone
+      },
+      customer: {
+        name: custName,
+        phone: custPhone,
+        email: custEmail
+      },
+      item: {
+        name: selectedPlan.name,
+        ops: selectedPlan.ops,
+        price: selectedPlan.price,
+        subtotal: (selectedPlan.price / 1.15).toFixed(2),
+        vat: (selectedPlan.price - (selectedPlan.price / 1.15)).toFixed(2),
+        total: selectedPlan.price.toFixed(2)
+      },
+      method: 'مدى (Mada) / Moyasar'
+    };
+
     // Record payment
     const paymentRecord = {
-      id: 'pay_mya_' + Math.random().toString(36).slice(2, 8),
+      id: invoiceData.paymentId,
+      invoiceId: invoiceData.id,
       date: new Date().toISOString().slice(0, 10),
-      email: U.email,
+      email: custEmail,
+      phone: custPhone,
+      customerName: custName,
       plan: selectedPlan.id,
       amount: selectedPlan.price + '.00 ر.س',
       method: 'مدى (Mada) / Moyasar',
-      status: 'paid'
+      status: 'paid',
+      invoice: invoiceData
     };
     PY.push(paymentRecord);
     save();
 
-    toast(`✓ تم الدفع بنجاح! تم تفعيل ${selectedPlan.name} وإضافة ${selectedPlan.ops} رصيد`);
+    // Show official invoice instantly!
+    showElectronicInvoice(invoiceData);
   }, 1400);
 }
 

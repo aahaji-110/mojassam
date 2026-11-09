@@ -7,9 +7,9 @@
  */
 
 /* ──────────────────────────────────────────────
-   1. Firebase Configuration (PLACEHOLDER)
+   1. Firebase Configuration & Dynamic Loader
    ────────────────────────────────────────────── */
-const firebaseConfig = {
+let firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "mojassam-app.firebaseapp.com",
   projectId: "mojassam-app",
@@ -18,26 +18,47 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
-/* ──────────────────────────────────────────────
-   2. Initialize Firebase
-   ────────────────────────────────────────────── */
-firebase.initializeApp(firebaseConfig);
-
-const auth = firebase.auth();
-const db   = firebase.firestore();
-const googleProvider = new firebase.auth.GoogleAuthProvider();
-
-// Use Firestore persistence for offline support
-db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('[MJ] Firestore persistence unavailable – multiple tabs open.');
-  } else if (err.code === 'unimplemented') {
-    console.warn('[MJ] Firestore persistence not supported in this browser.');
+try {
+  const savedFb = localStorage.getItem('_mj_firebase_config');
+  if (savedFb) {
+    const parsed = JSON.parse(savedFb);
+    if (parsed && parsed.apiKey && parsed.apiKey !== 'YOUR_API_KEY') {
+      firebaseConfig = parsed;
+    }
   }
-});
+} catch (e) {}
 
-// Set language to Arabic for auth emails
-auth.languageCode = 'ar';
+/* ──────────────────────────────────────────────
+   2. Initialize Firebase Safely
+   ────────────────────────────────────────────── */
+let auth = null;
+let db = null;
+let googleProvider = null;
+
+try {
+  if (typeof firebase !== 'undefined') {
+    if (firebase.apps.length === 0) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    auth = firebase.auth();
+    db   = firebase.firestore();
+    googleProvider = new firebase.auth.GoogleAuthProvider();
+
+    // Use Firestore persistence for offline support
+    db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn('[MJ] Firestore persistence unavailable – multiple tabs open.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('[MJ] Firestore persistence not supported in this browser.');
+      }
+    });
+
+    // Set language to Arabic for auth emails
+    auth.languageCode = 'ar';
+  }
+} catch (err) {
+  console.warn('[MJ] Firebase running in fallback/local mode:', err.message);
+}
 
 /* ──────────────────────────────────────────────
    3. Helper Functions
