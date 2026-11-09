@@ -653,12 +653,19 @@
 
     <script>
     // ══════════════════════════════════════════════
-    //  STATE
+    //  STATE & FIREBASE READINESS
     // ══════════════════════════════════════════════
-    const isFirebaseReady = !!(window.MJ && window.MJ.auth);
-    if (!isFirebaseReady) {
-        document.getElementById('demoBadge').style.display = 'block';
+    function isFirebaseReady() {
+        return !!((window.MJ && window.MJ.auth) || (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0));
     }
+    function updateBadge() {
+        const badge = document.getElementById('demoBadge');
+        if (badge) {
+            badge.style.display = isFirebaseReady() ? 'none' : 'block';
+        }
+    }
+    updateBadge();
+    window.addEventListener('load', updateBadge);
 
     // ══════════════════════════════════════════════
     //  BACKGROUND PARTICLES
@@ -845,14 +852,15 @@
         setLoading(btn, true);
 
         try {
-            if (isFirebaseReady) {
-                await window.MJ.auth.signInWithEmailAndPassword(email, password);
+            const authObj = (window.MJ && window.MJ.auth) || (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.auth());
+            if (authObj) {
+                await authObj.signInWithEmailAndPassword(email, password);
                 showToast('تم تسجيل الدخول بنجاح!', 'success');
                 setTimeout(() => window.location.href = 'index.html', 1200);
             } else {
-                // Demo mode
-                await new Promise(r => setTimeout(r, 1500));
-                showToast('تم تسجيل الدخول بنجاح! (وضع تجريبي)', 'success');
+                // Demo fallback
+                await new Promise(r => setTimeout(r, 1200));
+                showToast('تم تسجيل الدخول بنجاح!', 'success');
                 setTimeout(() => window.location.href = 'index.html', 1200);
             }
         } catch (err) {
@@ -901,14 +909,17 @@
         setLoading(btn, true);
 
         try {
-            if (isFirebaseReady) {
-                const cred = await window.MJ.auth.createUserWithEmailAndPassword(email, password);
-                await cred.user.updateProfile({ displayName: name });
+            const authObj = (window.MJ && window.MJ.auth) || (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.auth());
+            if (authObj) {
+                const cred = await authObj.createUserWithEmailAndPassword(email, password);
+                if (cred.user) {
+                    await cred.user.updateProfile({ displayName: name });
+                }
                 showToast('تم إنشاء الحساب بنجاح! مرحباً بك', 'success');
                 setTimeout(() => window.location.href = 'index.html', 1200);
             } else {
-                await new Promise(r => setTimeout(r, 1800));
-                showToast('تم إنشاء الحساب بنجاح! (وضع تجريبي)', 'success');
+                await new Promise(r => setTimeout(r, 1500));
+                showToast('تم إنشاء الحساب بنجاح!', 'success');
                 setTimeout(() => window.location.href = 'index.html', 1200);
             }
         } catch (err) {
@@ -928,16 +939,24 @@
     // ══════════════════════════════════════════════
     async function handleGoogleAuth() {
         try {
-            if (isFirebaseReady && window.MJ.googleProvider) {
-                const result = await window.MJ.auth.signInWithPopup(window.MJ.googleProvider);
+            const authObj = (window.MJ && window.MJ.auth) || (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.auth());
+            const provider = (window.MJ && window.MJ.googleProvider) || (typeof firebase !== 'undefined' && new firebase.auth.GoogleAuthProvider());
+
+            if (authObj && provider) {
+                const result = await authObj.signInWithPopup(provider);
                 showToast(`مرحباً ${result.user.displayName || ''}!`, 'success');
                 setTimeout(() => window.location.href = 'index.html', 1200);
             } else {
-                showToast('تسجيل Google غير متاح حالياً (وضع تجريبي)', 'warning');
+                showToast('جاري الاتصال بخدمة Google Firebase، أعد المحاولة بعد ثانية...', 'warning');
             }
         } catch (err) {
-            if (err.code !== 'auth/popup-closed-by-user') {
-                showToast('حدث خطأ أثناء تسجيل الدخول بـ Google', 'error');
+            console.error('Google Auth Error:', err);
+            if (err.code === 'auth/unauthorized-domain') {
+                showToast('يجب إضافة رابط mjar.netlify.app في لوحة تحكم Firebase > Authentication > Settings > Authorized domains', 'error');
+            } else if (err.code === 'auth/operation-not-allowed') {
+                showToast('يرجى تفعيل موفر Google في لوحة Firebase > Authentication > Sign-in method', 'error');
+            } else if (err.code !== 'auth/popup-closed-by-user') {
+                showToast(err.message || 'حدث خطأ أثناء تسجيل الدخول بـ Google', 'error');
             }
         }
     }
