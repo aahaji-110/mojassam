@@ -1,12 +1,12 @@
 /**
  * مُجسَّم - PostgreSQL API (Netlify Function)
  * ===========================================
- * Database: Netlify DB (Neon serverless PostgreSQL) via @netlify/neon
+ * Database: Netlify Database (managed serverless PostgreSQL) via @netlify/database
  * Identity: Firebase Auth ID tokens (verified with Google public keys)
  *
  * Endpoint: /.netlify/functions/api   (POST, JSON body: { action, ...params })
  */
-import { neon } from '@netlify/neon';
+import { getDatabase } from '@netlify/database';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'mojassam-9666e';
@@ -17,9 +17,9 @@ const JWKS = createRemoteJWKSet(new URL(
   'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'
 ));
 
-// Lazy client – reads NETLIFY_DATABASE_URL automatically on first query
+// Lazy client – Netlify Database resolves the connection automatically
 let _sql = null;
-const sql = (...args) => (_sql || (_sql = neon()))(...args);
+const sql = (...args) => (_sql || (_sql = getDatabase().sql))(...args);
 
 /* ── Schema (idempotent, runs once per cold start) ── */
 let schemaReady = null;
