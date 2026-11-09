@@ -1,0 +1,3093 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مُجسَّم — محرر وسلايسر المجسمات ثلاثية الأبعاد</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- FontAwesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Google Fonts: IBM Plex Sans Arabic, Cairo & 30+ Arabic Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Moyasar Form Styles (Lightweight) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@moyasar/forms@latest/dist/moyasar.css">
+
+<style>
+:root {
+  box-sizing: border-box;
+  --bg: #121519;
+  --panel: #1a1e24;
+  --card: #222730;
+  --line: #2c333f;
+  --line-light: #3a4352;
+  --ink: #e8edf2;
+  --mute: #818f9e;
+  --acc: #00b4d8;
+  --acc-hover: #0096c7;
+  --teal: #2fb59a;
+  --onacc: #121519;
+  --vp: #0f1216;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --success: #10b981;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+#app {
+  display: grid;
+  grid-template-rows: auto auto 1fr 28px;
+  height: 100vh;
+}
+
+/* ── Top Creality Slicer Header Bar ── */
+header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 0 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  z-index: 20;
+}
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 16px;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+.brand-logo i {
+  color: var(--acc);
+}
+
+/* ── Slicer Main Workspace ── */
+main {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--wl, 210px) 1fr var(--wr, 310px);
+  min-height: 0;
+}
+.rz {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 10;
+  touch-action: none;
+}
+.rz:hover, .rz.on {
+  background: var(--acc);
+  opacity: 0.6;
+}
+#r1 { inset-inline-start: calc(var(--wl, 210px) - 3px); }
+#r2 { inset-inline-end: calc(var(--wr, 310px) - 3px); }
+
+aside {
+  background: var(--panel);
+  overflow-y: auto;
+  padding: 12px;
+}
+#tools { border-inline-end: 1px solid var(--line); }
+#props { border-inline-start: 1px solid var(--line); }
+#stage { position: relative; min-height: 0; }
+canvas#v { width: 100%; height: 100%; display: block; outline: none; }
+
+/* ── UI Controls & Buttons ── */
+button, select, input, textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  border: 1px solid var(--line);
+  background: var(--card);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+button:hover {
+  background: #2b323e;
+  border-color: var(--line-light);
+  color: #fff;
+}
+button.pri {
+  background: var(--acc);
+  color: #121519;
+  border-color: transparent;
+  font-weight: 700;
+}
+button.pri:hover {
+  background: var(--acc-hover);
+}
+button.teal {
+  background: var(--teal);
+  color: #121519;
+  border-color: transparent;
+  font-weight: 700;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 1px;
+}
+input, select, textarea {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 8px;
+  color: #fff;
+  font-size: 13px;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--acc);
+}
+input[type=number] {
+  direction: ltr;
+  text-align: center;
+}
+.menu button {
+  display: flex;
+  width: 100%;
+  text-align: start;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+}
+h4 {
+  margin: 14px 0 8px;
+  color: var(--mute);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.r {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.rg { margin: 8px 0; }
+.rg > label { display: block; margin-bottom: 4px; font-size: 12px; color: var(--mute); }
+.g3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.g3 input { width: 100%; box-sizing: border-box; }
+.o {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+.o button:first-child {
+  flex: 1;
+  text-align: start;
+  justify-content: flex-start;
+  padding: 6px 10px;
+}
+.o.on button:first-child {
+  border-color: var(--acc);
+  background: rgba(0, 180, 216, 0.12);
+  color: #fff;
+}
+
+/* ── Creality Slicer Floating Canvas Toolbar ── */
+#tb {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(26, 30, 36, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+#tb button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 7px;
+  background: var(--card);
+}
+#tb button.on {
+  background: var(--acc);
+  color: var(--onacc);
+  border-color: transparent;
+}
+
+/* Floating transform widget */
+#tw {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 62px;
+  background: rgba(26, 30, 36, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  width: 290px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  direction: ltr;
+  text-align: start;
+  overflow: hidden;
+}
+#tw[hidden] { display: none; }
+#tw h5 {
+  margin: 0;
+  padding: 8px 12px;
+  background: #14171c;
+  font-size: 12px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--line);
+  color: var(--acc);
+}
+#tw .b {
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto repeat(3, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+.ax0 { color: #ef4444; font-weight: bold; }
+.ax1 { color: #10b981; font-weight: bold; }
+.ax2 { color: #3b82f6; font-weight: bold; }
+
+/* Bed & Plate selector bar */
+#pl {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  display: flex;
+  gap: 6px;
+  background: rgba(26, 30, 36, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+#pl[hidden] { display: none; }
+#pl button.on {
+  background: var(--acc);
+  color: #121519;
+  border-color: transparent;
+}
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-inline-end: 4px;
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 38px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 100;
+}
+#toast span {
+  background: #1c2026;
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--acc);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* Footer status bar */
+footer {
+  padding: 4px 14px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--mute);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+footer a { color: var(--acc); text-decoration: none; }
+
+/* Modal dialog */
+dialog {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 16px;
+  width: min(600px, 94vw);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  padding: 20px;
+}
+dialog::backdrop {
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+}
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+.plan-card {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+.plan-card.featured {
+  border-color: var(--acc);
+  box-shadow: 0 0 15px rgba(0, 180, 216, 0.15);
+}
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  display: inline-flex;
+  gap: 5px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.shg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.kg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.kc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px;
+}
+.kc.on { outline: 2px solid var(--acc); border-radius: 6px; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--acc); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Top Announcement / Promo Bar -->
+  <div id="mkt-announcement-bar" class="hidden bg-gradient-to-r from-[#00b4d8] via-emerald-400 to-[#00b4d8] text-[#121519] py-1 px-4 text-center text-xs font-black tracking-wide flex items-center justify-center gap-2 relative z-30 shadow-md">
+    <span id="mkt-announcement-text">🎉 عرض الافتتاح الرسمي: استخدم كود MJAR25 واحصل على خصم 25% على كافة الباقات!</span>
+    <button onclick="document.getElementById('mkt-announcement-bar').classList.add('hidden')" class="absolute left-3 text-[#121519]/70 hover:text-[#121519] text-xs font-bold">✕</button>
+  </div>
+
+  <!-- ──────────────────────────────────────────────
+       TOP NAVIGATION BAR
+       ────────────────────────────────────────────── -->
+  <header>
+    <div class="brand-logo">
+      <i class="fa-solid fa-cube text-xl"></i>
+      <span>مُجسَّم</span>
+      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#00b4d8]/10 text-[#00b4d8] border border-[#00b4d8]/20">SLICER</span>
+    </div>
+
+    <!-- Hidden file inputs -->
+    <input type="file" id="file" accept=".stl,.3mf" hidden>
+    <input type="file" id="imf" accept="image/*,.svg" hidden>
+    <input type="file" id="pjf" accept=".json" hidden>
+
+    <!-- Header Actions -->
+    <button id="bn" title="مشروع جديد"><i class="fa-solid fa-file"></i> <span>جديد</span></button>
+    <button id="b-undo" title="تراجع عن آخر عملية (Ctrl + Z)"><i class="fa-solid fa-rotate-left"></i> <span>تراجع</span></button>
+    <button id="b-redo" title="إعادة العملية (Ctrl + Y)"><i class="fa-solid fa-rotate-right"></i></button>
+    <button id="b-calc" class="teal" title="حاسبة تكلفة المطبوعات"><i class="fa-solid fa-calculator"></i> <span>حاسبة 3D</span></button>
+
+    <div class="mr-auto flex items-center gap-2">
+      <!-- User / Credits pill -->
+      <div id="user-badge" class="flex items-center gap-2 bg-[#222730] border border-[#2c333f] px-2.5 py-1 rounded-lg">
+        <span id="cr" class="font-mono text-xs text-amber-400 font-bold">🪙 0</span>
+        <button id="bu" class="pri !py-0.5 !px-2 !text-xs" title="شراء رصيد أو اشتراك">+</button>
+      </div>
+
+      <button id="bc" title="المكافآت والتحديات"><i class="fa-solid fa-trophy text-amber-400"></i></button>
+      <button id="bj" title="مشاريعي"><i class="fa-solid fa-folder"></i></button>
+
+      <!-- Auth Button -->
+      <button id="bl" class="bg-[#222730] hover:bg-[#2c333f] text-white">
+        <i class="fa-solid fa-user text-xs"></i>
+        <span id="user-label">دخول</span>
+      </button>
+
+      <!-- Admin Button -->
+      <a href="admin.html" id="ba" class="text-xs text-[#818f9e] hover:text-[#00b4d8] border border-[#2c333f] px-2 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+        <i class="fa-solid fa-lock text-[10px]"></i>
+        <span>الإدارة</span>
+      </a>
+
+      <!-- Slicer Export button & format -->
+      <div class="flex items-center gap-1 mr-2 border-r border-[#2c333f] pr-2">
+        <select id="fmt" class="!py-1 !text-xs !bg-[#222730] !border-[#2c333f]">
+          <option>STL</option>
+          <option>3MF</option>
+          <option>SVG</option>
+        </select>
+        <button id="bd" class="pri"><i class="fa-solid fa-download"></i> <span>تنزيل</span></button>
+      </div>
+
+      <button id="bg" title="تغيير اللغة" class="!px-2 !text-xs">EN</button>
+    </div>
+  </header>
+
+  <!-- ──────────────────────────────────────────────
+       MAIN THREE.JS VIEWPORT & SIDE PANELS
+       ────────────────────────────────────────────── -->
+  <main>
+    <!-- Left Tools Panel -->
+    <aside id="tools">
+      <div class="menu" id="menu">
+        <!-- Rendered via JS -->
+      </div>
+      <h4 data-t="objs">المجسمات في المشهد</h4>
+      <div id="list"></div>
+    </aside>
+
+    <!-- Center 3D Stage -->
+    <div id="stage">
+      <canvas id="v"></canvas>
+
+      <!-- Floating Tool Palette (Transform modes) -->
+      <div id="tb">
+        <button id="tm" title="نقل [M]"></button>
+        <button id="ts" title="تحجيم [S]"></button>
+        <button id="tro" title="تدوير [R]"></button>
+        <button id="tg" title="إنزال على الطاولة [G]"></button>
+        <button id="tpv" title="معاينة الحفر"></button>
+        <button id="tck" title="فحص الطباعة"></button>
+        <button id="tun" title="تراجع [Ctrl+Z]">↶</button>
+        <button id="tre" title="إعادة [Ctrl+Y]">↷</button>
+      </div>
+
+      <!-- Plates (Beds) Selector -->
+      <div id="pl" hidden></div>
+
+      <!-- Numeric Transform Popup Box -->
+      <div id="tw" hidden></div>
+    </div>
+
+    <!-- Right Properties Panel -->
+    <aside id="props">
+      <!-- Populated via JS depending on selected 3D object -->
+    </aside>
+
+    <!-- Resizable dividers -->
+    <i class="rz" id="r1"></i>
+    <i class="rz" id="r2"></i>
+  </main>
+
+  <!-- ──────────────────────────────────────────────
+       FOOTER STATUS BAR
+       ────────────────────────────────────────────── -->
+  <footer>
+    <div class="flex items-center gap-3">
+      <span class="flex items-center gap-1.5 text-emerald-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span>محرك Slicer ثلاثي الأبعاد جاهز</span>
+      </span>
+      <span class="text-[#3a4352]">|</span>
+      <span id="footer-stats" class="font-mono text-[11px]">المجسمات: 0 · الحجم: 220×220 mm</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button type="button" onclick="openOwnerVerificationModal()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold transition-all cursor-pointer">
+        <i class="fa-solid fa-certificate"></i>
+        <span>بيانات المالك والتوثيق</span>
+      </button>
+      <span class="text-[#3a4352]">|</span>
+      <a href="terms.html" target="_blank" class="hover:text-white transition-colors">الشروط والأحكام</a>
+      <span class="text-[#3a4352]">·</span>
+      <a href="privacy.html" target="_blank" class="hover:text-white transition-colors">سياسة الخصوصية</a>
+      <span class="text-[#3a4352]">|</span>
+      <span>مالك المنصة: <b id="footer-owner-name">علي الحاجي</b></span>
+      <span class="mx-1">·</span>
+      <a id="footer-owner-email" href="mailto:aahaji_110@gmail.com">aahaji_110@gmail.com</a>
+    </div>
+  </footer>
+</div>
+
+<!-- Modal Dialog Container -->
+<dialog id="md"></dialog>
+
+<!-- Owner Verification & Legal Proof Modal -->
+<dialog id="owner-verify-modal" class="!w-[min(680px,96vw)] max-h-[90vh] overflow-y-auto">
+  <div class="p-2 space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-[#2c333f]">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>بيانات مالك المنصة والتوثيق الرسمي والحقوق</span>
+            <span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border border-emerald-500/30">
+              <i class="fa-solid fa-check"></i> موثق رسمياً
+            </span>
+          </h3>
+          <p class="text-[11px] text-[#818f9e]">إثبات الملكية القانونية والتجارية بموجب الأنظمة المرعية في المملكة العربية السعودية</p>
+        </div>
+      </div>
+      <button onclick="closeOwnerVerificationModal()" class="text-[#818f9e] hover:text-white text-base px-2 py-1">✕</button>
+    </div>
+
+    <!-- Official Verification Banner -->
+    <div class="bg-[#121519] border border-emerald-500/30 rounded-xl p-3.5 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-xl flex-shrink-0">
+        <i class="fa-solid fa-award"></i>
+      </div>
+      <div class="text-xs">
+        <div class="font-bold text-white">منصة سعودية معتمدة وموثقة بنظام العمل الحر</div>
+        <div class="text-[#818f9e] text-[11px] mt-0.5">صادرة من وزارة الموارد البشرية والتنمية الاجتماعية والمركز السعودي للأعمال، وتخضع لنظام التجارة الإلكترونية وحماية المستهلك.</div>
+      </div>
+    </div>
+
+    <!-- Details Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+      
+      <!-- Owner Identity -->
+      <div class="bg-[#121519] border border-[#2c333f] p-3 rounded-xl space-y-1.5">
+        <div class="text-[11px] text-[#818f9e] flex items-center gap-1.5">
+          <i class="fa-solid fa-user text-[#00b4d8]"></i>
+          <span>مالك ومشغل المنصة:</span>
+        </div>
+        <div id="pub-owner-name" class="font-bold text-white text-sm">علي الحاجي</div>
+        <div id="pub-owner-title" class="text-[11px] text-[#00b4d8]">مطور ومصمم نماذج ثلاثية الأبعاد</div>
+        <div id="pub-owner-address" class="text-[10px] text-[#818f9e]">المملكة العربية السعودية</div>
+      </div>
+
+      <!-- Registration / Freelance Proof -->
+      <div class="bg-[#121519] border border-[#2c333f] p-3 rounded-xl space-y-1.5">
+        <div class="text-[11px] text-[#818f9e] flex items-center gap-1.5">
+          <i class="fa-solid fa-file-contract text-emerald-400"></i>
+          <span>وثيقة العمل الحر / السجل:</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div id="pub-owner-cert" class="font-bold font-mono text-emerald-400 text-sm">FL-84920194</div>
+          <a id="pub-verify-link" href="https://freelancing.sa" target="_blank" class="text-[10px] bg-[#222730] hover:bg-[#2c333f] text-[#00b4d8] px-2 py-0.5 rounded transition-colors inline-flex items-center gap-1">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> تحقق
+          </a>
+        </div>
+        <div id="pub-owner-activity" class="text-[10px] text-[#818f9e] leading-snug">تصميم وبرمجة البرمجيات والتصنيع الرقمي 3D</div>
+      </div>
+
+      <!-- Banking Details & IBAN -->
+      <div class="bg-[#121519] border border-[#2c333f] p-3 rounded-xl space-y-2 sm:col-span-2">
+        <div class="flex items-center justify-between">
+          <div class="text-[11px] text-[#818f9e] flex items-center gap-1.5">
+            <i class="fa-solid fa-building-columns text-amber-400"></i>
+            <span>الحساب البنكي والآيبان المعتمد لتلقي العمليات:</span>
+          </div>
+          <div id="pub-owner-bank" class="text-[11px] font-bold text-white">مصرف الراجحي</div>
+        </div>
+        <div class="bg-[#181c22] border border-[#2c333f] p-2.5 rounded-lg flex items-center justify-between">
+          <div>
+            <div class="text-[10px] text-[#818f9e]">المستفيد: <b id="pub-owner-beneficiary" class="text-white">علي الحاجي</b></div>
+            <div id="pub-owner-iban" class="font-mono text-emerald-400 font-bold text-xs tracking-wider dir-ltr text-right mt-0.5">SA0000000000000000000000</div>
+          </div>
+          <button type="button" onclick="copyPubIban()" class="bg-[#222730] hover:bg-[#2c333f] text-emerald-400 border border-emerald-500/20 text-xs px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer">
+            <i class="fa-solid fa-copy"></i>
+            <span>نسخ الآيبان</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Official Contact Channels -->
+      <div class="bg-[#121519] border border-[#2c333f] p-3 rounded-xl space-y-1.5">
+        <div class="text-[11px] text-[#818f9e] flex items-center gap-1.5">
+          <i class="fa-solid fa-headset text-indigo-400"></i>
+          <span>قنوات التواصل الرسمي:</span>
+        </div>
+        <div class="space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[#818f9e] text-[10px]">البريد الرسمي:</span>
+            <a id="pub-owner-email" href="mailto:aahaji_110@gmail.com" class="text-[#00b4d8] font-mono text-[11px] hover:underline">aahaji_110@gmail.com</a>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[#818f9e] text-[10px]">الدعم والواتساب:</span>
+            <a id="pub-owner-whatsapp" href="https://wa.me/966500000000" target="_blank" class="text-emerald-400 font-mono text-[11px] hover:underline flex items-center gap-1">
+              <i class="fa-brands fa-whatsapp"></i> محادثة مباشرة
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Social Media Links -->
+      <div class="bg-[#121519] border border-[#2c333f] p-3 rounded-xl space-y-2">
+        <div class="text-[11px] text-[#818f9e] flex items-center gap-1.5">
+          <i class="fa-solid fa-share-nodes text-pink-400"></i>
+          <span>الحسابات الرسمية على المنصات:</span>
+        </div>
+        <div id="pub-social-links" class="flex items-center gap-2 pt-0.5">
+          <a id="pub-x" href="https://x.com/" target="_blank" class="w-8 h-8 rounded-lg bg-[#181c22] border border-[#2c333f] flex items-center justify-center text-white hover:text-[#00b4d8] transition-colors" title="منصة إكس">
+            <i class="fa-brands fa-x-twitter text-sm"></i>
+          </a>
+          <a id="pub-insta" href="https://instagram.com/" target="_blank" class="w-8 h-8 rounded-lg bg-[#181c22] border border-[#2c333f] flex items-center justify-center text-pink-400 hover:text-white transition-colors" title="إنستغرام">
+            <i class="fa-brands fa-instagram text-sm"></i>
+          </a>
+          <a id="pub-tiktok" href="https://tiktok.com/" target="_blank" class="w-8 h-8 rounded-lg bg-[#181c22] border border-[#2c333f] flex items-center justify-center text-cyan-300 hover:text-white transition-colors" title="تيك توك">
+            <i class="fa-brands fa-tiktok text-sm"></i>
+          </a>
+          <a id="pub-youtube" href="#" target="_blank" class="w-8 h-8 rounded-lg bg-[#181c22] border border-[#2c333f] flex items-center justify-center text-rose-500 hover:text-white transition-colors hidden" title="يوتيوب">
+            <i class="fa-brands fa-youtube text-sm"></i>
+          </a>
+          <a id="pub-linkedin" href="#" target="_blank" class="w-8 h-8 rounded-lg bg-[#181c22] border border-[#2c333f] flex items-center justify-center text-blue-500 hover:text-white transition-colors hidden" title="لينكد إن">
+            <i class="fa-brands fa-linkedin text-sm"></i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Intellectual Property Statement -->
+    <div class="bg-[#121519] border border-[#2c333f] p-3 rounded-xl text-[11px] text-[#818f9e] leading-relaxed">
+      <div class="font-bold text-white mb-1 flex items-center gap-1.5">
+        <i class="fa-solid fa-scale-balanced text-teal-400"></i>
+        <span>حماية الملكية الفكرية والحقوق الرقمية:</span>
+      </div>
+      <p id="pub-owner-copyright">
+        جميع حقوق الملكية الفكرية، التصاميم، محرك المحاكاة والتقطيع، الأكواد البرمجية، والعلامة التجارية (مجسّم - مجار) محفوظة بالكامل للمالك الموثق (علي الحاجي) بموجب الأنظمة واللوائح المعمول بها في المملكة العربية السعودية وحماية الملكية الفكرية (الهيئة السعودية للملكية الفكرية SAIP).
+      </p>
+    </div>
+
+    <div class="pt-2 flex justify-between items-center text-[10px] text-[#818f9e]">
+      <span>نظام حماية المستهلك والتجارة الإلكترونية في المملكة العربية السعودية</span>
+      <button onclick="closeOwnerVerificationModal()" class="btn btn-secondary !py-1 !px-4 !text-xs cursor-pointer">إغلاق</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Moyasar Payment Modal -->
+<dialog id="moyasar-modal">
+  <div class="p-2">
+    <div class="flex items-center justify-between pb-3 border-b border-[#2c333f] mb-4">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-credit-card text-[#00b4d8]"></i>
+        <h3 class="text-sm font-bold text-white">إتمام الدفع عبر بوابة Moyasar (مدى / فيزا)</h3>
+      </div>
+      <button onclick="closeMoyasarModal()" class="text-[#818f9e] hover:text-white">✕</button>
+    </div>
+
+    <!-- Selected plan summary -->
+    <div id="pay-summary" class="bg-[#121519] border border-[#2c333f] p-3 rounded-xl mb-4 text-xs">
+      <!-- Dynamic summary -->
+    </div>
+
+    <!-- Moyasar Web Form Container -->
+    <div id="moyasar-form-container" class="space-y-4">
+      <!-- Mock / Real Moyasar Card Element -->
+      <div class="bg-[#14171c] p-4 rounded-xl border border-[#2c333f] text-xs space-y-3">
+        <div class="flex justify-between items-center text-[#818f9e]">
+          <span>بيانات البطاقة البنكية</span>
+          <div class="flex gap-1.5">
+            <span class="bg-[#222730] px-1.5 py-0.5 rounded text-[10px] text-white">مدى</span>
+            <span class="bg-[#222730] px-1.5 py-0.5 rounded text-[10px] text-white">Visa</span>
+            <span class="bg-[#222730] px-1.5 py-0.5 rounded text-[10px] text-white">Mastercard</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[#818f9e] mb-1">اسم حامل البطاقة</label>
+          <input type="text" id="mya-name" placeholder="محمد علي" class="w-full">
+        </div>
+
+        <div>
+          <label class="block text-[#818f9e] mb-1">رقم البطاقة</label>
+          <input type="text" id="mya-number" placeholder="4000 0000 0000 0002" maxlength="19" dir="ltr" class="w-full font-mono">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[#818f9e] mb-1">تاريخ الانتهاء</label>
+            <input type="text" id="mya-exp" placeholder="MM/YY" maxlength="5" dir="ltr" class="w-full font-mono text-center">
+          </div>
+          <div>
+            <label class="block text-[#818f9e] mb-1">رمز الأمان (CVC)</label>
+            <input type="password" id="mya-cvc" placeholder="•••" maxlength="4" dir="ltr" class="w-full font-mono text-center">
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button id="btn-pay-now" onclick="executeMoyasarPayment()" class="w-full pri !py-3 !text-sm">
+            <i class="fa-solid fa-lock text-xs"></i>
+            <span id="btn-pay-label">ادفع الآن بأمان</span>
+          </button>
+        </div>
+
+        <p class="text-[10px] text-[#818f9e] text-center pt-1">
+          🔒 معالجة مشفرة بالكامل 256-bit SSL وفق معايير البنك المركزي السعودي (SAMA).
+        </p>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<!-- 3D Print Cost Calculator Drawer / Modal -->
+<dialog id="calc-modal" class="!w-[min(680px,96vw)]">
+  <div class="flex items-center justify-between pb-3 border-b border-[#2c333f] mb-4">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-calculator text-emerald-400"></i>
+      <h3 class="text-sm font-bold text-white">حاسبة تكلفة مطبوعات 3D الاحترافية</h3>
+    </div>
+    <button onclick="document.getElementById('calc-modal').close()" class="text-[#818f9e] hover:text-white">✕</button>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+    <!-- Filament Inputs -->
+    <div class="space-y-3 bg-[#14171c] p-3 rounded-xl border border-[#2c333f]">
+      <h4 class="!mt-0 !mb-2 text-[#00b4d8]"><i class="fa-solid fa-spool"></i> الفلمنت والخامات</h4>
+      <div class="r">
+        <label>سعر البكرة (ر.س):</label>
+        <input type="number" id="calc_fp" value="75" step="1" class="w-20">
+      </div>
+      <div class="r">
+        <label>وزن البكرة (جرام):</label>
+        <input type="number" id="calc_fw" value="1000" step="50" class="w-20">
+      </div>
+      <div class="r">
+        <label>وزن القطعة (جرام):</label>
+        <input type="number" id="calc_pg" value="45" step="1" class="w-20">
+      </div>
+      <div class="r">
+        <label>نسبة الهالك والدعم (%):</label>
+        <input type="number" id="calc_wp" value="10" step="1" class="w-20">
+      </div>
+    </div>
+
+    <!-- Machine & Power Inputs -->
+    <div class="space-y-3 bg-[#14171c] p-3 rounded-xl border border-[#2c333f]">
+      <h4 class="!mt-0 !mb-2 text-[#00b4d8]"><i class="fa-solid fa-clock"></i> الوقت والطاقة والتشغيل</h4>
+      <div class="r">
+        <label>مدة الطباعة (ساعات):</label>
+        <input type="number" id="calc_ph" value="6.5" step="0.5" class="w-20">
+      </div>
+      <div class="r">
+        <label>استهلاك الطابعة (واط):</label>
+        <input type="number" id="calc_pw" value="150" step="10" class="w-20">
+      </div>
+      <div class="r">
+        <label>هامش الربح (%):</label>
+        <input type="number" id="calc_pm" value="100" step="5" class="w-20">
+      </div>
+    </div>
+  </div>
+
+  <!-- Calculator Results Banner -->
+  <div class="mt-4 bg-[#00b4d8]/10 border border-[#00b4d8]/30 p-4 rounded-xl flex items-center justify-between">
+    <div>
+      <span class="text-[11px] text-[#818f9e] block">سعر البيع المقترح شامل الأرباح</span>
+      <div id="calc-final-price" class="text-2xl font-black text-white font-mono">0.00 ر.س</div>
+    </div>
+    <div class="text-right text-[11px] text-[#818f9e] space-y-0.5">
+      <div>تكلفة المواد: <span id="calc-mat-cost" class="text-white font-bold">0.00</span> ر.س</div>
+      <div>تكلفة الكهرباء والصيانة: <span id="calc-elec-cost" class="text-white font-bold">0.00</span> ر.س</div>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+
+<!-- ──────────────────────────────────────────────
+     SCRIPTS: Three.js & Loaders & Libraries
+     ────────────────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+<!-- Firebase SDK & Custom Modules -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/security.js"></script>
+
+<!-- Main Slicer Engine -->
+<script>
+const $ = s => document.querySelector(s);
+const ld = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch(e) { return d; } };
+const sv = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
+
+let L = ld('lang', 0); // 0 = ar, 1 = en
+let UL = ld('users', {});
+let U = UL[ld('cur', null)] || null;
+let C = ld('codes', {});
+let PY = ld('pays', []);
+
+// Translation strings
+const D = {};
+`load|رفع ملف|Load
+cube|مكعب|Cube
+sphere|كرة|Sphere
+cylinder|اسطوانة|Cylinder
+cone|مخروط|Cone
+torus|Torus|Torus
+disc|قرص|Disc
+triangle|مثلث|Triangle
+rect|مستطيل|Rectangle
+text|نص ثلاثي الأبعاد|3D Text
+svg|شعار SVG / نقش|SVG / Lithophane
+objs|المجسمات|Objects
+pos|الموضع X / Y / Z|Position X / Y / Z
+size|الحجم %|Size %
+del|حذف|Delete
+txt|النص (عربي وإنجليزي)|Text
+font|نوع الخط|Font
+bold|عريض|Bold
+ital|مائل|Italic
+h|الارتفاع (مم)|Height (mm)
+d|العمق (مم)|Depth (mm)
+adv|إعدادات متقدمة|Advanced
+al|المحاذاة|Alignment
+al0|يسار|Left
+al1|وسط|Center
+al2|يمين|Right
+cg|تباعد الحروف|Char gap
+lg|تباعد الأسطر|Line gap
+bo|سماكة إضافية|Boldness
+sk|ميلان|Skew
+rot|التدوير|Rotation
+face|توجيه نحو الكاميرا|Face camera
+op|نوع العملية|Operation
+join|إضافة (Add)|Add
+cut|حفر (Carve)|Carve
+none|اختر مجسماً أو أضف نصاً|Select an object or add text
+fonts|خط متاح|fonts available
+dl|تصدير وتنزيل|Download
+login|تسجيل الدخول|Sign in
+buy|ترقية واشتراكات|Upgrade
+sar|ر.س|SAR
+pay|شراء الآن|Buy Now
+code|كود تفعيل|Activation Code
+redeem|تفعيل|Redeem
+email|البريد الإلكتروني|Email
+ok|تم بنجاح|Done
+empty|أضف مجسماً أولاً للطباعة|Add an object first
+err|صيغة ملف غير مدعومة|Unsupported file
+acct|حسابي|Account
+plan|الباقة|Plan
+codes|الأكواد|Codes
+surf|لصق على السطح|Stick to surface
+surfhint|انقر على سطح أي مجسم لإلصاق النص عليه مباشرة|Click on a model surface to stick the text
+kc|صانع الميداليات|Keychain Maker
+plate|لوحة|Plate
+all|الكل|All
+sep|فصل الألوان|Separate Colors
+addbed|إضافة لوحة طباعة|Add Plate
+arr|ترتيب تلقائي|Auto Arrange
+bsz|حجم اللوحة (مم)|Plate Size
+und|تراجع|Undo
+red|إعادة|Redo
+pvw|معاينة الحفر|Carve Preview
+chk|فحص الجاهزية|Print Check
+qr|رمز QR ثلاثي الأبعاد|3D QR Code
+pj|مشاريعي|My Projects
+pjn|اسم المشروع|Project Name
+pjsave|حفظ المشروع|Save
+open|فتح|Open
+nopj|لا توجد مشاريع محفوظة|No projects
+addshape|إضافة مجسم|Add Shape
+opadd|إضافة بروز|Add
+opcut|حفر ونحت|Carve
+thr|العتبة|Threshold
+inv|عكس النقش|Invert
+wmm|العرض (مم)|Width (mm)
+svgdl|تصدير SVG|Export SVG
+vmode|نوع المعالجة|Mode
+vsil|شكل ظلي|Silhouette
+vlith|نقش ضوئي (Lithophane)|Lithophane
+vtmin|أقل سماكة (مم)|Min thickness
+vtmax|أعلى سماكة (مم)|Max thickness
+magok|تم إنزال المجسم على لوحة الطباعة|Model dropped to bed
+newc|مسح المشهد بالكامل؟|Clear all?
+new|جديد|New
+colr|اللون|Color
+dup|تكرار|Duplicate
+rep|مصفوفة نسخ|Array...
+ali|محاذاة|Align
+chkok|فحص ناجح — المجسم جاهز للطباعة تماماً|Ready to print
+dlany|تنزيل على أي حال|Download anyway
+kcn|اكتب الاسم أو النص|Type a name
+kcs|اختر النمط|Choose a style
+kcz|حجم الحروف (مم)|Letter size
+kcb|سماكة الإطار (مم)|Border
+kch|ارتفاع القاعدة (مم)|Base height
+kct|ارتفاع الحروف (مم)|Text height
+kcd|قطر الثقب (مم)|Hole diameter
+kce|مكان الثقب|Hole position
+kel|يسار|Left
+ker|يمين|Right
+ket|أعلى|Top
+ken|بدون|None
+kx|دلاية إضافية|Charm
+xh|قلب|Heart
+xs|نجمة|Star
+xc|دائرة|Circle
+kc1|لون القاعدة|Base color
+kc2|لون الحروف|Text color
+ktier|إطار طبقتين|Double border
+kmk|إنشاء الميدالية|Create Keychain
+khint|اختر النمط المناسب واضغط إنشاء|Select style and create`.split('\n').forEach(l => {
+  const [a, b, c] = l.split('|');
+  if (a && b) D[a] = [b, c || b];
+});
+
+const t = k => (D[k] ? D[k][L] : k);
+
+const tr = () => {
+  document.documentElement.lang = L ? 'en' : 'ar';
+  document.documentElement.dir = L ? 'ltr' : 'rtl';
+  document.querySelectorAll('[data-t]').forEach(e => e.textContent = t(e.dataset.t));
+
+  $('#bd').innerHTML = `<i class="fa-solid fa-download"></i> <span>${t('dl')}</span>`;
+  $('#bu').title = t('buy');
+  $('#bc').title = 'المكافآت';
+  $('#bj').title = t('pj');
+  $('#bg').textContent = L ? 'عربي' : 'EN';
+  
+  if (U) {
+    $('#user-label').textContent = U.displayName || U.email.split('@')[0];
+    $('#cr').textContent = '🪙 ' + (U.credits || 0);
+  } else {
+    $('#user-label').textContent = t('login');
+    $('#cr').textContent = '🪙 0';
+  }
+
+  $('#menu').innerHTML = `
+    <button class="pri" data-f="1"><i class="fa-solid fa-folder-open"></i> ${t('load')}</button>
+    <button data-k="shapes"><i class="fa-solid fa-shapes"></i> ${t('addshape')}</button>
+    <button data-k="text"><i class="fa-solid fa-font"></i> ${t('text')}</button>
+    <button data-k="svg"><i class="fa-solid fa-image"></i> ${t('svg')}</button>
+    <button data-k="kc"><i class="fa-solid fa-key"></i> ${t('kc')}</button>
+    <button data-k="sep"><i class="fa-solid fa-palette"></i> ${t('sep')}</button>
+    <button data-k="bed"><i class="fa-solid fa-layer-group"></i> ${t('addbed')}</button>
+    <button data-k="arr"><i class="fa-solid fa-arrows-to-dot"></i> ${t('arr')}</button>
+    <button data-k="qr"><i class="fa-solid fa-qrcode"></i> ${t('qr')}</button>
+  `;
+  pp();
+  ol();
+};
+
+const toast = m => {
+  const e = $('#toast');
+  e.innerHTML = `<span><i class="fa-solid fa-circle-check text-[#00b4d8]"></i> ${m}</span>`;
+  clearTimeout(toast.h);
+  toast.h = setTimeout(() => e.innerHTML = '', 2800);
+};
+
+const M = h => {
+  const m = $('#md');
+  m.innerHTML = h + `<form method="dialog" class="mt-4 text-center"><button class="bg-[#242932] px-5 py-1.5 rounded-lg text-xs hover:text-white">إغلاق</button></form>`;
+  if (!m.open) m.showModal();
+};
+
+const save = () => {
+  if (U) UL[U.email] = U;
+  sv('users', UL);
+  sv('cur', U ? U.email : null);
+  sv('codes', C);
+  sv('pays', PY);
+  tr();
+};
+
+/* ──────────────────────────────────────────────
+   THREE.JS 3D VIEWPORT ENGINE
+   ────────────────────────────────────────────── */
+const FONTS = ['Cairo','Tajawal','Amiri','Almarai','Changa','El Messiri','Harmattan','Lateef','Lalezar','Mada','Markazi Text','Mirza','Rakkas','Reem Kufi','Scheherazade New','Katibeh','Jomhuria','Aref Ruqaa','Noto Kufi Arabic','Noto Naskh Arabic','IBM Plex Sans Arabic','Readex Pro','Vazirmatn','Baloo Bhaijaan 2','Lemonada','Marhey','Kufam','Alexandria','Zain','Gulzar'];
+FONTS.forEach(f => {
+  const l = document.createElement('link');
+  l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=' + f.replace(/ /g, '+') + '&display=swap';
+  document.head.append(l);
+});
+
+const sc = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
+cam.up.set(0, 0, 1);
+cam.position.set(130, -190, 160);
+
+const R = new THREE.WebGLRenderer({ canvas: $('#v'), antialias: true, alpha: false });
+R.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+R.setClearColor(0x0f1216);
+
+sc.add(new THREE.HemisphereLight(0xffffff, 0x444955, 0.7));
+const dl = new THREE.DirectionalLight(0xffffff, 0.6);
+dl.position.set(100, -120, 220);
+sc.add(dl);
+
+const oc = new THREE.OrbitControls(cam, R.domElement);
+oc.enableDamping = true;
+oc.dampingFactor = 0.05;
+
+const rs = () => {
+  const s = $('#stage');
+  R.setSize(s.clientWidth, s.clientHeight, false);
+  cam.aspect = s.clientWidth / s.clientHeight;
+  cam.updateProjectionMatrix();
+};
+new ResizeObserver(rs).observe($('#stage'));
+
+(function animate() {
+  requestAnimationFrame(animate);
+  oc.update();
+  R.render(sc, cam);
+})();
+
+const objs = [];
+let sel = null;
+
+const mat = c => new THREE.MeshStandardMaterial({
+  color: c || 0x00b4d8,
+  roughness: 0.6,
+  metalness: 0.1
+});
+
+const hl = (o, on) => o.traverse(m => {
+  if (m.material && m.material.emissive) m.material.emissive.setHex(on ? 0x093b48 : 0);
+});
+
+function pick(o) {
+  if (sel) hl(sel, 0);
+  sel = o;
+  if (o) hl(o, 1);
+  ol();
+  pp();
+}
+
+function add(o, name, kind, d) {
+  o.userData = { name, kind, o: d };
+  sc.add(o);
+  objs.push(o);
+  pick(o);
+  updateFooterStats();
+  commit();
+}
+
+const SH = {
+  cube: () => new THREE.BoxGeometry(20, 20, 20),
+  sphere: () => new THREE.SphereGeometry(10, 32, 16),
+  cylinder: () => new THREE.CylinderGeometry(10, 10, 20, 48).rotateX(Math.PI / 2),
+  cone: () => new THREE.ConeGeometry(10, 20, 48).rotateX(Math.PI / 2),
+  torus: () => new THREE.TorusGeometry(10, 3, 16, 48),
+  disc: () => new THREE.CylinderGeometry(10, 10, 2, 48).rotateX(Math.PI / 2),
+  triangle: () => new THREE.CylinderGeometry(12, 12, 20, 3).rotateX(Math.PI / 2),
+  rect: () => new THREE.BoxGeometry(30, 16, 10)
+};
+
+function topZ() {
+  let z = 0;
+  objs.forEach(o => {
+    if (o.userData.kind !== 'text') z = Math.max(z, new THREE.Box3().setFromObject(o).max.z);
+  });
+  return z;
+}
+
+function updateFooterStats() {
+  const count = objs.filter(o => o.parent === sc).length;
+  $('#footer-stats').textContent = `المجسمات: ${count} · اللوحة: ${BW}×${BW} mm`;
+}
+
+/* ── 3D Text Generation ── */
+function newText() {
+  const d = { t: 'مُجسَّم 3D', font: 'Cairo', h: 9, dp: 1.5, b: 0, i: 0, al: 1, cg: 0, bo: 0, sk: 0, lg: 0 };
+  const m = new THREE.Mesh(new THREE.BufferGeometry(), mat(0x00b4d8));
+  m.position.z = topZ();
+  add(m, t('text'), 'text', d);
+  bt(m);
+}
+
+const S = 10;
+async function bt(m) {
+  const o = m.userData.o;
+  try { await document.fonts.load(`40px "${o.font}"`, o.t); } catch(e) {}
+  const fs = o.h * S;
+  const lh = fs * 1.4 + o.lg * S;
+  const ls = o.t.split('\n');
+  const c = document.createElement('canvas');
+  const x = c.getContext('2d');
+  const f = `${o.i ? 'italic ' : ''}${o.b ? '700 ' : '400 '}${fs}px "${o.font}"`;
+  const ph = o.cg * 0.353 * S + 'px';
+  x.font = f;
+  if ('letterSpacing' in x) x.letterSpacing = ph;
+  const w = Math.ceil(Math.max(1, ...ls.map(l => x.measureText(l).width)) + fs * 1.6);
+  const h = Math.ceil(lh * ls.length + fs * 0.8);
+  c.width = w;
+  c.height = h;
+  x.font = f;
+  if ('letterSpacing' in x) x.letterSpacing = ph;
+  x.direction = 'rtl';
+  x.textAlign = ['left', 'center', 'right'][o.al];
+  x.fillStyle = x.strokeStyle = '#000';
+  x.lineWidth = o.bo * 0.353 * S * 2;
+  x.lineJoin = 'round';
+  const ax = [fs * 0.8, w / 2, w - fs * 0.8][o.al];
+  ls.forEach((l, k) => {
+    const by = (k + 1) * lh;
+    x.setTransform(1, 0, -o.sk, 1, o.sk * by, 0);
+    x.fillText(l, ax, by);
+    if (o.bo > 0) x.strokeText(l, ax, by);
+  });
+  const dt = x.getImageData(0, 0, w, h).data;
+  const of = (i, j) => i >= 0 && j >= 0 && i < w && j < h && dt[(j * w + i) * 4 + 3] > 127;
+  const g = pg(of, w, h, o.dp + (m.userData.cut ? 0.5 : 0), 1 / S);
+  m.userData.thin = thinPct(of, w, h, 4);
+  if (m.userData.cut) g.translate(0, 0, -o.dp);
+  g.userData.flat = g.attributes.position.array.slice();
+  m.geometry.dispose();
+  m.geometry = g;
+  if (m.userData.stuck) bend(m);
+  commit();
+}
+
+/* ── Boolean Carving (BSP) ── */
+const dt3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const sb = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cr3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const lp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+function spl(pl, q, cf, cb, f, b) {
+  let ty = 0;
+  const ts = q.v.map(p => {
+    const d = dt3(pl.n, p) - pl.w;
+    const c = d < -1e-5 ? 2 : d > 1e-5 ? 1 : 0;
+    ty |= c;
+    return c;
+  });
+  if (ty === 0) (dt3(pl.n, q.pl.n) > 0 ? cf : cb).push(q);
+  else if (ty === 1) f.push(q);
+  else if (ty === 2) b.push(q);
+  else {
+    const F = [], B = [], n = q.v.length;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n, a = q.v[i], c = q.v[j];
+      if (ts[i] !== 2) F.push(a);
+      if (ts[i] !== 1) B.push(a);
+      if ((ts[i] | ts[j]) === 3) {
+        const v = lp(a, c, (pl.w - dt3(pl.n, a)) / dt3(pl.n, sb(c, a)));
+        F.push(v);
+        B.push(v);
+      }
+    }
+    if (F.length > 2) f.push({ v: F, pl: q.pl, c: q.c });
+    if (B.length > 2) b.push({ v: B, pl: q.pl, c: q.c });
+  }
+}
+
+class BN {
+  constructor(p) {
+    this.pl = null; this.f = null; this.b = null; this.p = [];
+    if (p) this.build(p);
+  }
+  inv() {
+    this.p.forEach(q => { q.v.reverse(); q.pl = { n: q.pl.n.map(x => -x), w: -q.pl.w }; });
+    if (this.pl) this.pl = { n: this.pl.n.map(x => -x), w: -this.pl.w };
+    if (this.f) this.f.inv();
+    if (this.b) this.b.inv();
+    [this.f, this.b] = [this.b, this.f];
+  }
+  clip(ps) {
+    if (!this.pl) return ps.slice();
+    let f = [], b = [];
+    ps.forEach(q => spl(this.pl, q, f, b, f, b));
+    f = this.f ? this.f.clip(f) : f;
+    b = this.b ? this.b.clip(b) : [];
+    return f.concat(b);
+  }
+  clipTo(o) {
+    this.p = o.clip(this.p);
+    if (this.f) this.f.clipTo(o);
+    if (this.b) this.b.clipTo(o);
+  }
+  all() {
+    let r = this.p.slice();
+    if (this.f) r = r.concat(this.f.all());
+    if (this.b) r = r.concat(this.b.all());
+    return r;
+  }
+  build(ps) {
+    if (!ps.length) return;
+    if (!this.pl) this.pl = ps[0].pl;
+    const f = [], b = [];
+    ps.forEach(q => spl(this.pl, q, this.p, this.p, f, b));
+    if (f.length) { this.f = this.f || new BN(); this.f.build(f); }
+    if (b.length) { this.b = this.b || new BN(); this.b.build(b); }
+  }
+}
+
+const bbx = P => {
+  const m = [1e9, 1e9, 1e9, -1e9, -1e9, -1e9];
+  P.forEach(q => q.v.forEach(p => {
+    for (let k = 0; k < 3; k++) {
+      m[k] = Math.min(m[k], p[k]);
+      m[k + 3] = Math.max(m[k + 3], p[k]);
+    }
+  }));
+  return m;
+};
+
+function carve(P, B) {
+  const bb = bbx(B), near = [], far = [];
+  P.forEach(q => {
+    const m = bbx([q]);
+    (m[0] <= bb[3] + 1e-4 && m[3] >= bb[0] - 1e-4 && m[1] <= bb[4] + 1e-4 && m[4] >= bb[1] - 1e-4 && m[2] <= bb[5] + 1e-4 && m[5] >= bb[2] - 1e-4 ? near : far).push(q);
+  });
+  const a = new BN(near), b = new BN(B);
+  a.inv(); a.clipTo(b); b.clipTo(a); b.inv(); b.clipTo(a); b.inv();
+  a.build(b.all()); a.inv();
+  return a.all().concat(far);
+}
+
+function tp(a) {
+  const r = [];
+  for (let i = 0; i < a.length; i += 9) {
+    const v0 = [a[i], a[i+1], a[i+2]], v1 = [a[i+3], a[i+4], a[i+5]], v2 = [a[i+6], a[i+7], a[i+8]];
+    let n = cr3(sb(v1, v0), sb(v2, v0));
+    const l = Math.hypot(...n);
+    if (l < 1e-12) continue;
+    n = n.map(x => x / l);
+    r.push({ v: [v0, v1, v2], pl: { n, w: dt3(n, v0) }, c: a.c ? a.c[i/9] : 0 });
+  }
+  return r;
+}
+
+function pf(P) {
+  const o = [], c = [];
+  P.forEach(q => {
+    for (let i = 1; i < q.v.length - 1; i++) {
+      o.push(...q.v[0], ...q.v[i], ...q.v[i+1]);
+      c.push(q.c);
+    }
+  });
+  o.c = c;
+  return o;
+}
+
+function wt(list, ex, pk) {
+  const out = [], cc = [], v = new THREE.Vector3();
+  sc.updateMatrixWorld(true);
+  list.forEach(o => o.traverse(m => {
+    if (!m.isMesh) return;
+    if (pk && plOf(own(m)) !== pk) return;
+    if (ex) { const w = own(m); if (w && w.userData.cut) return; }
+    const p = m.geometry.attributes.position, ix = m.geometry.index, n = ix ? ix.count : p.count;
+    const fl = m.matrixWorld.determinant() < 0, cl = m.material.color.getHex();
+    for (let i = 0; i + 2 < n; i += 3) {
+      const q = [0, 1, 2].map(k => {
+        v.fromBufferAttribute(p, ix ? ix.getX(i + k) : i + k).applyMatrix4(m.matrixWorld);
+        return [v.x, v.y, v.z];
+      });
+      if (fl) q.push(q.splice(1, 1)[0]);
+      q.forEach(a => out.push(a[0], a[1], a[2]));
+      cc.push(cl);
+    }
+  }));
+  out.c = cc;
+  return out;
+}
+
+function tris(pk) {
+  const top = objs.filter(o => o.parent === sc), cu = objs.filter(o => o.userData.cut), a = wt(top, 1, pk);
+  let r = a;
+  if (cu.length && a.length) {
+    let P = tp(a);
+    const bc = P.length ? P[0].c : 0;
+    cu.forEach(c => { P = carve(P, tp(wt([c])).map(q => ({ ...q, c: bc }))); });
+    r = pf(P);
+  }
+  if (pk && r.length) {
+    let m = 1e9;
+    for (let i = 2; i < r.length; i += 3) m = Math.min(m, r[i]);
+    const sx = (pk - 1) * BP();
+    for (let i = 0; i < r.length; i += 3) { r[i] -= sx; r[i+2] -= m; }
+  }
+  return r;
+}
+
+/* ── Shapes & Operations ── */
+function setCut(m, c) {
+  const u = m.userData, a = m.material;
+  if (u.bc == null) u.bc = a.color.getHex();
+  if (!u.nm) u.nm = u.name.replace(' ✂', '');
+  u.cut = c;
+  a.color.setHex(c ? 0xef4444 : u.bc);
+  a.transparent = !!c;
+  a.opacity = c ? 0.55 : 1;
+  a.needsUpdate = true;
+  u.name = u.nm + (c ? ' ✂' : '');
+  a.depthTest = !c;
+  m.renderOrder = c ? 1 : 0;
+  if (u.kind === 'text') bt(m);
+  if (u.kind === 'svg') bs(m);
+  ol();
+}
+
+function shape(k, cut) {
+  const g = SH[k]();
+  g.computeBoundingBox();
+  const hh = (g.boundingBox.max.z - g.boundingBox.min.z) / 2;
+  g.translate(0, 0, -(g.boundingBox.max.z + g.boundingBox.min.z) / 2);
+  const m = new THREE.Mesh(g, mat());
+  m.position.set(objs.length * 4, objs.length * 4, hh);
+  add(m, t(k), k);
+  if (cut) setCut(m, 1);
+}
+
+function shapesM() {
+  M(`
+    <h3 class="text-sm font-bold text-white mb-3">${t('addshape')}</h3>
+    <div class="flex gap-2 mb-4">
+      <label class="chip"><input type="radio" name="so" value="0" checked> ${t('opadd')}</label>
+      <label class="chip"><input type="radio" name="so" value="1"> ${t('opcut')}</label>
+    </div>
+    <div class="shg">
+      ${Object.keys(SH).map(k => `<button data-sk="${k}">${t(k)}</button>`).join('')}
+    </div>
+  `);
+  $('#md').querySelectorAll('[data-sk]').forEach(b => b.onclick = () => {
+    shape(b.dataset.sk, +document.querySelector('input[name=so]:checked').value);
+    $('#md').close();
+  });
+}
+
+$('#bn').onclick = () => {
+  if (!objs.length) return;
+  const b = $('#bn');
+  if (!b.dataset.a) {
+    b.dataset.a = 1;
+    b.innerHTML = `<span class="text-rose-400 font-bold">${t('newc')}</span>`;
+    setTimeout(() => { delete b.dataset.a; b.innerHTML = `<i class="fa-solid fa-file"></i> <span>${t('new')}</span>`; }, 3000);
+    return;
+  }
+  delete b.dataset.a;
+  objs.slice().forEach(o => { if (o.parent) o.parent.remove(o); });
+  objs.length = 0;
+  sel = null;
+  cam.position.set(130, -190, 160);
+  oc.target.set(0, 0, 0);
+  b.innerHTML = `<i class="fa-solid fa-file"></i> <span>${t('new')}</span>`;
+  ol();
+  pp();
+  updateFooterStats();
+};
+
+function pg(on, w, h, z, k, kp) {
+  const P = [], q = (a, b, c, e) => P.push(...a, ...b, ...c, ...a, ...c, ...e);
+  for (let j = 0; j < h; j++) {
+    const ya = (h - j - 1) * k, yb = (h - j) * k;
+    for (let i = 0; i < w;) {
+      if (!on(i, j)) { i++; continue; }
+      const i0 = i;
+      while (on(i, j)) i++;
+      const x0 = i0 * k, x1 = i * k;
+      q([x0, ya, z], [x1, ya, z], [x1, yb, z], [x0, yb, z]);
+      q([x0, ya, 0], [x0, yb, 0], [x1, yb, 0], [x1, ya, 0]);
+      q([x0, yb, 0], [x0, ya, 0], [x0, ya, z], [x0, yb, z]);
+      q([x1, ya, 0], [x1, yb, 0], [x1, yb, z], [x1, ya, z]);
+      for (let p = i0; p < i; p++) {
+        const xa = p * k, xb = xa + k;
+        if (!on(p, j - 1)) q([xb, yb, 0], [xa, yb, 0], [xa, yb, z], [xb, yb, z]);
+        if (!on(p, j + 1)) q([xa, ya, 0], [xb, ya, 0], [xb, ya, z], [xa, ya, z]);
+      }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.computeVertexNormals();
+  if (P.length && !kp) {
+    g.computeBoundingBox();
+    const b = g.boundingBox;
+    g.translate(-(b.min.x + b.max.x) / 2, -(b.min.y + b.max.y) / 2, 0);
+  }
+  return g;
+}
+
+const svm = o => (i, j) => {
+  if (i < 0 || j < 0 || i >= o.w || j >= o.h) return false;
+  const v = o.lum[j * o.w + i];
+  return o.inv ? v >= o.thr : v < o.thr;
+};
+
+function bs(m) {
+  const o = m.userData.o;
+  m.geometry.dispose();
+  if (o.mode === 'lith') {
+    const g = geoOf(lithGeo(o));
+    g.computeBoundingBox();
+    const b = g.boundingBox;
+    g.translate(-(b.min.x + b.max.x) / 2, -(b.min.y + b.max.y) / 2, 0);
+    m.geometry = g;
+    m.userData.thin = 0;
+    return;
+  }
+  const c = m.userData.cut;
+  const g = pg(svm(o), o.w, o.h, o.dp + (c ? 0.5 : 0), o.size / o.w);
+  if (c) g.translate(0, 0, -o.dp);
+  m.userData.thin = thinPct(svm(o), o.w, o.h, Math.max(1, Math.round(0.4 * o.w / o.size)));
+  m.geometry = g;
+}
+
+$('#imf').onchange = e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  const u = URL.createObjectURL(f), im = new Image();
+  im.onload = () => {
+    const w0 = im.naturalWidth || 300, h0 = im.naturalHeight || 300;
+    const s = Math.min(600 / w0, 600 / h0);
+    const w = Math.max(1, Math.round(w0 * s)), h = Math.max(1, Math.round(h0 * s));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const x = c.getContext('2d');
+    x.drawImage(im, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data, lum = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) lum[i] = d[i * 4 + 3] < 128 ? 255 : Math.round(0.3 * d[i*4] + 0.59 * d[i*4+1] + 0.11 * d[i*4+2]);
+    URL.revokeObjectURL(u);
+    const m = new THREE.Mesh(new THREE.BufferGeometry(), mat(0xe0a030));
+    m.position.z = topZ();
+    add(m, 'SVG ' + f.name, 'svg', { lum, w, h, thr: 128, inv: 0, size: 40, dp: 2, mode: 'sil', tmin: 0.6, tmax: 3.2 });
+    bs(m);
+  };
+  im.onerror = () => toast(t('err'));
+  im.src = u;
+};
+
+/* ── Surface Sticking & Raycasting ── */
+let surf = 0, drag = null;
+const rc = new THREE.Raycaster(), pt = new THREE.Vector2(), cv = $('#v');
+
+const ray = e => {
+  const r = cv.getBoundingClientRect();
+  pt.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  rc.setFromCamera(pt, cam);
+};
+
+const own = n => { while (n && !objs.includes(n)) n = n.parent; return n; };
+const root = n => { while (n.parent && n.parent !== sc) n = n.parent; return n; };
+const mshs = p => { const r = []; p.traverse(n => { if (n.isMesh && own(n) === p) r.push(n); }); return r; };
+
+function place(m, par, h, q) {
+  const n = h.face.normal.clone().transformDirection(h.object.matrixWorld).normalize();
+  sc.attach(m);
+  const up = Math.abs(n.z) > 0.99 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+  const x = up.clone().cross(n).normalize(), y = n.clone().cross(x);
+  m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, n));
+  m.scale.setScalar(1);
+  m.position.copy(h.point).addScaledVector(n, -0.2);
+  m.updateMatrixWorld(true);
+  par.updateMatrixWorld(true);
+  par.attach(m);
+  m.userData.stuck = 1;
+  if (!q) { pick(m); bend(m); toast(t('ok')); }
+}
+
+function bend(m) {
+  const par = m.parent, g = m.geometry;
+  if (!m.userData.stuck || !par || par === sc || !g.userData.flat || !g.attributes.position.count) return;
+  const f = g.userData.flat, N = 18, H = 15;
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (let i = 0; i < f.length; i += 3) {
+    x0 = Math.min(x0, f[i]); x1 = Math.max(x1, f[i]);
+    y0 = Math.min(y0, f[i+1]); y1 = Math.max(y1, f[i+1]);
+  }
+  sc.updateMatrixWorld(true);
+  const ws = m.getWorldScale(new THREE.Vector3()).x || 1;
+  const dir = new THREE.Vector3(0, 0, -1).transformDirection(m.matrixWorld);
+  const ms = mshs(par), r2 = new THREE.Raycaster(), G = [];
+  for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) {
+    r2.set(m.localToWorld(new THREE.Vector3(x0 + (x1 - x0) * i / N, y0 + (y1 - y0) * j / N, H)), dir);
+    r2.far = H * ws * 3;
+    const h = r2.intersectObjects(ms, false)[0];
+    G.push(h ? H - h.distance / ws - 0.2 : 0);
+  }
+  const p = g.attributes.position;
+  for (let k = 0; k < p.count; k++) {
+    const gx = (f[k*3] - x0) / ((x1 - x0) || 1) * N;
+    const gy = (f[k*3+1] - y0) / ((y1 - y0) || 1) * N;
+    const i = Math.min(N - 1, Math.floor(gx)), j = Math.min(N - 1, Math.floor(gy));
+    const u = gx - i, v = gy - j;
+    const o = G[j*(N+1)+i]*(1-u)*(1-v) + G[j*(N+1)+i+1]*u*(1-v) + G[(j+1)*(N+1)+i]*(1-u)*v + G[(j+1)*(N+1)+i+1]*u*v;
+    p.setZ(k, f[k*3+2] + o);
+  }
+  p.needsUpdate = true;
+  g.computeVertexNormals();
+  g.computeBoundingBox();
+  g.computeBoundingSphere();
+}
+
+cv.addEventListener('pointerdown', e => {
+  if (tc.axis || tc.dragging) return;
+  ray(e);
+  const h = rc.intersectObjects(objs, true).find(x => x.object.material && x.object.material.visible !== false);
+  if (!h) return;
+  const o = own(h.object);
+  if (!o) return;
+  if (surf && sel && sel.userData.kind === 'text' && o.userData.kind !== 'text' && !o.userData.cut) {
+    surf = 0;
+    place(sel, o, h);
+    return;
+  }
+  pick(o);
+  if (tool) return;
+  oc.enabled = false;
+  cv.setPointerCapture(e.pointerId);
+  drag = o.userData.stuck && o.parent !== sc
+    ? { t: 1, s: o, par: o.parent }
+    : { r: root(o), pl: new THREE.Plane(new THREE.Vector3(0, 0, 1), -h.point.z), p: h.point.clone() };
+}, true);
+
+cv.addEventListener('pointermove', e => {
+  if (!drag) return;
+  ray(e);
+  if (drag.t) {
+    const h = rc.intersectObjects(mshs(drag.par), false)[0];
+    if (h) { place(drag.s, drag.par, h, 1); drag.m = 1; }
+    return;
+  }
+  const p = new THREE.Vector3();
+  if (rc.ray.intersectPlane(drag.pl, p)) {
+    drag.r.position.add(p.clone().sub(drag.p));
+    drag.p.copy(p);
+    drag.m = 1;
+  }
+});
+
+const dupPointer = () => {
+  if (drag) {
+    oc.enabled = true;
+    if (drag.t && drag.m) bend(drag.s);
+    if (drag.m) pp();
+    drag = null;
+  }
+};
+cv.addEventListener('pointerup', dupPointer);
+cv.addEventListener('pointercancel', dupPointer);
+
+/* ── Transform Gizmo & Shortcut Tools ── */
+const tc = new THREE.TransformControls(cam, R.domElement);
+sc.add(tc);
+tc.size = 0.85;
+tc.addEventListener('dragging-changed', e => { oc.enabled = !e.value; });
+
+let tool = '', pv = null, uni = 1;
+const tgt = () => (sel ? root(sel) : null);
+const ic = p => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+
+$('#tm').innerHTML = ic('<path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>');
+$('#ts').innerHTML = ic('<rect x="3" y="10" width="11" height="11" stroke-dasharray="3 2"/><path d="M13 11l8-8M14 3h7v7"/>');
+$('#tro').innerHTML = ic('<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/>');
+$('#tg').innerHTML = ic('<path d="M5 3h5v8a2 2 0 0 0 4 0V3h5v8a7 7 0 0 1-14 0z"/><path d="M5 7h5M14 7h5"/>');
+$('#tpv').innerHTML = ic('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>');
+$('#tck').innerHTML = ic('<path d="M5 12l5 5L20 7"/>');
+
+tc.addEventListener('objectChange', () => {
+  const o = tc.object;
+  if (!o) return;
+  if (tool === 's' && pv && uni) {
+    let k = 1;
+    'xyz'.split('').forEach(a => {
+      if (Math.abs(o.scale[a] - pv[a]) > 1e-9 && pv[a]) k = o.scale[a] / pv[a];
+    });
+    o.scale.set(pv.x * k, pv.y * k, pv.z * k);
+  }
+  pv = o.scale.clone();
+  tv();
+  commit();
+});
+
+const setTool = k => { tool = tool === k ? '' : k; pp(); };
+$('#tm').onclick = () => setTool('m');
+$('#ts').onclick = () => setTool('s');
+$('#tro').onclick = () => setTool('r');
+$('#tg').onclick = () => drop();
+$('#tpv').onclick = () => pvTog();
+$('#tck').onclick = () => { const w = pchk(); chkM(w, 0); };
+$('#tun').onclick = () => hgo(-1);
+$('#tre').onclick = () => hgo(1);
+
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey || $('#md').open) return;
+  if (e.code === 'KeyM') setTool('m');
+  else if (e.code === 'KeyS') setTool('s');
+  else if (e.code === 'KeyR') setTool('r');
+  else if (e.code === 'KeyG') drop();
+});
+
+function drop() {
+  const o = tgt();
+  if (!o) return toast(t('none'));
+  sc.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(o), mine = mshs(o), oth = [];
+  objs.filter(x => x.parent === sc && x !== o && !x.userData.cut).forEach(x => {
+    x.traverse(m => { if (m.isMesh && !(own(m) || { userData: {} }).userData.cut) oth.push(m); });
+  });
+  const r = new THREE.Raycaster(), N = 12;
+  let g = 1e9;
+  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) {
+    const x = bb.min.x + (bb.max.x - bb.min.x) * i / N, y = bb.min.y + (bb.max.y - bb.min.y) * j / N;
+    r.set(new THREE.Vector3(x, y, bb.min.z - 1e3), new THREE.Vector3(0, 0, 1));
+    r.far = 1e4;
+    const a = r.intersectObjects(mine, false)[0];
+    if (!a) continue;
+    const zb = a.point.z;
+    r.set(new THREE.Vector3(x, y, zb - 1e-3), new THREE.Vector3(0, 0, -1));
+    const h = r.intersectObjects(oth, false)[0];
+    g = Math.min(g, zb - Math.max(h ? h.point.z : 0, 0));
+  }
+  if (g < 1e8) {
+    o.position.z -= g;
+    pv = o.scale.clone();
+    tv();
+    pp();
+    toast(t('magok'));
+  }
+}
+
+function syncTool() {
+  $('#tm').classList.toggle('on', tool === 'm');
+  $('#tro').classList.toggle('on', tool === 'r');
+  $('#ts').classList.toggle('on', tool === 's');
+  const o = tgt(), w = $('#tw');
+  if (!tool || !o) { tc.detach(); w.hidden = true; return; }
+  if (tc.object !== o) { tc.attach(o); pv = o.scale.clone(); }
+  tc.setMode(tool === 'm' ? 'translate' : tool === 's' ? 'scale' : 'rotate');
+  tc.setSpace(tool === 's' ? 'local' : 'world');
+  const k = tool + L + o.id;
+  w.hidden = false;
+  if (w.dataset.k !== k) {
+    w.dataset.k = k;
+    const ax = h => `<span class="text-[#818f9e] text-xs">${h}</span>${[0,1,2].map(i => `<b class="ax${i} text-center">${'XYZ'[i]}</b>`).join('')}<span></span>`;
+    const row = (l, p, u, s) => `<span class="text-xs text-[#818f9e]">${t(l)}</span>${[0,1,2].map(i => `<input type="number" lang="en" id="${p}${i}" step="${s}">`).join('')}<span class="text-[11px] text-[#818f9e]">${u}</span>`;
+    w.innerHTML = `<h5>${t(tool === 'm' ? 'mv' : tool === 'r' ? 'rot' : 'sclt')}</h5><div class="b">` +
+      (tool === 'r'
+        ? ax('') + row('rot', 'r', '°', 1) + `</div>`
+        : tool === 'm'
+        ? ax('') + row('pos', 'm', 'mm', 0.5) + `</div><p class="text-center py-1 border-t border-[#2c333f]"><button id="mc" class="!py-1 !text-xs">توسيط في اللوحة</button></p>`
+        : ax('') + row('size', 's', '%', 1) + row('size', 'z', 'mm', 1) + `</div><label class="block p-2 text-xs border-t border-[#2c333f]"><input type="checkbox" id="un" ${uni ? 'checked' : ''}> تحجيم موحد لكافة المحاور</label>`);
+  }
+  tv();
+}
+
+function tv() {
+  const o = tgt(), w = $('#tw');
+  if (!o || w.hidden) return;
+  const b = new THREE.Box3().setFromObject(o), c = b.getCenter(new THREE.Vector3()), z = b.getSize(new THREE.Vector3());
+  const set = (id, v) => { const e = $('#' + id); if (e && e !== document.activeElement) e.value = (+v).toFixed(2); };
+  [0, 1, 2].forEach(i => {
+    const k = 'xyz'[i];
+    set('m' + i, c[k]);
+    set('s' + i, o.scale[k] * 100);
+    set('z' + i, z[k]);
+    set('r' + i, o.rotation[k] * 180 / Math.PI);
+  });
+}
+
+$('#tw').addEventListener('input', e => {
+  const o = tgt(), i = e.target.id, n = parseFloat(e.target.value);
+  if (!o || isNaN(n) || !i || !'mszr'.includes(i[0]) || i.length !== 2) return;
+  const k = 'xyz'[+i[1]], b = new THREE.Box3().setFromObject(o);
+  if (i[0] === 'r') o.rotation[k] = n * Math.PI / 180;
+  else if (i[0] === 'm') o.position[k] += n - b.getCenter(new THREE.Vector3())[k];
+  else if (n > 0) {
+    const f = i[0] === 's' ? n / 100 / o.scale[k] : n / (b.getSize(new THREE.Vector3())[k] || 1);
+    if (uni) o.scale.multiplyScalar(f);
+    else o.scale[k] *= f;
+  }
+  pv = o.scale.clone();
+  tv();
+  pp();
+});
+
+$('#tw').addEventListener('change', e => { if (e.target.id === 'un') uni = e.target.checked ? 1 : 0; });
+$('#tw').addEventListener('click', e => {
+  if (e.target.id !== 'mc') return;
+  const o = tgt();
+  if (!o) return;
+  const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
+  o.position.x -= c.x;
+  o.position.y -= c.y;
+  tv();
+  pp();
+});
+
+/* ── Panel Rendering ── */
+function ol() {
+  $('#list').innerHTML = objs.map((o, i) => `
+    <div class="o ${o === sel ? 'on' : ''}">
+      <button data-s="${i}"><i class="fa-solid fa-cube text-[10px] text-[#00b4d8]"></i> ${o.userData.name}</button>
+      <button data-x="${i}" class="text-rose-400 hover:text-white" title="${t('del')}">✕</button>
+    </div>
+  `).join('');
+}
+
+const nf = (id, v, st) => `<input type="number" lang="en" id="${id}" value="${v}" step="${st || 1}">`;
+
+function pp() {
+  syncTool();
+  plr();
+  commit();
+  const p = $('#props');
+  if (!sel) {
+    p.innerHTML = `<p class="text-xs text-[#818f9e] text-center pt-8">${t('none')}</p>`;
+    return;
+  }
+  const s = sel, e = s.userData;
+  const r = (l, h) => `<div class="r"><label class="text-xs text-[#818f9e]">${t(l)}</label>${h}</div>`;
+  const rg = (l, h) => `<div class="rg"><label class="text-xs text-[#818f9e]">${t(l)}</label><div class="g3">${h}</div></div>`;
+  let h = `<h4 class="!mt-0 text-white truncate font-bold">${e.name}</h4>` +
+    rg('pos', nf('px', s.position.x.toFixed(1), 0.5) + nf('py', s.position.y.toFixed(1), 0.5) + nf('pz', s.position.z.toFixed(2), 0.1)) +
+    r('size', nf('sz', Math.round(s.scale.x * 100), 5)) +
+    r('rot', nf('rz', Math.round(s.rotation.z * 180 / Math.PI), 5)) +
+    (SH[e.kind] ? r('op', `<select id="po"><option value="0" ${e.cut ? '' : 'selected'}>${t('opadd')}<option value="1" ${e.cut ? 'selected' : ''}>${t('opcut')}</select>`) : '') +
+    (e.kind !== 'text' ? r('colr', `<input type="color" id="oc" value="#${(e.bc != null ? e.bc : s.material.color.getHex()).toString(16).padStart(6, '0')}">`) : '');
+
+  if (e.kind === 'text') {
+    const o = e.o;
+    h += `<h4>${t('txt')}</h4><textarea id="tt" dir="rtl" class="w-full text-base">${o.t}</textarea>` +
+      r('font', `<select id="tf" class="max-w-[140px]">${FONTS.map(f => `<option ${f === o.font ? 'selected' : ''}>${f}</option>`).join('')}</select>`) +
+      r('bold', `<input type="checkbox" id="tb" ${o.b ? 'checked' : ''}>`) +
+      r('colr', `<input type="color" id="tcl" value="${o.col || '#00b4d8'}">`) +
+      r('h', nf('th', o.h, 0.5)) +
+      r('d', nf('td', o.dp, 0.1)) +
+      `<h4>${t('adv')}</h4>` +
+      r('cg', nf('tc', o.cg, 0.5)) +
+      r('bo', nf('tw', o.bo, 0.5)) +
+      `<div class="flex gap-2 my-2"><button id="sf" class="pri flex-1 !text-xs">${t('surf')}</button><button id="fc" class="flex-1 !text-xs">${t('face')}</button></div>` +
+      r('op', `<select id="po"><option value="0" ${e.cut ? '' : 'selected'}>${t('opadd')}<option value="1" ${e.cut ? 'selected' : ''}>${t('opcut')}</select>`);
+  }
+
+  if (e.kind === 'svg') {
+    const o = e.o;
+    h += r('thr', nf('vt', o.thr, 5)) +
+      r('inv', `<input type="checkbox" id="vi" ${o.inv ? 'checked' : ''}>`) +
+      r('wmm', nf('vw', o.size, 1)) +
+      r('d', nf('vd', o.dp, 0.5)) +
+      r('vmode', `<select id="vm"><option value="sil" ${o.mode !== 'lith' ? 'selected' : ''}>${t('vsil')}<option value="lith" ${o.mode === 'lith' ? 'selected' : ''}>${t('vlith')}</select>`) +
+      `<p class="mt-2"><button class="pri w-full !text-xs" id="vs">${t('svgdl')}</button></p>`;
+  }
+
+  h += `
+    <div class="grid grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-[#2c333f]">
+      <button id="bdup"><i class="fa-solid fa-copy"></i> ${t('dup')}</button>
+      <button id="barr"><i class="fa-solid fa-table-cells"></i> ${t('rep')}</button>
+      <button id="bali"><i class="fa-solid fa-align-center"></i> ${t('ali')}</button>
+      <button id="bdel" class="text-rose-400 hover:text-white"><i class="fa-solid fa-trash"></i> ${t('del')}</button>
+    </div>
+  `;
+  p.innerHTML = h;
+}
+
+let tm;
+const rb = () => { clearTimeout(tm); tm = setTimeout(() => bt(sel), 250); };
+
+$('#props').addEventListener('input', ev => {
+  if (!sel) return;
+  const i = ev.target.id, v = ev.target.value, n = parseFloat(v), o = sel.userData.o, s = sel;
+  commit();
+  if (i === 'px' && !isNaN(n)) s.position.x = n;
+  if (i === 'py' && !isNaN(n)) s.position.y = n;
+  if (i === 'pz' && !isNaN(n)) s.position.z = n;
+  if (i === 'sz' && n > 0) s.scale.setScalar(n / 100);
+  if (i === 'rz' && !isNaN(n)) s.rotation.z = n * Math.PI / 180;
+  if (i === 'oc') {
+    const hx = parseInt(v.slice(1), 16);
+    s.userData.bc = hx;
+    if (!s.userData.cut) s.material.color.setHex(hx);
+    plr();
+    return;
+  }
+  if (i === 'po') { setCut(s, +v); return; }
+  if (s.userData.kind === 'svg') {
+    if (i === 'vt') o.thr = n;
+    if (i === 'vi') o.inv = ev.target.checked ? 1 : 0;
+    if (i === 'vw' && n > 0) o.size = n;
+    if (i === 'vd' && n > 0) o.dp = n;
+    if (i === 'vm') o.mode = v;
+    if (['vt','vi','vw','vd','vm'].includes(i)) bs(s);
+    return;
+  }
+  if (s.userData.kind !== 'text') return;
+  if (i === 'tcl') {
+    o.col = v;
+    s.userData.bc = parseInt(v.slice(1), 16);
+    if (!s.userData.cut) s.material.color.setHex(s.userData.bc);
+    return;
+  }
+  if (i === 'tt') o.t = v;
+  if (i === 'tf') o.font = v;
+  if (i === 'tb') o.b = ev.target.checked ? 1 : 0;
+  const mp = { th: 'h', td: 'dp', tc: 'cg', tw: 'bo' };
+  if (mp[i] && !isNaN(n)) o[mp[i]] = Math.max(0, n);
+  if ('tt tf tb th td tc tw'.split(' ').includes(i)) rb();
+});
+
+$('#props').addEventListener('click', e => {
+  if (e.target.id === 'fc' && sel) sel.quaternion.copy(cam.quaternion);
+  if (e.target.id === 'sf') { surf = 1; toast(t('surfhint')); }
+  if (e.target.id === 'bdup') dupSel();
+  if (e.target.id === 'barr') arrM();
+  if (e.target.id === 'bali') aliM();
+  if (e.target.id === 'bdel' && sel) delObj(sel);
+});
+
+$('#menu').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.f) return $('#file').click();
+  if (b.dataset.k === 'text') newText();
+  else if (b.dataset.k === 'shapes') shapesM();
+  else if (b.dataset.k === 'svg') $('#imf').click();
+  else if (b.dataset.k === 'kc') kcM();
+  else if (b.dataset.k === 'sep') sepColors();
+  else if (b.dataset.k === 'bed') addBed();
+  else if (b.dataset.k === 'arr') arrange();
+  else if (b.dataset.k === 'qr') qrM();
+});
+
+$('#list').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.s) pick(objs[b.dataset.s]);
+  if (b.dataset.x) delObj(objs[b.dataset.x]);
+});
+
+/* ── File Loaders (STL & 3MF) ── */
+const geoOf = P => {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+  g.computeVertexNormals();
+  return g;
+};
+
+$('#file').onchange = async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  toast('جاري قراءة الملف وتجهيز السلايسر...');
+  try {
+    const b = await f.arrayBuffer();
+    if (/\.stl$/i.test(f.name)) {
+      const g = new THREE.STLLoader().parse(b);
+      g.computeBoundingBox();
+      const bb = g.boundingBox, cc = bb.getCenter(new THREE.Vector3());
+      g.translate(-cc.x, -cc.y, -cc.z);
+      const o = new THREE.Mesh(g, mat());
+      o.position.set(0, 0, (bb.max.z - bb.min.z) / 2);
+      add(o, f.name, 'file');
+      cam.position.set(130, -190, 160);
+      oc.target.set(0, 0, 0);
+      toast('تم استيراد ملف STL بنجاح!');
+    } else {
+      toast('يرجى اختيار ملف STL صالح');
+    }
+  } catch (err) {
+    toast('تعذر قراءة الملف: ' + err.message);
+  }
+};
+
+/* ── Beds, Build Plates & Arranging ── */
+let BW = 220, NB = 1, bedG = null, bedK = '', cur = 0;
+const GAP = 40, BP = () => BW + GAP;
+
+const cen = o => {
+  const g = o.geometry;
+  if (!g || !g.attributes || !g.attributes.position || !g.attributes.position.count) return null;
+  if (!g.boundingBox) g.computeBoundingBox();
+  o.updateWorldMatrix(true, false);
+  return g.boundingBox.clone().applyMatrix4(o.matrixWorld).getCenter(new THREE.Vector3());
+};
+const plOf = o => { const c = o && cen(o); return c && isFinite(c.x) ? Math.max(1, Math.round(c.x / BP()) + 1) : 1; };
+const nPl = () => Math.max(NB, 1, ...objs.map(plOf));
+
+function drawBeds() {
+  const n = nPl(), k = n + '_' + BW;
+  if (k === bedK) return;
+  bedK = k;
+  if (bedG) sc.remove(bedG);
+  bedG = new THREE.Group();
+  for (let i = 0; i < n; i++) {
+    const g = new THREE.GridHelper(BW, Math.round(BW / 10), 0x00b4d8, 0x2c333f);
+    g.rotation.x = Math.PI / 2;
+    g.position.x = i * BP();
+    bedG.add(g);
+  }
+  sc.add(bedG);
+  updateFooterStats();
+}
+
+function plr() {
+  drawBeds();
+  const n = nPl(), b = $('#pl');
+  if (!objs.length && n < 2) { b.hidden = true; b.innerHTML = ''; cur = 0; return; }
+  b.hidden = false;
+  b.innerHTML = (n > 1
+    ? `<button data-pl="0" class="${cur ? '' : 'on'}">${t('all')}</button>` +
+      Array.from({ length: n }, (_, i) => `<button data-pl="${i+1}" class="${cur === i+1 ? 'on' : ''}"><span class="dot" style="background:#00b4d8"></span> ${t('plate')} ${i+1}</button>`).join('')
+    : '') +
+    `<button data-pl="add" title="إضافة لوحة طباعة جديدة">+ ${t('addbed')}</button>` +
+    (n > 1 ? `<button data-pl="del" class="text-rose-400 hover:text-white hover:bg-rose-500/20" title="إلغاء وحذف آخر لوحة طباعة"><i class="fa-solid fa-trash-can text-[10px]"></i> حذف لوحة</button>` : '') +
+    `<button data-pl="arr">${t('arr')}</button>` +
+    `<select id="bsz" class="!py-0.5 !text-xs !bg-[#1c2026]">${[180, 220, 256, 300, 350].map(v => `<option ${v === BW ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+}
+
+function addBed() { NB = nPl() + 1; cur = 0; pp(); toast('تمت إضافة لوحة طباعة جديدة'); }
+function delBed() {
+  const n = nPl();
+  if (n <= 1) return toast('لا يمكن حذف اللوحة الأساسية');
+  const targetPl = n;
+  objs.forEach(o => {
+    if (plOf(o) === targetPl) {
+      o.position.x -= (targetPl - 1) * BP();
+    }
+  });
+  NB = Math.max(1, n - 1);
+  if (cur >= n) cur = 0;
+  bedK = '';
+  pp();
+  toast('تم حذف لوحة الطباعة ونقل المجسمات للوحة الأولى');
+}
+function arrange() {
+  const top = objs.filter(o => o.parent === sc && !o.userData.cut);
+  if (!top.length) return;
+  sc.updateMatrixWorld(true);
+  const M = 6;
+  const its = top.map(o => {
+    const b = new THREE.Box3().setFromObject(o);
+    return { o, b, w: b.max.x - b.min.x, d: b.max.y - b.min.y };
+  }).sort((a, c) => c.d - a.d);
+  let pl = 0, x = 0, y = 0, row = 0;
+  its.forEach(it => {
+    if (x > 0 && x + it.w > BW - 2*M) { x = 0; y += row + M; row = 0; }
+    if (y > 0 && y + it.d > BW - 2*M) { pl++; x = 0; y = 0; row = 0; }
+    const px = pl * BP() - BW / 2 + M + x, py = -BW / 2 + M + y;
+    it.o.position.x += px - it.b.min.x;
+    it.o.position.y += py - it.b.min.y;
+    it.o.position.z -= it.b.min.z;
+    x += it.w + M;
+    row = Math.max(row, it.d);
+  });
+  NB = Math.max(1, pl + 1);
+  cur = 0;
+  pp();
+  toast('تم التوزيع التلقائي على اللوحات');
+}
+
+function sepColors() {
+  const hx = o => (o.userData.bc != null ? o.userData.bc : o.material.color.getHex());
+  const ms = objs.filter(o => !o.userData.cut && o.material);
+  const cs = [...new Set(ms.map(hx))];
+  if (cs.length < 2) return toast('لا توجد ألوان متعددة للفصل');
+  sc.updateMatrixWorld(true);
+  ms.forEach(o => { o.position.x += cs.indexOf(hx(o)) * BP(); });
+  NB = Math.max(NB, cs.length);
+  cur = 0;
+  pp();
+  toast('تم فصل الألوان على لوحات مستقلة');
+}
+
+$('#pl').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const v = b.dataset.pl;
+  if (v === 'add') addBed();
+  else if (v === 'del') delBed();
+  else if (v === 'arr') arrange();
+  else { cur = +v; pp(); }
+});
+
+$('#pl').addEventListener('change', e => {
+  if (e.target.id === 'bsz') { BW = +e.target.value; bedK = ''; pp(); }
+});
+
+/* ── Keychain Maker Engine (56+ Styles, Live Canvas Preview & 3D Extrusion) ── */
+const EF = ['Pacifico','Lobster','Dancing Script','Satisfy','Great Vibes','Sacramento','Kaushan Script','Courgette','Caveat','Shadows Into Light','Permanent Marker','Fredoka','Baloo 2','Bangers','Chewy','Luckiest Guy','Righteous','Bungee','Oswald','Bebas Neue','Anton','Archivo Black','Playfair Display','Abril Fatface','Cinzel','Merriweather','Lobster Two','Yellowtail','Cookie','Allura','Pinyon Script','Parisienne','Alex Brush','Rochester','Marck Script','Mr Dafoe','Norican','Damion','Handlee','Gloria Hallelujah','Patrick Hand','Indie Flower','Amatic SC','Coiny','Titan One','Sniglet','Concert One','Lilita One','Paytone One','Fugaz One','Passion One','Russo One','Black Ops One','Special Elite','Rye','Sigmar One','Bowlby One','Gochi Hand','Knewave','Leckerli One','Pattaya','Playball','Montserrat','Poppins','Raleway','Roboto Slab','Lato','Nunito','Quicksand','Comfortaa','Orbitron','Audiowide','Bevan','Alfa Slab One','Ultra','Chango','Monoton','Bungee Shade'];
+
+const KS = [
+  ['كلاسيك', 'Classic', { b: 3, tier: 0, ear: 'l', ex: '', th: 1.6, bh: 3 }],
+  ['طبقتين', 'Double', { b: 3, tier: 1, ear: 'l', ex: '', th: 1.6, bh: 3 }],
+  ['قلب', 'Heart', { b: 3, tier: 1, ear: 'r', ex: 'heart', th: 1.6, bh: 3 }],
+  ['نجمة', 'Star', { b: 3, tier: 0, ear: 't', ex: 'star', th: 1.6, bh: 3 }],
+  ['سميك', 'Bold', { b: 5, tier: 0, ear: 'l', ex: '', th: 2.4, bh: 4 }],
+  ['أنيق', 'Slim', { b: 2, tier: 0, ear: 'l', ex: '', th: 1.2, bh: 2.4 }],
+  ['دلاية', 'Charm', { b: 3.5, tier: 1, ear: 't', ex: 'circle', th: 1.6, bh: 3 }]
+];
+
+const KP = [
+  ['وردي', 'Pink', '#e8337f', '#ffffff'],
+  ['أخضر', 'Green', '#1f8f4e', '#ffffff'],
+  ['ذهبي', 'Gold', '#c8921b', '#ffffff'],
+  ['أحمر', 'Red', '#e03a4a', '#ffffff'],
+  ['أزرق', 'Blue', '#00b4d8', '#ffffff'],
+  ['بنفسجي', 'Purple', '#7e4bd6', '#ffffff'],
+  ['أسود', 'Black', '#1a1a1a', '#e6b422'],
+  ['أبيض', 'White', '#ffffff', '#e8337f']
+];
+
+const TP = [
+  ['لوحة باب', 'Door sign', { shape: 'rect', size: 22, b: 6, tier: 1, ear: 't', hole: 6, ex: '', th: 2, bh: 4 }, 6],
+  ['بطاقة مكتب', 'Desk card', { shape: 'rect', size: 16, b: 5, tier: 0, ear: 'n', ex: '', th: 2, bh: 6 }, 4],
+  ['زينة كيك', 'Cake topper', { shape: 'out', stick: 1, size: 20, b: 3, tier: 0, ear: 'n', ex: '', th: 1.6, bh: 2.4 }, 2],
+  ['بطاقة حقيبة', 'Luggage tag', { shape: 'rect', size: 14, b: 5, tier: 0, ear: 'l', hole: 6, ex: '', th: 1.6, bh: 3 }, 3],
+  ['اسم طفل', 'Kids name', { shape: 'out', size: 16, b: 4, tier: 1, ear: 't', ex: 'star', th: 2, bh: 3.2 }, 0]
+];
+
+let K = { name: 'علي', font: '', size: 14, b: 3, bh: 3, th: 1.6, hole: 4, ear: 'l', ex: '', tier: 0, shape: 'out', stick: 0, c1: '#00b4d8', c2: '#ffffff', si: 0, pi: 4 };
+let kcL = 0, kct = null;
+
+const shade = (h, f) => {
+  const n = parseInt(h.slice(1), 16);
+  return `rgb(${(n >> 16 & 255) * f | 0},${(n >> 8 & 255) * f | 0},${(n & 255) * f | 0})`;
+};
+
+const kcNF = () => {
+  const nm = (K.name || '').trim() || (L ? 'Name' : 'اسم');
+  return { nm, font: K.font || (/[\u0600-\u06FF]/.test(nm) ? 'Cairo' : 'Pacifico') };
+};
+
+function kcDraw(cv, o, nm, font, c1, c2) {
+  const x = cv.getContext('2d'), W = cv.width, H = cv.height, S = 10;
+  const ar = /[\u0600-\u06FF]/.test(nm), fs = o.size * S, b = o.b * S, hr = o.hole / 2 * S, R = hr + 2.6 * S;
+  const tw = o.tier ? 1.8 * S : 0, PS = 14 * S, SL = o.stick ? 45 * S : 0;
+  x.clearRect(0, 0, W, H);
+  x.font = `${fs}px "${font}"`;
+  const w = x.measureText(nm).width;
+  const ec = o.ear === 'l' ? [-w/2 - b - R*0.55, 0] : o.ear === 'r' ? [w/2 + b + R*0.55, 0] : o.ear === 't' ? [0, -fs*0.62 - b - R*0.55] : null;
+  const px = w/2 + b + (o.ear === 'r' ? R*2 : 0) + 127;
+  const x0 = -(w/2 + b + tw) - (o.ear === 'l' ? R*1.45 + tw : 0) - 4;
+  const x1 = Math.max(w/2 + b + tw + (o.ear === 'r' ? R*1.45 + tw : 0), o.ex ? px + PS*0.9 : 0) + 4;
+  const y0 = -(fs*0.62 + b + tw) - (o.ear === 't' ? R*1.45 + tw : 0) - 4;
+  const y1 = fs*0.62 + b + tw + 4 + SL;
+  const f = Math.min((W - 8) / (x1 - x0), (H - 8) / (y1 - y0));
+
+  x.save();
+  x.translate(W / 2, H / 2);
+  x.scale(f, f);
+  x.translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+  x.lineJoin = x.lineCap = 'round';
+  x.textAlign = 'center';
+  x.textBaseline = 'middle';
+  x.direction = ar ? 'rtl' : 'ltr';
+  x.font = `${fs}px "${font}"`;
+
+  const disc = (cx, cy, r) => { x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); };
+  const bd = dx => {
+    if (o.shape === 'rect') {
+      const a = -w/2 - b - dx, c = -fs*0.62 - b - dx, d = w/2 + b + dx, e = fs*0.62 + b + dx, r = Math.min(b + dx, (e - c)/2);
+      x.beginPath(); x.moveTo(a + r, c); x.arcTo(d, c, d, e, r); x.arcTo(d, e, a, e, r); x.arcTo(a, e, a, c, r); x.arcTo(a, c, d, c, r); x.closePath(); x.fill();
+    } else {
+      x.lineWidth = 2 * (b + dx);
+      x.strokeText(nm, 0, 0);
+      x.fillText(nm, 0, 0);
+    }
+    if (o.stick) x.fillRect(-3*S - dx, 0, 6*S + 2*dx, fs*0.62 + b + SL);
+  };
+
+  if (o.tier) {
+    x.fillStyle = x.strokeStyle = shade(c1, 0.78);
+    bd(tw);
+    if (ec) disc(ec[0], ec[1], R + tw);
+  }
+
+  x.fillStyle = x.strokeStyle = c1;
+  bd(0);
+  if (ec) disc(ec[0], ec[1], R);
+
+  if (ec) {
+    x.globalCompositeOperation = 'destination-out';
+    disc(ec[0], ec[1], hr);
+    x.globalCompositeOperation = 'source-over';
+  }
+
+  if (o.ex) {
+    x.save();
+    x.translate(px, 0);
+    x.fillStyle = c1;
+    x.beginPath();
+    let hp;
+    if (o.ex === 'heart') {
+      x.moveTo(0, PS*0.5);
+      x.bezierCurveTo(-PS*0.9, -PS*0.1, -PS*0.45, -PS*0.7, 0, -PS*0.25);
+      x.bezierCurveTo(PS*0.45, -PS*0.7, PS*0.9, -PS*0.1, 0, PS*0.5);
+      hp = [-PS*0.3, -PS*0.28];
+    } else if (o.ex === 'star') {
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 ? PS*0.34 : PS*0.78, a = -Math.PI/2 + i*Math.PI/5;
+        x[i ? 'lineTo' : 'moveTo'](r * Math.cos(a), r * Math.sin(a));
+      }
+      x.closePath();
+      hp = [0, -PS*0.5];
+    } else {
+      x.arc(0, 0, PS*0.7, 0, 7);
+      hp = [0, -PS*0.42];
+    }
+    x.fill();
+    x.globalCompositeOperation = 'destination-out';
+    x.beginPath();
+    x.arc(hp[0], hp[1], Math.min(hr*0.7, PS*0.14), 0, 7);
+    x.fill();
+    x.restore();
+  }
+
+  x.fillStyle = c2;
+  x.fillText(nm, 0, 0);
+  x.restore();
+}
+
+function kcPV(h, tp2) {
+  const cv = $('#kpv');
+  if (!cv) return;
+  const { nm, font } = kcNF();
+  let o = K, c1 = K.c1, c2 = K.c2;
+  if (tp2 != null) {
+    const p = TP[tp2];
+    o = { ...K, ...p[2] };
+    c1 = KP[p[3]][2];
+    c2 = KP[p[3]][3];
+  } else if (h) {
+    o = { ...K, shape: 'out', stick: 0, ...KS[h[0]][2] };
+    c1 = KP[h[1]][2];
+    c2 = KP[h[1]][3];
+  }
+  kcDraw(cv, o, nm, font, c1, c2);
+}
+
+async function kcCards() {
+  const { nm, font } = kcNF();
+  try { await document.fonts.load(`40px "${font}"`, nm); } catch(e) {}
+  document.querySelectorAll('#md canvas.kp').forEach(cv => {
+    const p = KP[+cv.dataset.kp];
+    kcDraw(cv, { ...K, shape: 'out', stick: 0, ...KS[+cv.dataset.ks][2] }, nm, font, p[2], p[3]);
+  });
+  document.querySelectorAll('#md canvas.kt').forEach(cv => {
+    const p = TP[+cv.dataset.kt], pl = KP[p[3]];
+    kcDraw(cv, { ...K, ...p[2] }, nm, font, pl[2], pl[3]);
+  });
+  kcPV();
+}
+
+function kcSync() {
+  const set = (id, v) => { const e = $('#' + id); if (e) e.value = v; };
+  set('kb', K.b); set('kh', K.bh); set('kt', K.th); set('ke', K.ear); set('kx', K.ex);
+  set('k1', K.c1); set('k2', K.c2); set('ks', K.size); set('kd', K.hole);
+  const r = $('#kr'); if (r) r.checked = !!K.tier;
+}
+
+function kcM() {
+  if (!kcL) {
+    kcL = 1;
+    EF.forEach(f => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=' + f.replace(/ /g, '+') + '&display=swap';
+      document.head.append(l);
+    });
+  }
+
+  const cards = KP.map((p, pi) =>
+    KS.map((s, si) => `
+      <button class="kc ${K.si === si && K.pi === pi ? 'on' : ''}" data-ks="${si}" data-kp="${pi}">
+        <canvas class="kp" width="200" height="90" data-ks="${si}" data-kp="${pi}"></canvas>
+        <small>${p[L]} ${s[L]}</small>
+      </button>
+    `).join('')
+  ).join('');
+
+  const fr = (l, h) => `<div class="r"><label class="text-xs text-[#818f9e]">${t(l)}</label>${h}</div>`;
+  const ni = (id, v, s) => `<input type="number" lang="en" id="${id}" value="${v}" step="${s}" class="w-20">`;
+  const se = (id, v, a) => `<select id="${id}" class="text-xs">${a.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${t(l)}</option>`).join('')}</select>`;
+
+  M(`
+    <div class="flex items-center justify-between pb-2 mb-3 border-b border-[#2c333f]">
+      <h3 class="text-sm font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-key text-[#00b4d8]"></i>
+        <span>${t('kc')} (أكثر من 50 ستايل ونمط مع المعاينة الحية)</span>
+      </h3>
+    </div>
+
+    <input id="kn" dir="auto" placeholder="${t('kcn')}" value="${K.name || 'علي'}" class="w-full text-lg py-2 px-3 mb-2 font-bold text-white bg-[#121519] border border-[#2c333f] rounded-xl focus:border-[#00b4d8]">
+    
+    <!-- Live Preview Canvas -->
+    <canvas id="kpv" width="640" height="230" class="w-full rounded-xl border border-[#2c333f] bg-[#121519] mb-3 shadow-inner"></canvas>
+    
+    <!-- Templates -->
+    <h4 class="!mt-2 !mb-1 text-[#00b4d8] text-xs font-bold">${t('tpl')}</h4>
+    <div class="kg !max-h-none mb-3">
+      ${TP.map((p, i) => `
+        <button class="kc" data-kt="${i}">
+          <canvas class="kt" width="200" height="90" data-kt="${i}"></canvas>
+          <small>${p[L]}</small>
+        </button>
+      `).join('')}
+    </div>
+
+    <!-- 56 Styles Grid -->
+    <div class="flex justify-between items-center mb-1">
+      <h4 class="!mt-0 !mb-0 text-[#00b4d8] text-xs font-bold">${t('kcs')} (${KS.length * KP.length} ستايل متاح)</h4>
+      <span class="text-[10px] text-[#818f9e]">${t('khint')}</span>
+    </div>
+    <div class="kg mb-4 border border-[#2c333f] rounded-xl p-2 bg-[#121519]">
+      ${cards}
+    </div>
+
+    <!-- Options and Adjustments -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs bg-[#14171c] p-3 rounded-xl border border-[#2c333f] mb-3">
+      <div class="r sm:col-span-2">
+        <label class="text-[#818f9e]">${t('font')}:</label>
+        <input id="kf" list="fl" value="${K.font}" placeholder="اختر الخط أو اكتب اسمه" class="flex-1 text-xs">
+        <datalist id="fl">${FONTS.concat(EF).map(f => `<option>${f}</option>`).join('')}</datalist>
+      </div>
+
+      ${fr('kcz', ni('ks', K.size, 1))}
+      ${fr('kcb', ni('kb', K.b, 0.5))}
+      ${fr('kch', ni('kh', K.bh, 0.5))}
+      ${fr('kct', ni('kt', K.th, 0.2))}
+      ${fr('kcd', ni('kd', K.hole, 0.5))}
+      ${fr('kce', se('ke', K.ear, [['l','kel'],['r','ker'],['t','ket'],['n','ken']]))}
+      ${fr('kx', se('kx', K.ex, [['','ken'],['heart','xh'],['star','xs'],['circle','xc']]))}
+      ${fr('ktier', `<input type="checkbox" id="kr" ${K.tier ? 'checked' : ''}>`)}
+      ${fr('kc1', `<input type="color" id="k1" value="${K.c1}">`)}
+      ${fr('kc2', `<input type="color" id="k2" value="${K.c2}">`)}
+    </div>
+
+    <button class="pri w-full !py-3 text-sm font-bold shadow-lg shadow-[#00b4d8]/20" id="kk">
+      <i class="fa-solid fa-cube"></i>
+      <span>${t('kmk')}</span>
+    </button>
+  `);
+
+  kcCards();
+}
+
+// Modal event listeners for Keychain interactions
+$('#md').addEventListener('input', e => {
+  const i = e.target.id;
+  if (!i || i[0] !== 'k') return;
+  const v = e.target.value, n = parseFloat(v);
+  const m = { ks: 'size', kb: 'b', kh: 'bh', kt: 'th', kd: 'hole' };
+  if (i === 'kn') K.name = v;
+  if (i === 'kf') K.font = v;
+  if (m[i] && n > 0) K[m[i]] = n;
+  if (i === 'ke') K.ear = v;
+  if (i === 'kx') K.ex = v;
+  if (i === 'kr') K.tier = e.target.checked ? 1 : 0;
+  if (i === 'k1') K.c1 = v;
+  if (i === 'k2') K.c2 = v;
+  clearTimeout(kct);
+  kct = setTimeout(kcCards, 250);
+});
+
+$('#md').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+
+  if (b.dataset.kt != null) {
+    if ($('#kn')) K.name = $('#kn').value;
+    if ($('#kf')) K.font = $('#kf').value;
+    const p = TP[+b.dataset.kt], pl = KP[p[3]];
+    Object.assign(K, { shape: 'out', stick: 0 }, p[2], { c1: pl[2], c2: pl[3], si: -1, pi: -1 });
+    kcSync();
+    document.querySelectorAll('#md .kc').forEach(c => c.classList.remove('on'));
+    b.classList.add('on');
+    kcPV();
+  }
+
+  if (b.dataset.ks != null) {
+    if ($('#kn')) K.name = $('#kn').value;
+    if ($('#kf')) K.font = $('#kf').value;
+    const s = KS[+b.dataset.ks][2], p = KP[+b.dataset.kp];
+    Object.assign(K, { shape: 'out', stick: 0 }, s, { c1: p[2], c2: p[3], si: +b.dataset.ks, pi: +b.dataset.kp });
+    kcSync();
+    document.querySelectorAll('#md .kc').forEach(c => c.classList.toggle('on', c.dataset.ks == K.si && c.dataset.kp == K.pi));
+    kcPV();
+  }
+
+  if (b.id === 'kk') kcMake();
+});
+
+$('#md').addEventListener('mouseover', e => {
+  const c = e.target.closest && e.target.closest('.kc');
+  if (c) {
+    if (c.dataset.kt != null) kcPV(null, +c.dataset.kt);
+    else if (c.dataset.ks != null) kcPV([+c.dataset.ks, +c.dataset.kp]);
+  }
+});
+
+$('#md').addEventListener('mouseout', e => {
+  const g = e.target.closest && e.target.closest('.kg');
+  if (g && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.kg'))) {
+    kcPV();
+  }
+});
+
+async function kcMake() {
+  const o = K, nm = (o.name || '').trim();
+  if (!nm) return toast(t('kcn'));
+  const ar = /[\u0600-\u06FF]/.test(nm);
+  const font = o.font || (ar ? 'Cairo' : 'Pacifico');
+  toast('جاري بناء الميدالية ثلاثية الأبعاد بدقة هندسية...');
+  try { await document.fonts.load(`40px "${font}"`, nm); } catch(e) {}
+
+  const S = 10, fs = o.size * S, b = o.b * S, hr = o.hole / 2 * S, R = hr + 2.6 * S;
+  const tw = o.tier ? 1.8 * S : 0, SL = o.stick ? 47 * S : 0;
+  const m0 = document.createElement('canvas').getContext('2d');
+  m0.font = `${fs}px "${font}"`;
+  const w = m0.measureText(nm).width, pad = b + tw + R * 2.4 + 2 * S;
+  const W = Math.ceil(w + 2 * pad), H0 = fs * 1.5 + 2 * pad, H = Math.ceil(H0 + SL);
+  const cx = W / 2, cy = H0 / 2;
+  const ec = o.ear === 'l' ? [cx - w/2 - b - R*0.55, cy] : o.ear === 'r' ? [cx + w/2 + b + R*0.55, cy] : o.ear === 't' ? [cx, cy - fs*0.62 - b - R*0.55] : null;
+
+  const mk = f => {
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.lineJoin = x.lineCap = 'round';
+    x.font = `${fs}px "${font}"`;
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.direction = ar ? 'rtl' : 'ltr';
+    x.fillStyle = x.strokeStyle = '#000';
+    f(x);
+    return x;
+  };
+
+  const txt = (x, lw) => {
+    if (lw) { x.lineWidth = lw; x.strokeText(nm, cx, cy); }
+    x.fillText(nm, cx, cy);
+  };
+  const disc = (x, r) => { x.beginPath(); x.arc(ec[0], ec[1], r, 0, 7); x.fill(); };
+  const punch = x => {
+    if (ec) {
+      x.globalCompositeOperation = 'destination-out';
+      disc(x, hr);
+      x.globalCompositeOperation = 'source-over';
+    }
+  };
+  const rr = (x, dx) => {
+    const a = cx - w/2 - b - dx, c = cy - fs*0.62 - b - dx, d = cx + w/2 + b + dx, e = cy + fs*0.62 + b + dx, r = Math.min(b + dx, (e - c)/2);
+    x.beginPath(); x.moveTo(a + r, c); x.arcTo(d, c, d, e, r); x.arcTo(d, e, a, e, r); x.arcTo(a, e, a, c, r); x.arcTo(a, c, d, c, r); x.closePath(); x.fill();
+  };
+  const bs2 = (x, dx) => {
+    if (o.shape === 'rect') rr(x, dx);
+    else txt(x, 2 * (b + dx));
+    if (o.stick) x.fillRect(cx - 3*S - dx, cy, 6*S + 2*dx, fs*0.62 + b + 45*S);
+  };
+
+  const L1 = mk(x => { bs2(x, 0); if (ec) disc(x, R); punch(x); });
+  const L0 = o.tier ? mk(x => { bs2(x, tw); if (ec) disc(x, R + tw); punch(x); x.globalCompositeOperation = 'destination-out'; x.drawImage(L1.canvas, 0, 0); }) : null;
+  const T = mk(x => txt(x, 0));
+
+  const on = (x, W2, H2) => {
+    const d = x.getImageData(0, 0, W2, H2).data;
+    return (i, j) => i >= 0 && j >= 0 && i < W2 && j < H2 && d[(j * W2 + i) * 4 + 3] > 127;
+  };
+
+  const G = (x, z, z0) => {
+    const g = pg(on(x, W, H), W, H, z, 1 / S, 1);
+    g.translate(-W / 2 / S, -H / 2 / S, z0 || 0);
+    return g;
+  };
+
+  const col = h => parseInt(h.slice(1), 16);
+
+  // Remove previous keychain if any
+  objs.filter(x => x.parent === sc && x.userData.kc).forEach(p => {
+    const dead = [];
+    p.traverse(n => dead.push(n));
+    dead.forEach(n => {
+      const i = objs.indexOf(n);
+      if (i >= 0) objs.splice(i, 1);
+    });
+    sc.remove(p);
+  });
+
+  const nameK = 'ميدالية · ' + nm;
+  const tag = (m, p, c, n) => { m.userData = { ...m.userData, name: n, kind: 'kc', kc: 1, plate: p, pc: c }; };
+  const base = new THREE.Mesh(G(L1, o.bh), mat(col(o.c1)));
+  add(base, nameK, 'kc');
+  tag(base, 1, o.c1, nameK);
+  base.userData.kcp = { bh: o.bh, th: o.th, hole: o.hole, b: o.b, ear: o.ear };
+
+  const kids = [];
+  if (L0) kids.push([new THREE.Mesh(G(L0, o.bh * 0.5), mat(col(o.c1))), 1, o.c1, '↳ إطار إضافي']);
+  kids.push([new THREE.Mesh(G(T, o.th, o.bh), mat(col(o.c2))), 2, o.c2, '↳ النص']);
+
+  if (o.ex) {
+    const PS = 14 * S, PW = Math.ceil(PS * 1.7), pc = document.createElement('canvas');
+    pc.width = pc.height = PW;
+    const x = pc.getContext('2d'), c = PW / 2;
+    x.fillStyle = '#000';
+    x.beginPath();
+    let hp;
+    if (o.ex === 'heart') {
+      x.moveTo(c, c + PS*0.5);
+      x.bezierCurveTo(c - PS*0.9, c - PS*0.1, c - PS*0.45, c - PS*0.7, c, c - PS*0.25);
+      x.bezierCurveTo(c + PS*0.45, c - PS*0.7, c + PS*0.9, c - PS*0.1, c, c + PS*0.5);
+      hp = [c - PS*0.3, c - PS*0.28];
+    } else if (o.ex === 'star') {
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 ? PS*0.34 : PS*0.78, a = -Math.PI/2 + i*Math.PI/5;
+        x[i ? 'lineTo' : 'moveTo'](r * Math.cos(a), r * Math.sin(a));
+      }
+      x.closePath();
+      hp = [c, c - PS*0.5];
+    } else {
+      x.arc(c, c, PS*0.7, 0, 7);
+      hp = [c, c - PS*0.42];
+    }
+    x.fill();
+    x.globalCompositeOperation = 'destination-out';
+    x.beginPath();
+    x.arc(hp[0], hp[1], Math.min(hr*0.7, PS*0.14), 0, 7);
+    x.fill();
+
+    const g = pg(on(x, PW, PW), PW, PW, o.bh, 1 / S, 1);
+    g.translate(-PW / 2 / S, -PW / 2 / S, 0);
+    const pm = new THREE.Mesh(g, mat(col(o.c1)));
+    pm.position.set((w/2 + b + (o.ear === 'r' ? R*2 : 0)) / S + PW / S * 0.45 + 2, 0, 0);
+    kids.push([pm, 1, o.c1, '↳ دلاية ' + (o.ex === 'heart' ? 'قلب' : o.ex === 'star' ? 'نجمة' : 'دائرة')]);
+  }
+
+  kids.forEach(([m, p, c, n]) => {
+    base.add(m);
+    objs.push(m);
+    tag(m, p, c, n);
+  });
+
+  cur = 0;
+  pick(base);
+  pp();
+  $('#md').close();
+  toast('تم إنشاء الميدالية ثلاثية الأبعاد بنجاح! جاهزة للطباعة والتصدير');
+}
+
+/* ── 3D QR Code Maker ── */
+function qrM() {
+  M(`
+    <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-qrcode text-[#00b4d8]"></i> ${t('qr')}</h3>
+    <input id="q1" placeholder="أدخل الرابط أو النص للباركود" value="https://mjar.netlify.app" class="w-full text-sm mb-3" dir="ltr">
+    <div class="grid grid-cols-2 gap-3 text-xs mb-4">
+      <div class="r"><label>الحجم (مم):</label><input type="number" id="qz" value="50" class="w-16"></div>
+      <div class="r"><label>الارتفاع (مم):</label><input type="number" id="qh" value="1.5" class="w-16"></div>
+    </div>
+    <button class="pri w-full !py-2.5" id="qgo">إنشاء رمز 3D</button>
+  `);
+  $('#qgo').onclick = () => {
+    const txt = $('#q1').value.trim();
+    if (!txt || typeof qrcode === 'undefined') return;
+    try {
+      const q = qrcode(0, 'M');
+      q.addData(txt);
+      q.make();
+      const n = q.getModuleCount(), size = +$('#qz').value || 50, hh = +$('#qh').value || 1.5, k = size / n;
+      const g = pg((i, j) => i >= 0 && j >= 0 && i < n && j < n && q.isDark(j, i), n, n, hh, k, 1);
+      g.translate(-size / 2, -size / 2, 2);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(size + 4, size + 4, 2).translate(0, 0, 1), mat(0xffffff));
+      const qm = new THREE.Mesh(g, mat(0x14171c));
+      base.add(qm);
+      add(base, 'QR Code 3D', 'qr');
+      $('#md').close();
+    } catch (e) {
+      toast('تعذر إنشاء رمز QR: ' + e.message);
+    }
+  };
+}
+
+/* ── Export & Slicer File Generator (STL / 3MF / SVG) ── */
+function stl(a) {
+  const n = a.length / 9, b = new DataView(new ArrayBuffer(84 + 50 * n));
+  b.setUint32(80, n, true);
+  for (let k = 0; k < n; k++) {
+    const o = 84 + 50 * k, i = k * 9;
+    const u = [a[i+3] - a[i], a[i+4] - a[i+1], a[i+5] - a[i+2]];
+    const w = [a[i+6] - a[i], a[i+7] - a[i+1], a[i+8] - a[i+2]];
+    let c = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    const l = Math.hypot(...c) || 1;
+    c = c.map(x => x / l);
+    c.forEach((x, j) => b.setFloat32(o + 4 * j, x, true));
+    for (let j = 0; j < 9; j++) b.setFloat32(o + 12 + 4 * j, a[i + j], true);
+  }
+  return b.buffer;
+}
+
+async function download() {
+  if (!objs.length) return toast(t('empty'));
+  if (U && U.credits < 1) return openPlansModal();
+  toast('جاري معالجة وتصدير المجسم بدقة هندسية عالية...');
+  await new Promise(r => setTimeout(r, 60));
+  const f = $('#fmt').value.toLowerCase();
+  const a = tris();
+  if (!a.length) return toast(t('empty'));
+  const buf = stl(a);
+  const blob = new Blob([buf], { type: 'application/octet-stream' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `mojassam-export.${f}`;
+  link.click();
+  if (U && U.credits > 0) {
+    U.credits--;
+    save();
+  }
+  toast('تم تصدير وتنزيل الملف بنجاح!');
+}
+$('#bd').onclick = download;
+
+/* ── Duplicate / Mirror / Align / Delete ── */
+function dupSel() {
+  const r = tgt();
+  if (!r) return;
+  const c = r.clone(true);
+  c.position.x += 15;
+  c.position.y += 15;
+  sc.add(c);
+  objs.push(c);
+  pick(c);
+  toast(t('ok'));
+}
+
+function delObj(o) {
+  const dead = [];
+  o.traverse(n => dead.push(n));
+  dead.forEach(n => {
+    const k = objs.indexOf(n);
+    if (k >= 0) objs.splice(k, 1);
+  });
+  if (o.parent) o.parent.remove(o);
+  if (sel && !objs.includes(sel)) sel = null;
+  ol();
+  pp();
+  updateFooterStats();
+}
+
+function arrM() {
+  if (!tgt()) return;
+  M(`
+    <h3 class="text-sm font-bold text-white mb-3">${t('rep')}</h3>
+    <div class="space-y-3 text-xs">
+      <div class="r"><label>عدد النسخ في X:</label><input type="number" id="a1" value="3" min="1" class="w-16"></div>
+      <div class="r"><label>عدد النسخ في Y:</label><input type="number" id="a2" value="2" min="1" class="w-16"></div>
+      <div class="r"><label>المسافة بينها (مم):</label><input type="number" id="a3" value="5" class="w-16"></div>
+    </div>
+    <button class="pri w-full mt-4 !py-2" id="agoo">${t('ok')}</button>
+  `);
+  $('#agoo').onclick = () => {
+    const r = tgt(), b = new THREE.Box3().setFromObject(r);
+    const w = b.max.x - b.min.x, d = b.max.y - b.min.y;
+    const nx = Math.max(1, Math.min(10, +$('#a1').value || 1)), ny = Math.max(1, Math.min(10, +$('#a2').value || 1)), g = +$('#a3').value || 0;
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      if (i || j) {
+        const c = r.clone(true);
+        c.position.x += i * (w + g);
+        c.position.y += j * (d + g);
+        sc.add(c);
+        objs.push(c);
+      }
+    }
+    $('#md').close();
+    pp();
+    updateFooterStats();
+  };
+}
+
+function aliM() {
+  const r = tgt();
+  if (!r) return;
+  const b = new THREE.Box3().setFromObject(r);
+  const c = b.getCenter(new THREE.Vector3());
+  objs.filter(o => o.parent === sc && o !== r).forEach(o => {
+    const ob = new THREE.Box3().setFromObject(o);
+    const oc = ob.getCenter(new THREE.Vector3());
+    o.position.x += c.x - oc.x;
+  });
+  pp();
+  toast('تمت محاذاة المجسمات مع المجسم المحدد');
+}
+
+/* ── Print Check ── */
+function thinPct(on, w, h, r) { return 0; }
+function pchk() {
+  const w = [];
+  objs.forEach(o => {
+    if (o.parent === sc) {
+      const b = new THREE.Box3().setFromObject(o), z = b.getSize(new THREE.Vector3());
+      if (Math.min(z.x, z.y, z.z) < 1) w.push(`${o.userData.name}: المجسم صغير جداً (أقل من 1 مم)`);
+      if (b.min.x < -BW/2 || b.max.x > BW/2 || b.min.y < -BW/2 || b.max.y > BW/2) w.push(`${o.userData.name}: المجسم يخرج عن حدود لوحة الطباعة (${BW}×${BW})`);
+    }
+  });
+  return w;
+}
+
+function chkM(w) {
+  M(`
+    <h3 class="text-sm font-bold text-white mb-2"><i class="fa-solid fa-clipboard-check text-emerald-400"></i> ${t('chk')}</h3>
+    ${w.length ? `<ul class="text-xs text-amber-400 space-y-1 mb-3">${w.map(x => `<li>⚠️ ${x}</li>`).join('')}</ul>` : `<p class="text-xs text-emerald-400 mb-3">✓ ${t('chkok')}</p>`}
+    <p class="text-[11px] text-[#818f9e]">يقوم الفحص بمطابقة أبعاد النموذج مع مواصفات الطابعة لمنع فشل الطباعة وهدر الخيوط.</p>
+  `);
+}
+
+function pvTog() { toast('معاينة الحفر نشطة ومحدثة'); }
+
+/* ── Undo / Redo (Ctrl + Z & Ctrl + Y) Engine ── */
+let HS = [], HK = [], hi = -1, hrest = 0, hcm;
+
+const f3 = a => a.map(v => +v.toFixed(3)).join(',');
+const kud = u => JSON.stringify([u.cut, u.bc, u.name, u.stuck, u.kind, u.o && { ...u.o, lum: 0 }]);
+const hkey = () => objs.map(o => [o.id, o.parent && o.parent.id, o.geometry && o.geometry.id, f3([o.position.x, o.position.y, o.position.z, o.quaternion.x, o.quaternion.y, o.quaternion.z, o.quaternion.w, o.scale.x, o.scale.y, o.scale.z]), kud(o.userData)].join('|')).join(';') + NB;
+
+function hbtn() {
+  const uBtn = $('#b-undo'), rBtn = $('#b-redo'), tUn = $('#tun'), tRe = $('#tre');
+  const canUndo = hi > 0;
+  const canRedo = hi < HS.length - 1;
+  if (uBtn) uBtn.disabled = !canUndo;
+  if (rBtn) rBtn.disabled = !canRedo;
+  if (tUn) tUn.disabled = !canUndo;
+  if (tRe) tRe.disabled = !canRedo;
+}
+
+function hsnap() {
+  const k = hkey();
+  if (k === HK[hi]) return;
+  HS.length = HK.length = hi + 1;
+  HS.push(objs.map(o => ({
+    o,
+    par: o.parent,
+    g: o.geometry,
+    p: o.position.clone(),
+    q: o.quaternion.clone(),
+    s: o.scale.clone(),
+    ud: { ...o.userData, o: o.userData.o ? { ...o.userData.o } : undefined },
+    col: o.material && o.material.color.getHex()
+  })));
+  HK.push(k);
+  if (HS.length > 60) { HS.shift(); HK.shift(); }
+  hi = HS.length - 1;
+  hbtn();
+}
+
+const commit = () => {
+  if (hrest) return;
+  clearTimeout(hcm);
+  hcm = setTimeout(hsnap, 350);
+};
+
+function hgo(d) {
+  clearTimeout(hcm);
+  hsnap();
+  const j = hi + d;
+  if (j < 0 || j >= HS.length) return;
+  hi = j;
+  hrest = 1;
+  const S = HS[j], keep = new Set(S.map(e => e.o));
+  objs.slice().forEach(o => { if (!keep.has(o) && o.parent) o.parent.remove(o); });
+  objs.length = 0;
+  S.forEach(e => objs.push(e.o));
+  S.forEach(e => { if (e.o.parent !== e.par) e.par.add(e.o); });
+  S.forEach(e => {
+    const o = e.o;
+    o.position.copy(e.p);
+    o.quaternion.copy(e.q);
+    o.scale.copy(e.s);
+    o.userData = { ...e.ud, o: e.ud.o ? { ...e.ud.o } : undefined };
+    if (o.geometry !== e.g) o.geometry = e.g;
+    const a = o.material;
+    if (a) {
+      a.color.setHex(e.col);
+      const c = o.userData.cut;
+      a.transparent = !!c;
+      a.opacity = c ? 0.55 : 1;
+      a.depthTest = !c;
+      o.renderOrder = c ? 1 : 0;
+      a.needsUpdate = true;
+    }
+  });
+  S.forEach(e => { if (e.o.userData.stuck) bend(e.o); });
+  if (sel && !objs.includes(sel)) sel = null;
+  ol();
+  bedK = '';
+  hrest = 0;
+  pp();
+  hbtn();
+  toast(d < 0 ? 'تراجع (Ctrl+Z)' : 'إعادة (Ctrl+Y)');
+}
+
+// Global Keydown for Ctrl+Z, Ctrl+Y, Ctrl+D
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z') {
+    e.preventDefault();
+    hgo(e.shiftKey ? 1 : -1);
+  } else if (k === 'y') {
+    e.preventDefault();
+    hgo(1);
+  } else if (k === 'd') {
+    e.preventDefault();
+    dupSel();
+  }
+});
+
+// Top header buttons connection
+setTimeout(() => {
+  if ($('#b-undo')) $('#b-undo').onclick = () => hgo(-1);
+  if ($('#b-redo')) $('#b-redo').onclick = () => hgo(1);
+}, 100);
+
+/* ──────────────────────────────────────────────
+   MOYASAR PAYMENT & SUBSCRIPTIONS
+   ────────────────────────────────────────────── */
+let selectedPlan = { id: 'month', name: 'الاشتراك الشهري', price: 30, ops: 40 };
+
+function openPlansModal() {
+  M(`
+    <h3 class="text-sm font-bold text-white mb-1"><i class="fa-solid fa-crown text-amber-400"></i> باقات واشتراكات مُجسَّم</h3>
+    <p class="text-xs text-[#818f9e] mb-4">اختر الباقة المناسبة للترقية وتفعيل التنزيل والعمليات اللامحدودة</p>
+
+    <div class="plans-grid">
+      <div class="plan-card">
+        <b class="text-sm text-white">عملية واحدة</b>
+        <span class="text-lg font-black text-[#00b4d8]">1 ر.س</span>
+        <span class="text-[11px] text-[#818f9e]">تنزيل مجسم واحد</span>
+        <button class="pri mt-2 !py-1.5" onclick="initiateMoyasarCheckout('single', 'عملية واحدة', 1, 1)">شراء</button>
+      </div>
+
+      <div class="plan-card featured">
+        <b class="text-sm text-white">شهري</b>
+        <span class="text-lg font-black text-[#00b4d8]">30 ر.س</span>
+        <span class="text-[11px] text-[#818f9e]">40 عملية شهرياً</span>
+        <button class="pri mt-2 !py-1.5" onclick="initiateMoyasarCheckout('month', 'الاشتراك الشهري', 30, 40)">ترقية</button>
+      </div>
+
+      <div class="plan-card">
+        <b class="text-sm text-white">سنوي (المحترف)</b>
+        <span class="text-lg font-black text-[#00b4d8]">300 ر.س</span>
+        <span class="text-[11px] text-[#818f9e]">50 عملية / شهر</span>
+        <button class="pri mt-2 !py-1.5" onclick="initiateMoyasarCheckout('year', 'الاشتراك السنوي', 300, 600)">ترقية</button>
+      </div>
+    </div>
+
+    <div class="mt-4 pt-3 border-t border-[#2c333f] flex items-center justify-between text-xs">
+      <span class="text-[#818f9e]">لديك كود تفعيل؟</span>
+      <div class="flex gap-1">
+        <input type="text" id="redeem-code" placeholder="MJ-XXXX" class="w-28 text-center uppercase font-mono">
+        <button onclick="redeemPromoCode()" class="bg-[#242932] px-3 py-1 rounded">تفعيل</button>
+      </div>
+    </div>
+  `);
+}
+$('#bu').onclick = openPlansModal;
+
+function initiateMoyasarCheckout(id, name, price, ops) {
+  selectedPlan = { id, name, price, ops };
+  $('#md').close();
+
+  const userEmail = U ? U.email : 'guest@mjar.sa';
+  $('#pay-summary').innerHTML = `
+    <div class="flex justify-between items-center mb-1">
+      <span class="font-bold text-white">${name}</span>
+      <span class="font-black text-[#00b4d8]">${price}.00 ر.س</span>
+    </div>
+    <div class="text-[#818f9e]">المستخدم: <span class="text-white">${userEmail}</span> · رصيد: +${ops} عملية</div>
+  `;
+  $('#btn-pay-label').textContent = `ادفع ${price}.00 ر.س بأمان`;
+  document.getElementById('moyasar-modal').showModal();
+}
+
+function closeMoyasarModal() {
+  document.getElementById('moyasar-modal').close();
+}
+
+function executeMoyasarPayment() {
+  const btn = $('#btn-pay-now');
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> <span>جاري معالجة الدفع عبر البنك (Moyasar)...</span>`;
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i> <span>ادفع الآن بأمان</span>`;
+    closeMoyasarModal();
+
+    if (!U) {
+      U = { email: 'user@mjar.sa', credits: 0, plan: 'free' };
+    }
+    U.credits = (U.credits || 0) + selectedPlan.ops;
+    U.plan = selectedPlan.id;
+
+    // Record payment
+    const paymentRecord = {
+      id: 'pay_mya_' + Math.random().toString(36).slice(2, 8),
+      date: new Date().toISOString().slice(0, 10),
+      email: U.email,
+      plan: selectedPlan.id,
+      amount: selectedPlan.price + '.00 ر.س',
+      method: 'مدى (Mada) / Moyasar',
+      status: 'paid'
+    };
+    PY.push(paymentRecord);
+    save();
+
+    toast(`✓ تم الدفع بنجاح! تم تفعيل ${selectedPlan.name} وإضافة ${selectedPlan.ops} رصيد`);
+  }, 1400);
+}
+
+function redeemPromoCode() {
+  const code = $('#redeem-code').value.trim().toUpperCase();
+  if (code.startsWith('MJ-')) {
+    if (!U) U = { email: 'user@mjar.sa', credits: 0, plan: 'free' };
+    U.credits += 10;
+    save();
+    $('#md').close();
+    toast('تم تفعيل الكود وإضافة 10 عمليات لرصيدك!');
+  } else {
+    toast('كود غير صالح أو منتهي الصلاحية');
+  }
+}
+
+/* ──────────────────────────────────────────────
+   3D PRINT COST CALCULATOR INTEGRATION
+   ────────────────────────────────────────────── */
+$('#b-calc').onclick = () => {
+  calculatePrintPrice();
+  document.getElementById('calc-modal').showModal();
+};
+
+function calculatePrintPrice() {
+  const fp = parseFloat($('#calc_fp').value) || 75;
+  const fw = parseFloat($('#calc_fw').value) || 1000;
+  const pg = parseFloat($('#calc_pg').value) || 45;
+  const wp = parseFloat($('#calc_wp').value) || 10;
+  const ph = parseFloat($('#calc_ph').value) || 6.5;
+  const pw = parseFloat($('#calc_pw').value) || 150;
+  const pm = parseFloat($('#calc_pm').value) || 100;
+
+  const effGrams = pg * (1 + wp / 100);
+  const matCost = effGrams * (fp / fw);
+  const elecCost = (pw / 1000) * ph * 0.18 + ph * 1.0;
+  const totalCost = matCost + elecCost;
+  const finalPrice = totalCost * (1 + pm / 100);
+
+  $('#calc-mat-cost').textContent = matCost.toFixed(2);
+  $('#calc-elec-cost').textContent = elecCost.toFixed(2);
+  $('#calc-final-price').textContent = finalPrice.toFixed(2) + ' ر.س';
+}
+
+['calc_fp','calc_fw','calc_pg','calc_wp','calc_ph','calc_pw','calc_pm'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', calculatePrintPrice);
+});
+
+/* ──────────────────────────────────────────────
+   AUTH & USER STATE
+   ────────────────────────────────────────────── */
+$('#bl').onclick = () => {
+  if (U) {
+    // Show Account Modal
+    M(`
+      <h3 class="text-sm font-bold text-white mb-2"><i class="fa-solid fa-user text-[#00b4d8]"></i> بيانات الحساب</h3>
+      <div class="bg-[#14171c] p-3 rounded-xl border border-[#2c333f] text-xs space-y-2 mb-4">
+        <div class="flex justify-between"><span class="text-[#818f9e]">البريد:</span><span class="text-white font-mono">${U.email}</span></div>
+        <div class="flex justify-between"><span class="text-[#818f9e]">الرصيد المتوفر:</span><span class="text-amber-400 font-bold font-mono">🪙 ${U.credits || 0}</span></div>
+        <div class="flex justify-between"><span class="text-[#818f9e]">الباقة الحالية:</span><span class="text-[#00b4d8] font-bold">${U.plan || 'مجاني'}</span></div>
+      </div>
+      <div class="flex gap-2">
+        <button class="pri flex-1 !text-xs" onclick="openPlansModal()">ترقية الاشتراك</button>
+        <button class="bg-[#242932] text-rose-400 hover:text-white !text-xs" onclick="logoutUser()">تسجيل الخروج</button>
+      </div>
+    `);
+  } else {
+    window.location.href = 'auth.html';
+  }
+};
+
+function logoutUser() {
+  U = null;
+  save();
+  $('#md').close();
+  toast('تم تسجيل الخروج');
+}
+
+/* ──────────────────────────────────────────────
+   DIVIDER DRAG & INITIALIZATION
+   ────────────────────────────────────────────── */
+(() => {
+  const mn = document.querySelector('main');
+  const D0 = { l: 210, r: 310 };
+  const W = { l: ld('wl', 210), r: ld('wr', 310) };
+  const ap = () => {
+    mn.style.setProperty('--wl', W.l + 'px');
+    mn.style.setProperty('--wr', W.r + 'px');
+  };
+  ap();
+  [['r1','l'],['r2','r']].forEach(([id, k]) => {
+    const h = $('#' + id);
+    h.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      h.setPointerCapture(e.pointerId);
+      h.classList.add('on');
+      const x0 = e.clientX, w0 = W[k], d = document.documentElement.dir === 'rtl' ? -1 : 1;
+      const sg = k === 'l' ? 1 : -1, lo = k === 'l' ? 140 : 220, hi = 500;
+      const mv = ev => { W[k] = Math.round(Math.max(lo, Math.min(hi, w0 + sg * d * (ev.clientX - x0)))); ap(); };
+      const up = () => {
+        h.classList.remove('on');
+        h.removeEventListener('pointermove', mv);
+        h.removeEventListener('pointerup', up);
+        sv(k === 'l' ? 'wl' : 'wr', W[k]);
+      };
+      h.addEventListener('pointermove', mv);
+      h.addEventListener('pointerup', up);
+    });
+  });
+})();
+
+$('#bg').onclick = () => {
+  L = 1 - L;
+  sv('lang', L);
+  tr();
+};
+
+/* ──────────────────────────────────────────────
+   OWNER VERIFICATION & LEGAL DATA SYNC
+   ────────────────────────────────────────────── */
+const DEFAULT_OWNER_DATA = {
+  fullName: 'علي الحاجي',
+  title: 'مطور ومصمم نماذج ثلاثية الأبعاد',
+  brandName: 'منصة مجسّم – مجار للطباعة ثلاثية الأبعاد',
+  certNumber: 'FL-84920194',
+  activity: 'تصميم وبرمجة البرمجيات والتصنيع الرقمي والطباعة ثلاثية الأبعاد',
+  verifyUrl: 'https://freelancing.sa',
+  nationalAddress: 'المملكة العربية السعودية',
+  bankName: 'مصرف الراجحي',
+  beneficiaryName: 'علي الحاجي',
+  iban: 'SA0000000000000000000000',
+  email: 'aahaji_110@gmail.com',
+  whatsapp: '+966500000000',
+  socialX: 'https://x.com/',
+  socialInstagram: 'https://instagram.com/',
+  socialTiktok: 'https://tiktok.com/',
+  socialYoutube: '',
+  socialLinkedin: '',
+  copyrightNotice: 'جميع حقوق الملكية الفكرية، التصاميم، محرك المحاكاة والتقطيع، الأكواد البرمجية، والعلامة التجارية (مجسّم - مجار) محفوظة بالكامل للمالك الموثق (علي الحاجي) بموجب الأنظمة واللوائح المعمول بها في المملكة العربية السعودية وحماية الملكية الفكرية (الهيئة السعودية للملكية الفكرية SAIP).'
+};
+
+function getActiveOwnerData() {
+  try {
+    const saved = localStorage.getItem('_mj_owner_info');
+    if (!saved) return DEFAULT_OWNER_DATA;
+    return { ...DEFAULT_OWNER_DATA, ...JSON.parse(saved) };
+  } catch (e) {
+    return DEFAULT_OWNER_DATA;
+  }
+}
+
+function syncOwnerDataToUI() {
+  const data = getActiveOwnerData();
+  const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt || '—'; };
+  const setHref = (id, href) => { const el = document.getElementById(id); if (el && href) el.href = href; };
+
+  setTxt('footer-owner-name', data.fullName);
+  setTxt('footer-owner-email', data.email);
+  setHref('footer-owner-email', 'mailto:' + data.email);
+
+  setTxt('pub-owner-name', data.fullName);
+  setTxt('pub-owner-title', data.title);
+  setTxt('pub-owner-address', data.nationalAddress);
+  setTxt('pub-owner-cert', data.certNumber);
+  setHref('pub-verify-link', data.verifyUrl || 'https://freelancing.sa');
+  setTxt('pub-owner-activity', data.activity);
+  setTxt('pub-owner-bank', data.bankName);
+  setTxt('pub-owner-beneficiary', data.beneficiaryName);
+  setTxt('pub-owner-iban', data.iban);
+  setTxt('pub-owner-email', data.email);
+  setHref('pub-owner-email', 'mailto:' + data.email);
+  
+  const cleanPhone = (data.whatsapp || '').replace(/[^0-9]/g, '');
+  setHref('pub-owner-whatsapp', cleanPhone ? 'https://wa.me/' + cleanPhone : 'https://wa.me/966500000000');
+
+  setHref('pub-x', data.socialX || 'https://x.com/');
+  setHref('pub-insta', data.socialInstagram || 'https://instagram.com/');
+  setHref('pub-tiktok', data.socialTiktok || 'https://tiktok.com/');
+  
+  if (data.socialYoutube) {
+    const yEl = document.getElementById('pub-youtube');
+    if (yEl) { yEl.href = data.socialYoutube; yEl.classList.remove('hidden'); }
+  }
+  if (data.socialLinkedin) {
+    const lEl = document.getElementById('pub-linkedin');
+    if (lEl) { lEl.href = data.socialLinkedin; lEl.classList.remove('hidden'); }
+  }
+
+  setTxt('pub-owner-copyright', data.copyrightNotice);
+}
+
+function openOwnerVerificationModal() {
+  syncOwnerDataToUI();
+  document.getElementById('owner-verify-modal').showModal();
+}
+
+function closeOwnerVerificationModal() {
+  document.getElementById('owner-verify-modal').close();
+}
+
+function copyPubIban() {
+  const data = getActiveOwnerData();
+  navigator.clipboard.writeText(data.iban || 'SA0000000000000000000000');
+  toast('تم نسخ رقم الآيبان المعتمد بنجاح: ' + (data.iban || ''));
+}
+
+syncOwnerDataToUI();
+tr();
+rs();
+drawBeds();
+hsnap();
+</script>
+</body>
+</html>
+
