@@ -10,12 +10,12 @@
    1. Firebase Configuration & Dynamic Loader
    ────────────────────────────────────────────── */
 let firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "mojassam-app.firebaseapp.com",
-  projectId: "mojassam-app",
-  storageBucket: "mojassam-app.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD91V9cu-zr1OhEh1QZJJ8DqWq2u_5req0",
+  authDomain: "mojassam-9666e.firebaseapp.com",
+  projectId: "mojassam-9666e",
+  storageBucket: "mojassam-9666e.firebasestorage.app",
+  messagingSenderId: "498373838795",
+  appId: "1:498373838795:web:482d0b48abe5c0111b584e"
 };
 
 try {
