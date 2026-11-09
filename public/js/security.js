@@ -333,18 +333,10 @@
    */
   async function _logSuspiciousActivity(type, details = {}) {
     try {
-      if (!window.MJ || !window.MJ.db) return;
+      if (!window.MJ || !window.MJ.logSecurity) return;
 
-      const user = window.MJ.getCurrentUser ? window.MJ.getCurrentUser() : null;
-
-      await window.MJ.db.collection('security_logs').add({
-        type,
-        details,
-        uid: user ? user.uid : null,
-        userAgent: navigator.userAgent,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        url: window.location.href
-      });
+      // Stored in PostgreSQL table `security_logs`
+      await window.MJ.logSecurity(type, details);
     } catch (e) {
       // Silently fail – don't break app flow for logging
       console.error('[MJSec] Failed to log activity:', e);

@@ -1,13 +1,14 @@
 /**
- * مُجسَّم - Firebase Configuration & Initialization
+ * مُجسَّم - Auth + PostgreSQL Data Layer
  * =====================================================
- * Firebase v10+ (compat mode) – Auth, Firestore
- * 
+ * Identity : Firebase Auth (Google / Email) – compat SDK
+ * Database : PostgreSQL (Netlify DB / Neon) via /.netlify/functions/api
+ *
  * Global namespace: window.MJ
  */
 
 /* ──────────────────────────────────────────────
-   1. Firebase Configuration & Dynamic Loader
+   1. Firebase Configuration (Auth only)
    ────────────────────────────────────────────── */
 let firebaseConfig = {
   apiKey: "AIzaSyD91V9cu-zr1OhEh1QZJJ8DqWq2u_5req0",
@@ -29,11 +30,11 @@ try {
 } catch (e) {}
 
 /* ──────────────────────────────────────────────
-   2. Initialize Firebase Safely
+   2. Initialize Firebase Auth Safely
    ────────────────────────────────────────────── */
 let auth = null;
-let db = null;
 let googleProvider = null;
+const db = null; // Firestore removed – data lives in PostgreSQL
 
 try {
   if (typeof firebase !== 'undefined') {
@@ -41,59 +42,53 @@ try {
       firebase.initializeApp(firebaseConfig);
     }
     auth = firebase.auth();
-    db   = firebase.firestore();
     googleProvider = new firebase.auth.GoogleAuthProvider();
-
-    // Use Firestore persistence for offline support
-    db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-      if (err.code === 'failed-precondition') {
-        console.warn('[MJ] Firestore persistence unavailable – multiple tabs open.');
-      } else if (err.code === 'unimplemented') {
-        console.warn('[MJ] Firestore persistence not supported in this browser.');
-      }
-    });
-
-    // Set language to Arabic for auth emails
     auth.languageCode = 'ar';
+
+    // Sync every signed-in user (incl. Google) into PostgreSQL
+    auth.onAuthStateChanged((u) => { if (u) api('login').catch(() => {}); });
   }
 } catch (err) {
   console.warn('[MJ] Firebase running in fallback/local mode:', err.message);
 }
 
 /* ──────────────────────────────────────────────
-   3. Helper Functions
+   3. API Client (PostgreSQL backend)
    ────────────────────────────────────────────── */
+const API_URL = '/.netlify/functions/api';
 
-/**
- * Sign up a new user with email & password.
- * Creates a Firestore profile document under /users/{uid}.
- */
+async function api(action, params = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  const user = auth && auth.currentUser;
+  if (user) headers.Authorization = 'Bearer ' + (await user.getIdToken());
+
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ action, ...params })
+  });
+  let data;
+  try { data = await res.json(); } catch { data = { success: false, error: 'خطأ في الاتصال بالخادم' }; }
+  return data;
+}
+
+async function _safe(fn) {
+  try { return await fn(); }
+  catch (error) {
+    console.error('[MJ] API error:', error);
+    return { success: false, error: error.message || 'خطأ في الاتصال بالشبكة' };
+  }
+}
+
+/* ──────────────────────────────────────────────
+   4. Auth Functions
+   ────────────────────────────────────────────── */
 async function signUp(email, password, displayName = '') {
   try {
     const credential = await auth.createUserWithEmailAndPassword(email, password);
     const user = credential.user;
-
-    // Update display name if provided
-    if (displayName) {
-      await user.updateProfile({ displayName });
-    }
-
-    // Create Firestore user profile
-    await db.collection('users').doc(user.uid).set({
-      uid: user.uid,
-      email: user.email,
-      displayName: displayName || '',
-      role: 'user',
-      credits: 0,
-      subscription: {
-        plan: 'free',
-        expiryDate: null
-      },
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
+    if (displayName) await user.updateProfile({ displayName });
+    await api('login', { displayName });
     return { success: true, user };
   } catch (error) {
     console.error('[MJ] signUp error:', error.code);
@@ -101,29 +96,17 @@ async function signUp(email, password, displayName = '') {
   }
 }
 
-/**
- * Sign in an existing user.
- */
 async function signIn(email, password) {
   try {
     const credential = await auth.signInWithEmailAndPassword(email, password);
-    const user = credential.user;
-
-    // Update last login timestamp
-    await db.collection('users').doc(user.uid).update({
-      lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    return { success: true, user };
+    await api('login');
+    return { success: true, user: credential.user };
   } catch (error) {
     console.error('[MJ] signIn error:', error.code);
     return { success: false, error: _mapAuthError(error) };
   }
 }
 
-/**
- * Sign out the current user.
- */
 async function signOut() {
   try {
     await auth.signOut();
@@ -134,9 +117,6 @@ async function signOut() {
   }
 }
 
-/**
- * Send a password-reset email.
- */
 async function resetPassword(email) {
   try {
     await auth.sendPasswordResetEmail(email);
@@ -147,259 +127,67 @@ async function resetPassword(email) {
   }
 }
 
-/**
- * Get the currently signed-in user (synchronous snapshot).
- */
 function getCurrentUser() {
-  return auth.currentUser;
+  return auth ? auth.currentUser : null;
 }
 
-/**
- * Subscribe to auth-state changes.
- * @param {Function} callback – receives (user | null)
- * @returns {Function} unsubscribe
- */
 function onAuthChange(callback) {
-  return auth.onAuthStateChanged(callback);
+  return auth ? auth.onAuthStateChanged(callback) : () => {};
 }
 
 /* ──────────────────────────────────────────────
-   4. Firestore User Profile Helpers
+   5. User Profile
    ────────────────────────────────────────────── */
+const getUserProfile    = (uid) => _safe(() => api('getProfile', { uid }));
+const updateUserProfile = (uid, data) => _safe(() => api('updateProfile', { uid, data }));
 
-/**
- * Get a user profile from Firestore.
- */
-async function getUserProfile(uid) {
-  try {
-    const doc = await db.collection('users').doc(uid).get();
-    if (!doc.exists) return { success: false, error: 'المستخدم غير موجود' };
-    return { success: true, data: doc.data() };
-  } catch (error) {
-    console.error('[MJ] getUserProfile error:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Update fields on a user profile.
- */
-async function updateUserProfile(uid, data) {
-  try {
-    // Never allow role or uid to be changed via this helper
-    const sanitized = { ...data };
-    delete sanitized.uid;
-    delete sanitized.role;
-    sanitized.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-
-    await db.collection('users').doc(uid).update(sanitized);
-    return { success: true };
-  } catch (error) {
-    console.error('[MJ] updateUserProfile error:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Check whether a user has the 'admin' role.
- */
-async function isAdmin(uid) {
-  try {
-    const doc = await db.collection('users').doc(uid).get();
-    if (!doc.exists) return false;
-    return doc.data().role === 'admin';
-  } catch (error) {
-    console.error('[MJ] isAdmin error:', error);
-    return false;
-  }
+async function isAdmin() {
+  const r = await _safe(() => api('isAdmin'));
+  return !!(r && r.success && r.data);
 }
 
 /* ──────────────────────────────────────────────
-   5. Credits System
+   6. Credits
    ────────────────────────────────────────────── */
-
-/**
- * Add credits to a user's balance (atomic increment).
- */
-async function addCredits(uid, amount) {
-  try {
-    if (typeof amount !== 'number' || amount <= 0) {
-      return { success: false, error: 'المبلغ يجب أن يكون رقماً موجباً' };
-    }
-    await db.collection('users').doc(uid).update({
-      credits: firebase.firestore.FieldValue.increment(amount),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Log the transaction
-    await db.collection('transactions').add({
-      uid,
-      type: 'credit',
-      amount,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error('[MJ] addCredits error:', error);
-    return { success: false, error: error.message };
+function addCredits(uid, amount) {
+  if (typeof amount !== 'number' || amount <= 0) {
+    return Promise.resolve({ success: false, error: 'المبلغ يجب أن يكون رقماً موجباً' });
   }
+  return _safe(() => api('addCredits', { uid, amount }));
 }
 
-/**
- * Deduct credits from a user's balance (atomic decrement).
- * Checks balance before deducting.
- */
-async function deductCredits(uid, amount) {
-  try {
-    if (typeof amount !== 'number' || amount <= 0) {
-      return { success: false, error: 'المبلغ يجب أن يكون رقماً موجباً' };
-    }
-
-    // Read current balance first
-    const doc = await db.collection('users').doc(uid).get();
-    if (!doc.exists) return { success: false, error: 'المستخدم غير موجود' };
-
-    const currentCredits = doc.data().credits || 0;
-    if (currentCredits < amount) {
-      return { success: false, error: 'رصيد غير كافٍ' };
-    }
-
-    await db.collection('users').doc(uid).update({
-      credits: firebase.firestore.FieldValue.increment(-amount),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Log the transaction
-    await db.collection('transactions').add({
-      uid,
-      type: 'debit',
-      amount,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error('[MJ] deductCredits error:', error);
-    return { success: false, error: error.message };
+function deductCredits(uid, amount) {
+  if (typeof amount !== 'number' || amount <= 0) {
+    return Promise.resolve({ success: false, error: 'المبلغ يجب أن يكون رقماً موجباً' });
   }
+  return _safe(() => api('deductCredits', { uid, amount }));
 }
 
 /* ──────────────────────────────────────────────
-   6. Subscription Management
+   7. Subscriptions
    ────────────────────────────────────────────── */
+const getSubscription = (uid) => _safe(() => api('getSubscription', { uid }));
 
-/**
- * Get a user's subscription details.
- */
-async function getSubscription(uid) {
-  try {
-    const doc = await db.collection('users').doc(uid).get();
-    if (!doc.exists) return { success: false, error: 'المستخدم غير موجود' };
-
-    const subscription = doc.data().subscription || { plan: 'free', expiryDate: null };
-
-    // Check if subscription has expired
-    if (subscription.expiryDate) {
-      const expiry = subscription.expiryDate.toDate ? subscription.expiryDate.toDate() : new Date(subscription.expiryDate);
-      if (expiry < new Date()) {
-        subscription.expired = true;
-      } else {
-        subscription.expired = false;
-      }
-    }
-
-    return { success: true, data: subscription };
-  } catch (error) {
-    console.error('[MJ] getSubscription error:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Set a user's subscription plan and expiry date.
- */
-async function setSubscription(uid, plan, expiryDate) {
-  try {
-    const expiry = expiryDate instanceof Date
-      ? firebase.firestore.Timestamp.fromDate(expiryDate)
-      : expiryDate;
-
-    await db.collection('users').doc(uid).update({
-      subscription: {
-        plan,
-        expiryDate: expiry,
-        startedAt: firebase.firestore.FieldValue.serverTimestamp()
-      },
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Log subscription change
-    await db.collection('transactions').add({
-      uid,
-      type: 'subscription',
-      plan,
-      expiryDate: expiry,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    return { success: true };
-  } catch (error) {
-    console.error('[MJ] setSubscription error:', error);
-    return { success: false, error: error.message };
-  }
+function setSubscription(uid, plan, expiryDate) {
+  const expiry = expiryDate instanceof Date ? expiryDate.toISOString() : expiryDate;
+  return _safe(() => api('setSubscription', { uid, plan, expiryDate: expiry }));
 }
 
 /* ──────────────────────────────────────────────
-   7. Admin-Only Functions
+   8. Admin
    ────────────────────────────────────────────── */
-
-/**
- * Fetch all users (admin only – enforced by Firestore rules).
- */
-async function getAllUsers() {
-  try {
-    const current = getCurrentUser();
-    if (!current) return { success: false, error: 'يجب تسجيل الدخول' };
-
-    const admin = await isAdmin(current.uid);
-    if (!admin) return { success: false, error: 'غير مصرح لك بهذا الإجراء' };
-
-    const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
-    const users = [];
-    snapshot.forEach((doc) => users.push({ id: doc.id, ...doc.data() }));
-    return { success: true, data: users };
-  } catch (error) {
-    console.error('[MJ] getAllUsers error:', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Fetch all payment transactions (admin only).
- */
-async function getAllPayments() {
-  try {
-    const current = getCurrentUser();
-    if (!current) return { success: false, error: 'يجب تسجيل الدخول' };
-
-    const admin = await isAdmin(current.uid);
-    if (!admin) return { success: false, error: 'غير مصرح لك بهذا الإجراء' };
-
-    const snapshot = await db.collection('transactions').orderBy('createdAt', 'desc').get();
-    const payments = [];
-    snapshot.forEach((doc) => payments.push({ id: doc.id, ...doc.data() }));
-    return { success: true, data: payments };
-  } catch (error) {
-    console.error('[MJ] getAllPayments error:', error);
-    return { success: false, error: error.message };
-  }
-}
+const getAllUsers    = () => _safe(() => api('getAllUsers'));
+const getAllPayments = () => _safe(() => api('getAllPayments'));
 
 /* ──────────────────────────────────────────────
-   8. Error Mapping (Arabic)
+   9. Security Logging
    ────────────────────────────────────────────── */
+const logSecurity = (type, details = {}) =>
+  _safe(() => api('logSecurity', { type, details, url: window.location.href }));
 
+/* ──────────────────────────────────────────────
+   10. Error Mapping (Arabic)
+   ────────────────────────────────────────────── */
 function _mapAuthError(error) {
   const map = {
     'auth/email-already-in-use':    'البريد الإلكتروني مستخدم بالفعل',
@@ -416,16 +204,14 @@ function _mapAuthError(error) {
 }
 
 /* ──────────────────────────────────────────────
-   9. Global Namespace Export
+   11. Global Namespace Export
    ────────────────────────────────────────────── */
-
 window.MJ = Object.freeze({
-  // Core Firebase references
   auth,
   db,
   googleProvider,
+  api,
 
-  // Auth functions
   signUp,
   signIn,
   signOut,
@@ -433,22 +219,20 @@ window.MJ = Object.freeze({
   getCurrentUser,
   onAuthChange,
 
-  // User profile
   getUserProfile,
   updateUserProfile,
   isAdmin,
 
-  // Credits
   addCredits,
   deductCredits,
 
-  // Subscriptions
   getSubscription,
   setSubscription,
 
-  // Admin
   getAllUsers,
-  getAllPayments
+  getAllPayments,
+
+  logSecurity
 });
 
-console.log('[MJ] Firebase initialized ✓');
+console.log('[MJ] Auth ready ✓ | Backend: PostgreSQL');

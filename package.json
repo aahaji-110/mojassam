@@ -2,10 +2,9 @@
   "name": "mojassam",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {}
+  "type": "module",
+  "dependencies": {
+    "@netlify/neon": "^0.1.2",
+    "jose": "^5.10.0"
+  }
 }
