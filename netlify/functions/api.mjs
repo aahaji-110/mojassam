@@ -19,14 +19,11 @@ let _sql = null;
 const sql = (...args) => (_sql || (_sql = getDatabase().sql))(...args);
 
 const DEFAULT_PACKAGES = [
-  { id: 'pack_starter', category: 'coins', nameAr: 'باقة البداية', nameEn: 'Starter Pack', coins: 6, priceSar: 9, badgeAr: 'تجريبية', badgeEn: 'Starter', popular: false },
-  { id: 'pack_basic', category: 'coins', nameAr: 'باقة الأساس', nameEn: 'Basic Pack', coins: 20, priceSar: 24, badgeAr: 'وفّر 20%', badgeEn: 'Save 20%', popular: false },
-  { id: 'pack_pro', category: 'coins', nameAr: 'باقة المحترفين', nameEn: 'Pro Pack', coins: 50, priceSar: 49, badgeAr: 'الأكثر طلباً ⭐', badgeEn: 'Most Popular ⭐', popular: true },
-  { id: 'pack_mega', category: 'coins', nameAr: 'باقة الاستوديو', nameEn: 'Studio Pack', coins: 120, priceSar: 99, badgeAr: 'أفضل قيمة', badgeEn: 'Best Value', popular: false },
-  { id: 'sub_daily', category: 'subscription', period: 'daily', durationDays: 1, nameAr: 'اشتراك يومي', nameEn: 'Daily Pass', coins: 20, priceSar: 12, badgeAr: '24 ساعة', badgeEn: '24 Hours', popular: false },
-  { id: 'sub_weekly', category: 'subscription', period: 'weekly', durationDays: 7, nameAr: 'اشتراك أسبوعي', nameEn: 'Weekly Plan', coins: 60, priceSar: 29, badgeAr: '7 أيام', badgeEn: '7 Days', popular: false },
-  { id: 'sub_monthly', category: 'subscription', period: 'monthly', durationDays: 30, nameAr: 'اشتراك شهري', nameEn: 'Monthly Plan', coins: 160, priceSar: 60, badgeAr: 'الأفضل شهرياً 🔥', badgeEn: 'Best Monthly 🔥', popular: true },
-  { id: 'sub_yearly', category: 'subscription', period: 'yearly', durationDays: 365, nameAr: 'اشتراك سنوي', nameEn: 'Yearly Plan', coins: 1200, priceSar: 300, badgeAr: 'وفّر 58% 💎', badgeEn: 'Save 58% 💎', popular: false }
+  { id: 'coins_10', category: 'coins', nameAr: 'رصيد 10 كوينز', nameEn: '10 Coins Pack', coins: 10, priceUsd: 3, priceSar: 3, currency: 'USD', noExpiry: true, badgeAr: 'بدون تاريخ انتهاء', badgeEn: 'Never Expires', popular: false },
+  { id: 'coins_30', category: 'coins', nameAr: 'رصيد 30 كوينز', nameEn: '30 Coins Pack', coins: 30, priceUsd: 8, priceSar: 8, currency: 'USD', noExpiry: true, badgeAr: 'بدون تاريخ انتهاء', badgeEn: 'Never Expires', popular: false },
+  { id: 'coins_50', category: 'coins', nameAr: 'رصيد 50 كوينز', nameEn: '50 Coins Pack', coins: 50, priceUsd: 10, priceSar: 10, currency: 'USD', noExpiry: true, badgeAr: 'الأكثر توفيراً ⭐ بدون انتهاء', badgeEn: 'Best Value ⭐ No Expiry', popular: true },
+  { id: 'sub_monthly', category: 'subscription', period: 'monthly', durationDays: 30, nameAr: 'اشتراك شهري (يتجدد شهرياً)', nameEn: 'Monthly Subscription', coins: 100, priceUsd: 20, priceSar: 20, currency: 'USD', noExpiry: false, badgeAr: '100 كوينز تتجدد شهرياً 🔥', badgeEn: '100 Coins / Month 🔥', popular: true },
+  { id: 'sub_yearly', category: 'subscription', period: 'yearly', durationDays: 365, nameAr: 'اشتراك سنوي (يتجدد سنوياً)', nameEn: 'Yearly Subscription', coins: 500, priceUsd: 80, priceSar: 80, currency: 'USD', noExpiry: false, badgeAr: '500 كوينز تتجدد سنوياً 💎', badgeEn: '500 Coins / Year 💎', popular: false }
 ];
 
 const DEFAULT_SITE_SETTINGS = {
@@ -153,6 +150,15 @@ function ensureSchema() {
       await sql`INSERT INTO app_meta (key, value) VALUES ('admin_pin_changed', 'false') ON CONFLICT (key) DO NOTHING`;
       await sql`INSERT INTO app_meta (key, value) VALUES ('packages', ${JSON.stringify(DEFAULT_PACKAGES)}) ON CONFLICT (key) DO NOTHING`;
       await sql`INSERT INTO app_meta (key, value) VALUES ('site_settings', ${JSON.stringify(DEFAULT_SITE_SETTINGS)}) ON CONFLICT (key) DO NOTHING`;
+
+      // Apply USD packages migration once
+      const [pkgVer] = await sql`SELECT value FROM app_meta WHERE key = 'packages_usd_v1'`;
+      if (!pkgVer) {
+        await sql`INSERT INTO app_meta (key, value) VALUES ('packages', ${JSON.stringify(DEFAULT_PACKAGES)})
+          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
+        await sql`INSERT INTO app_meta (key, value) VALUES ('packages_usd_v1', 'true')
+          ON CONFLICT (key) DO UPDATE SET value = 'true'`;
+      }
     })().catch((e) => {
       schemaReady = null;
       throw e;
@@ -320,7 +326,7 @@ async function upsertUser(u, displayName, referralCodeInput, settings) {
   return created;
 }
 
-async function sendActivationEmail(settings, toEmail, code, pkgName, coins, amountSar) {
+async function sendActivationEmail(settings, toEmail, code, pkgName, coins, amountUsd) {
   if (!settings.resendApiKey || !toEmail) return { sent: false, reason: 'no_api_key' };
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -336,8 +342,8 @@ async function sendActivationEmail(settings, toEmail, code, pkgName, coins, amou
         html: `
           <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;background:#181a1f;color:#fff;padding:28px;border-radius:16px;max-width:520px;margin:auto;border:1px solid #2e323b">
             <h2 style="color:#10b981;margin-top:0">منصة مجسمات ثلاثية الأبعاد</h2>
-            <p>شكراً لشرائك <strong>${pkgName}</strong> بقيمة <strong>${amountSar} ر.س</strong>.</p>
-            <p>استخدم كود التفعيل التالي في خانة شحن الرصيد داخل الموقع لإضافة <strong>${coins} كوينز</strong> لحسابك فوراً:</p>
+            <p>تمت عملية الدفع بنجاح لباقة <strong>${pkgName}</strong> بقيمة <strong>$${amountUsd}</strong>.</p>
+            <p>استخدم كود التفعيل التلقائي التالي في خانة شحن الرصيد داخل الموقع لإضافة <strong>${coins} كوينز</strong> لحسابك فوراً:</p>
             <div style="background:#0f1115;border:2px dashed #10b981;padding:16px;text-align:center;font-size:24px;font-weight:bold;letter-spacing:3px;color:#10b981;border-radius:12px;margin:20px 0">
               ${code}
             </div>
@@ -830,14 +836,31 @@ export default async (req) => {
       }
 
       case 'requestCancelAccountRefund': {
-        const reason = String(body.reason || 'طلب إلغاء الحساب واسترداد المبلغ المتبقي').slice(0, 500);
+        // Strict rule: Cannot cancel account and refund if ANY balance/coins have been used!
+        const [usedCheck] = await sql`
+          SELECT count(*)::int AS used_tx
+          FROM transactions
+          WHERE uid = ${user.uid} AND type = 'export'`;
+        if (Number(me.exports_count || 0) > 0 || (usedCheck && usedCheck.used_tx > 0)) {
+          return json(400, {
+            success: false,
+            error: 'عذراً، لا يمكن إلغاء الحساب وإرجاع المبلغ لأنه تم استخدام الرصيد بالفعل.'
+          });
+        }
+        if (Number(me.total_spent || 0) <= 0) {
+          return json(400, {
+            success: false,
+            error: 'لا يوجد رصيد مدفوع غير مستخدم في حسابك لاسترداده.'
+          });
+        }
+        const reason = String(body.reason || 'طلب إلغاء الحساب واسترداد المبلغ (لم يتم استخدام الرصيد)').slice(0, 500);
         await sql`
           INSERT INTO transactions (uid, email, type, coins_delta, amount_sar, status, description)
           VALUES (${user.uid}, ${me.email}, 'refund', ${-Number(me.coins)}, ${Number(me.total_spent || 0)}, 'pending',
-                  ${'طلب إلغاء حساب واسترداد المبلغ: ' + reason})`;
+                  ${'طلب إلغاء حساب واسترداد المبلغ (رصيد غير مستخدم): ' + reason})`;
         return json(200, {
           success: true,
-          message: 'تم تسجيل طلب إلغاء الحساب واسترداد المبلغ بنجاح، وسيتم تنفيذه وإعادة المبلغ لوسيلة الدفع الخاصة بك.'
+          message: 'تم تسجيل طلب إلغاء الحساب واسترداد المبلغ بنجاح (لم يتم استخدام الرصيد)، وسيتم إعادة المبلغ لوسيلة الدفع الخاصة بك.'
         });
       }
 

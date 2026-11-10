@@ -311,20 +311,74 @@ window.MJEngine = (function () {
   }
 
   /* ──────────────────────────────────────────────────────────────
-     3. Surface Wrapping & Sticking ("لصق على سطح المجسم")
-        Wraps any 3D Text or Primitive onto:
-        - Cylinder surface (يلتف حول الأسطوانة)
-        - Sphere surface (يلتف على الكرة)
-        - Any face of a target Mesh (Top, Bottom, Front, Back, Right, Left)
-        - Raycast surface projection (يتشكل على تضاريس سطح المجسم بالضبط)
-        Supports both:
-        - Emboss (بروز / قطعة مدمجة)
-        - Engrave (حفر داخل المجسم)
+     3. Surface Wrapping, Exact Contour Relief & Real Mesh Carving
+        ("لصق وتشكيل بنفس تطعجات المجسم أو حفر بنفس المجسم")
+        - Subdivides triangles finely so every millimeter of the text/shape
+          conforms to the exact outer bumps, steps, grooves, and curves of targetMesh!
+        - Auto-scales text/shape to fit the target surface so it never hangs in mid-air.
+        - Supports user-chosen placement point (anchorPoint or offsetU / offsetV).
+        - In 'engrave' mode, physically carves/indents targetMesh's own surface inward!
      ────────────────────────────────────────────────────────────── */
-  function stickMeshToTarget(sourceMesh, targetMesh, face = 'front', mode = 'emboss') {
+  function subdivideGeometry(geom, maxEdgeLen = 1.6, maxPasses = 3) {
+    let cur = geom.index ? geom.toNonIndexed() : geom.clone();
+    for (let pass = 0; pass < maxPasses; pass++) {
+      const pos = cur.attributes.position.array;
+      const triCount = pos.length / 9;
+      if (triCount > 24000) break; // safety cap for performance
+
+      const out = [];
+      let splitCount = 0;
+
+      for (let i = 0; i < pos.length; i += 9) {
+        const ax = pos[i], ay = pos[i + 1], az = pos[i + 2];
+        const bx = pos[i + 3], by = pos[i + 4], bz = pos[i + 5];
+        const cx = pos[i + 6], cy = pos[i + 7], cz = pos[i + 8];
+
+        const dab = Math.hypot(bx - ax, by - ay, bz - az);
+        const dbc = Math.hypot(cx - bx, cy - by, cz - bz);
+        const dca = Math.hypot(ax - cx, ay - cy, az - cz);
+
+        if (dab > maxEdgeLen || dbc > maxEdgeLen || dca > maxEdgeLen) {
+          splitCount++;
+          // Split along the longest edge
+          if (dab >= dbc && dab >= dca) {
+            const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5, mz = (az + bz) * 0.5;
+            out.push(ax, ay, az, mx, my, mz, cx, cy, cz);
+            out.push(mx, my, mz, bx, by, bz, cx, cy, cz);
+          } else if (dbc >= dab && dbc >= dca) {
+            const mx = (bx + cx) * 0.5, my = (by + cy) * 0.5, mz = (bz + cz) * 0.5;
+            out.push(ax, ay, az, bx, by, bz, mx, my, mz);
+            out.push(ax, ay, az, mx, my, mz, cx, cy, cz);
+          } else {
+            const mx = (cx + ax) * 0.5, my = (cy + ay) * 0.5, mz = (cz + az) * 0.5;
+            out.push(ax, ay, az, bx, by, bz, mx, my, mz);
+            out.push(mx, my, mz, bx, by, bz, cx, cy, cz);
+          }
+        } else {
+          out.push(ax, ay, az, bx, by, bz, cx, cy, cz);
+        }
+      }
+
+      const nextGeom = new THREE.BufferGeometry();
+      nextGeom.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
+      cur = nextGeom;
+      if (splitCount === 0) break;
+    }
+    cur.computeVertexNormals();
+    return cur;
+  }
+
+  function stickMeshToTarget(sourceMesh, targetMesh, face = 'front', mode = 'emboss', customOpts = {}) {
     if (!sourceMesh || !targetMesh) return;
 
-    // Ensure world matrices are fresh
+    // Restore targetMesh original geometry if it was previously carved
+    targetMesh.traverse((child) => {
+      if (child.isMesh && child.userData.preCarveGeometry) {
+        child.geometry.dispose();
+        child.geometry = child.userData.preCarveGeometry.clone();
+      }
+    });
+
     targetMesh.updateMatrixWorld(true);
     const targetBox = new THREE.Box3().setFromObject(targetMesh);
     const targetSize = new THREE.Vector3();
@@ -332,194 +386,259 @@ window.MJEngine = (function () {
     targetBox.getSize(targetSize);
     targetBox.getCenter(targetCenter);
 
-    // Clone base geometry if not stored yet so user can re-wrap to different faces cleanly
     if (!sourceMesh.userData.originalGeometry) {
       sourceMesh.userData.originalGeometry = sourceMesh.geometry.clone();
     }
-    const baseGeom = sourceMesh.userData.originalGeometry.clone();
-
-    // Subdivide geometry along X/Z so it bends smoothly on curved surfaces
+    let baseGeom = sourceMesh.userData.originalGeometry.clone();
     baseGeom.computeBoundingBox();
-    const srcBb = baseGeom.boundingBox;
-    const srcW = Math.max(1, srcBb.max.x - srcBb.min.x);
-    const srcH = Math.max(1, srcBb.max.y - srcBb.min.y);
-    const srcD = Math.max(1, srcBb.max.z - srcBb.min.z);
+    const origBb = baseGeom.boundingBox;
+    const origW = Math.max(1, origBb.max.x - origBb.min.x);
+    const origH = Math.max(0.5, origBb.max.y - origBb.min.y);
+    const origD = Math.max(1, origBb.max.z - origBb.min.z);
 
-    // Detect if target is cylindrical or spherical or custom mesh
-    const targetType = targetMesh.userData.primitiveType || '';
-    const isCylinder = targetType === 'cylinder' || targetType === 'cone' || targetType === 'truncated_cone' || face === 'cylinder_wrap';
-    const isSphere = targetType === 'sphere' || face === 'sphere_wrap';
+    // Center baseGeom on X and Z, with Y=0 at bottom
+    baseGeom.translate(
+      -(origBb.min.x + origBb.max.x) / 2,
+      -origBb.min.y,
+      -(origBb.min.z + origBb.max.z) / 2
+    );
 
-    const embedOffset = mode === 'engrave' ? -srcH * 0.72 : -0.35; // Engrave sinks into surface
+    // Determine projection axes (dir = ray direction toward surface, right = U axis, up = V axis)
+    let dir = new THREE.Vector3(0, 0, -1);
+    let right = new THREE.Vector3(1, 0, 0);
+    let up = new THREE.Vector3(0, -1, 0);
+    let availW = targetSize.x;
+    let availH = targetSize.y;
 
-    if (isCylinder && (face === 'front' || face === 'back' || face === 'right' || face === 'left' || face === 'cylinder_wrap')) {
-      // Cylindrical wrap around the vertical axis of targetMesh!
-      const radius = Math.max(targetSize.x, targetSize.z) / 2;
-      const pos = baseGeom.attributes.position;
-      const angleOffset =
-        face === 'back' ? Math.PI :
-        face === 'right' ? Math.PI / 2 :
-        face === 'left' ? -Math.PI / 2 : 0;
+    if (face === 'top') {
+      dir.set(0, -1, 0); right.set(1, 0, 0); up.set(0, 0, 1);
+      availW = targetSize.x; availH = targetSize.z;
+    } else if (face === 'bottom') {
+      dir.set(0, 1, 0); right.set(1, 0, 0); up.set(0, 0, -1);
+      availW = targetSize.x; availH = targetSize.z;
+    } else if (face === 'front') {
+      dir.set(0, 0, -1); right.set(1, 0, 0); up.set(0, -1, 0);
+      availW = targetSize.x; availH = targetSize.y;
+    } else if (face === 'back') {
+      dir.set(0, 0, 1); right.set(-1, 0, 0); up.set(0, -1, 0);
+      availW = targetSize.x; availH = targetSize.y;
+    } else if (face === 'right') {
+      dir.set(-1, 0, 0); right.set(0, 0, -1); up.set(0, -1, 0);
+      availW = targetSize.z; availH = targetSize.y;
+    } else if (face === 'left') {
+      dir.set(1, 0, 0); right.set(0, 0, 1); up.set(0, -1, 0);
+      availW = targetSize.z; availH = targetSize.y;
+    }
 
-      for (let i = 0; i < pos.count; i++) {
-        const vx = pos.getX(i);
-        const vy = pos.getY(i); // extrusion thickness (height off bed)
-        const vz = pos.getZ(i); // vertical along cylinder height
+    // Auto-scale source geometry so it NEVER overflows the target face!
+    const userScaleMult = Number(customOpts.scalePct || 85) / 100;
+    const fitScale = Math.min(
+      (availW * userScaleMult) / origW,
+      (availH * userScaleMult) / origD
+    );
+    const depthMm = Number(customOpts.depthMm || Math.min(origH, 2.8));
+    baseGeom.scale(fitScale, depthMm / origH, fitScale);
 
-        const theta = (vx / Math.max(10, radius)) + angleOffset;
-        const r = radius + vy + embedOffset;
-        const nx = Math.sin(theta) * r;
-        const nz = Math.cos(theta) * r;
-        const ny = -vz; // upright text on side of cylinder
-        pos.setXYZ(i, nx, ny, nz);
+    // Finely subdivide triangles so the geometry bends with every step, bump, groove, and curve!
+    const stepMm = Math.max(0.6, Math.min(availW, availH) / 28);
+    baseGeom = subdivideGeometry(baseGeom, stepMm, 4);
+    baseGeom.computeBoundingBox();
+
+    const offsetU = Number(customOpts.offsetU || 0);
+    const offsetV = Number(customOpts.offsetV || 0);
+
+    // If user clicked a specific point on the model, center there; otherwise use face center + offsetU/offsetV
+    const anchorCenter = customOpts.anchorPoint
+      ? customOpts.anchorPoint.clone()
+      : targetCenter.clone().addScaledVector(right, offsetU).addScaledVector(up, -offsetV);
+
+    const outward = dir.clone().negate();
+    const rayDistance = Math.max(targetSize.x, targetSize.y, targetSize.z) * 1.5 + 40;
+    const rayOriginBase = anchorCenter.clone().addScaledVector(outward, rayDistance);
+
+    const raycaster = new THREE.Raycaster();
+    const pos = baseGeom.attributes.position;
+
+    // Cache ray hits on a high-resolution 2D lookup grid across the decal footprint for speed & smoothness
+    baseGeom.computeBoundingBox();
+    const sbb = baseGeom.boundingBox;
+    const spanU = Math.max(1, sbb.max.x - sbb.min.x);
+    const spanV = Math.max(1, sbb.max.z - sbb.min.z);
+    const gridRes = 48;
+    const hitGrid = [];
+
+    // First find fallback surface plane at center in case an edge ray misses
+    raycaster.set(rayOriginBase, dir);
+    const centerHits = raycaster.intersectObject(targetMesh, true);
+    const defaultSurfacePt = centerHits.length > 0
+      ? centerHits[0].point.clone()
+      : anchorCenter.clone();
+
+    for (let gy = 0; gy <= gridRes; gy++) {
+      hitGrid[gy] = [];
+      const vz = sbb.min.z + (gy / gridRes) * spanV;
+      for (let gx = 0; gx <= gridRes; gx++) {
+        const vx = sbb.min.x + (gx / gridRes) * spanU;
+        const rStart = rayOriginBase.clone()
+          .addScaledVector(right, vx)
+          .addScaledVector(up, vz);
+        raycaster.set(rStart, dir);
+        const hits = raycaster.intersectObject(targetMesh, true);
+        if (hits.length > 0) {
+          const h = hits[0];
+          const wn = h.face
+            ? h.face.normal.clone().transformDirection(h.object.matrixWorld).normalize()
+            : outward.clone();
+          hitGrid[gy][gx] = { pt: h.point.clone(), normal: wn, valid: true };
+        } else {
+          // Clamp to nearest valid point on surface so letters never float in air
+          const projDist = defaultSurfacePt.clone().sub(rStart).dot(dir);
+          hitGrid[gy][gx] = {
+            pt: rStart.clone().addScaledVector(dir, projDist),
+            normal: outward.clone(),
+            valid: false
+          };
+        }
       }
-      pos.needsUpdate = true;
-      baseGeom.computeVertexNormals();
-      sourceMesh.geometry.dispose();
-      sourceMesh.geometry = baseGeom;
-      sourceMesh.rotation.set(0, 0, 0);
-      sourceMesh.scale.set(1, 1, 1);
-      sourceMesh.position.copy(targetCenter);
-    } else if (isSphere) {
-      // Spherical wrap
-      const radius = Math.max(targetSize.x, targetSize.y, targetSize.z) / 2;
-      const pos = baseGeom.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const vx = pos.getX(i);
-        const vy = pos.getY(i);
-        const vz = pos.getZ(i);
-        const lon = vx / Math.max(10, radius);
-        const lat = -vz / Math.max(10, radius);
-        const r = radius + vy + embedOffset;
-        const nx = r * Math.cos(lat) * Math.sin(lon);
-        const ny = r * Math.sin(lat);
-        const nz = r * Math.cos(lat) * Math.cos(lon);
-        pos.setXYZ(i, nx, ny, nz);
-      }
-      pos.needsUpdate = true;
-      baseGeom.computeVertexNormals();
-      sourceMesh.geometry.dispose();
-      sourceMesh.geometry = baseGeom;
-      sourceMesh.rotation.set(0, 0, 0);
-      sourceMesh.scale.set(1, 1, 1);
-      sourceMesh.position.copy(targetCenter);
-    } else {
-      // Raycast projection onto arbitrary target mesh surface along chosen direction!
-      const raycaster = new THREE.Raycaster();
-      const pos = baseGeom.attributes.position;
+    }
 
-      // Orient and project according to chosen side
-      let dir = new THREE.Vector3(0, -1, 0);
-      let right = new THREE.Vector3(1, 0, 0);
-      let up = new THREE.Vector3(0, 0, -1);
-      let startOrigin = targetCenter.clone();
+    function sampleSurface(vx, vz) {
+      const u = Math.min(1, Math.max(0, (vx - sbb.min.x) / spanU)) * gridRes;
+      const v = Math.min(1, Math.max(0, (vz - sbb.min.z) / spanV)) * gridRes;
+      const ix = Math.min(gridRes - 1, Math.floor(u));
+      const iy = Math.min(gridRes - 1, Math.floor(v));
+      const fx = u - ix;
+      const fy = v - iy;
 
-      if (face === 'top') {
-        dir.set(0, -1, 0);
-        right.set(1, 0, 0);
-        up.set(0, 0, 1);
-        startOrigin.y = targetBox.max.y + 50;
-      } else if (face === 'bottom') {
-        dir.set(0, 1, 0);
-        right.set(1, 0, 0);
-        up.set(0, 0, -1);
-        startOrigin.y = targetBox.min.y - 50;
-      } else if (face === 'front') {
-        dir.set(0, 0, -1);
-        right.set(1, 0, 0);
-        up.set(0, -1, 0);
-        startOrigin.z = targetBox.max.z + 50;
-      } else if (face === 'back') {
-        dir.set(0, 0, 1);
-        right.set(-1, 0, 0);
-        up.set(0, -1, 0);
-        startOrigin.z = targetBox.min.z - 50;
-      } else if (face === 'right') {
-        dir.set(-1, 0, 0);
-        right.set(0, 0, -1);
-        up.set(0, -1, 0);
-        startOrigin.x = targetBox.max.x + 50;
-      } else if (face === 'left') {
-        dir.set(1, 0, 0);
-        right.set(0, 0, 1);
-        up.set(0, -1, 0);
-        startOrigin.x = targetBox.min.x - 50;
-      }
+      const h00 = hitGrid[iy][ix];
+      const h10 = hitGrid[iy][ix + 1];
+      const h01 = hitGrid[iy + 1][ix];
+      const h11 = hitGrid[iy + 1][ix + 1];
 
-      const outward = dir.clone().negate();
+      const pt = new THREE.Vector3()
+        .addScaledVector(h00.pt, (1 - fx) * (1 - fy))
+        .addScaledVector(h10.pt, fx * (1 - fy))
+        .addScaledVector(h01.pt, (1 - fx) * fy)
+        .addScaledVector(h11.pt, fx * fy);
 
-      // Sample surface hits on a 2D grid for fast conforming
-      const gridN = 15;
-      const surfaceOffsetGrid = [];
-      for (let gy = 0; gy <= gridN; gy++) {
-        surfaceOffsetGrid[gy] = [];
-        const vFrac = (gy / gridN) - 0.5;
-        for (let gx = 0; gx <= gridN; gx++) {
-          const uFrac = (gx / gridN) - 0.5;
-          const rayStart = startOrigin.clone()
-            .addScaledVector(right, uFrac * srcW)
-            .addScaledVector(up, vFrac * srcD);
-          raycaster.set(rayStart, dir);
-          const hits = raycaster.intersectObject(targetMesh, true);
-          if (hits.length > 0) {
-            surfaceOffsetGrid[gy][gx] = hits[0].point.clone();
-          } else {
-            // Fallback plane on bounding box face
-            const fallbackPt = startOrigin.clone()
-              .addScaledVector(dir, 50)
-              .addScaledVector(right, uFrac * srcW)
-              .addScaledVector(up, vFrac * srcD);
-            surfaceOffsetGrid[gy][gx] = fallbackPt;
+      const nrm = new THREE.Vector3()
+        .addScaledVector(h00.normal, (1 - fx) * (1 - fy))
+        .addScaledVector(h10.normal, fx * (1 - fy))
+        .addScaledVector(h01.normal, (1 - fx) * fy)
+        .addScaledVector(h11.normal, fx * fy)
+        .normalize();
+
+      return { pt, normal: nrm };
+    }
+
+    if (mode === 'engrave') {
+      // REAL MESH CARVING ("حفر بنفس المجسم"):
+      // 1. Build a 2D silhouette mask of the sourceMesh on the (U, V) plane
+      const maskSize = 180;
+      const mask = new Uint8Array(maskSize * maskSize);
+      const posArr = pos.array;
+      for (let i = 0; i < posArr.length; i += 9) {
+        // Rasterize triangle bounding box in (vx, vz) into mask
+        const x0 = posArr[i], z0 = posArr[i + 2];
+        const x1 = posArr[i + 3], z1 = posArr[i + 5];
+        const x2 = posArr[i + 6], z2 = posArr[i + 8];
+        const minU = Math.max(0, Math.floor(((Math.min(x0, x1, x2) - sbb.min.x) / spanU) * (maskSize - 1)));
+        const maxU = Math.min(maskSize - 1, Math.ceil(((Math.max(x0, x1, x2) - sbb.min.x) / spanU) * (maskSize - 1)));
+        const minV = Math.max(0, Math.floor(((Math.min(z0, z1, z2) - sbb.min.z) / spanV) * (maskSize - 1)));
+        const maxV = Math.min(maskSize - 1, Math.ceil(((Math.max(z0, z1, z2) - sbb.min.z) / spanV) * (maskSize - 1)));
+        for (let py = minV; py <= maxV; py++) {
+          const vzTest = sbb.min.z + (py / (maskSize - 1)) * spanV;
+          for (let px = minU; px <= maxU; px++) {
+            const vxTest = sbb.min.x + (px / (maskSize - 1)) * spanU;
+            // Barycentric test in 2D
+            const d1 = (vxTest - x1) * (z0 - z1) - (x0 - x1) * (vzTest - z1);
+            const d2 = (vxTest - x2) * (z1 - z2) - (x1 - x2) * (vzTest - z2);
+            const d3 = (vxTest - x0) * (z2 - z0) - (x2 - x0) * (vzTest - z0);
+            const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+            const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+            if (!(hasNeg && hasPos)) {
+              mask[py * maskSize + px] = 1;
+            }
           }
         }
       }
 
-      for (let i = 0; i < pos.count; i++) {
-        const vx = pos.getX(i);
-        const vy = pos.getY(i);
-        const vz = pos.getZ(i);
+      // 2. Subdivide targetMesh and indent its surface vertices inward wherever they fall inside the carved silhouette!
+      targetMesh.traverse((child) => {
+        if (!child.isMesh || !child.geometry) return;
+        if (!child.userData.preCarveGeometry) {
+          child.userData.preCarveGeometry = child.geometry.clone();
+        }
+        const fineTarget = subdivideGeometry(child.userData.preCarveGeometry, Math.max(1.2, Math.min(availW, availH) / 24), 4);
+        const tPos = fineTarget.attributes.position;
+        const invMat = child.matrixWorld.clone().invert();
+        const vWorld = new THREE.Vector3();
 
-        const u = Math.min(1, Math.max(0, (vx / srcW) + 0.5)) * gridN;
-        const v = Math.min(1, Math.max(0, (vz / srcD) + 0.5)) * gridN;
-        const ix = Math.min(gridN - 1, Math.floor(u));
-        const iy = Math.min(gridN - 1, Math.floor(v));
-        const fx = u - ix;
-        const fy = v - iy;
+        for (let i = 0; i < tPos.count; i++) {
+          vWorld.fromBufferAttribute(tPos, i).applyMatrix4(child.matrixWorld);
+          const rel = vWorld.clone().sub(anchorCenter);
+          // Only carve vertices on the selected side
+          if (rel.dot(outward) < -2) continue;
 
-        const p00 = surfaceOffsetGrid[iy][ix];
-        const p10 = surfaceOffsetGrid[iy][ix + 1];
-        const p01 = surfaceOffsetGrid[iy + 1][ix];
-        const p11 = surfaceOffsetGrid[iy + 1][ix + 1];
-
-        const surfPt = new THREE.Vector3()
-          .addScaledVector(p00, (1 - fx) * (1 - fy))
-          .addScaledVector(p10, fx * (1 - fy))
-          .addScaledVector(p01, (1 - fx) * fy)
-          .addScaledVector(p11, fx * fy);
-
-        const finalPt = surfPt.addScaledVector(outward, vy + embedOffset);
-        pos.setXYZ(i, finalPt.x - targetCenter.x, finalPt.y - targetCenter.y, finalPt.z - targetCenter.z);
-      }
-
-      pos.needsUpdate = true;
-      baseGeom.computeVertexNormals();
-      sourceMesh.geometry.dispose();
-      sourceMesh.geometry = baseGeom;
-      sourceMesh.rotation.set(0, 0, 0);
-      sourceMesh.scale.set(1, 1, 1);
-      sourceMesh.position.copy(targetCenter);
+          const uCoord = rel.dot(right);
+          const vCoord = rel.dot(up);
+          if (uCoord >= sbb.min.x && uCoord <= sbb.max.x && vCoord >= sbb.min.z && vCoord <= sbb.max.z) {
+            const mx = Math.floor(((uCoord - sbb.min.x) / spanU) * (maskSize - 1));
+            const my = Math.floor(((vCoord - sbb.min.z) / spanV) * (maskSize - 1));
+            if (mask[my * maskSize + mx]) {
+              vWorld.addScaledVector(dir, depthMm * 0.85);
+              vWorld.applyMatrix4(invMat);
+              tPos.setXYZ(i, vWorld.x, vWorld.y, vWorld.z);
+            }
+          }
+        }
+        tPos.needsUpdate = true;
+        fineTarget.computeVertexNormals();
+        child.geometry.dispose();
+        child.geometry = fineTarget;
+      });
     }
 
-    // Apply visual style for Emboss vs Engrave
+    // 3. Deform every vertex of sourceMesh to follow the exact target surface relief
+    for (let i = 0; i < pos.count; i++) {
+      const vx = pos.getX(i);
+      const vy = pos.getY(i); // 0 at bottom, depthMm at top
+      const vz = pos.getZ(i);
+
+      const { pt } = sampleSurface(vx, vz);
+      // In emboss mode: bottom sits slightly inside (-0.2mm) for watertight union, top protrudes by +vy along outward direction
+      // In engrave mode: recessed inside the carved groove to form crisp inner walls & floor
+      const displacement = mode === 'engrave'
+        ? (-depthMm * 0.88 + vy * 0.35)
+        : (vy - 0.15);
+
+      const finalWorld = pt.clone().addScaledVector(outward, displacement);
+      pos.setXYZ(
+        i,
+        finalWorld.x - targetCenter.x,
+        finalWorld.y - targetCenter.y,
+        finalWorld.z - targetCenter.z
+      );
+    }
+
+    pos.needsUpdate = true;
+    baseGeom.computeVertexNormals();
+    sourceMesh.geometry.dispose();
+    sourceMesh.geometry = baseGeom;
+    sourceMesh.rotation.set(0, 0, 0);
+    sourceMesh.scale.set(1, 1, 1);
+    sourceMesh.position.copy(targetCenter);
+
     sourceMesh.userData.stickMode = mode;
     sourceMesh.userData.stuckTo = targetMesh.uuid;
+    sourceMesh.userData.lastStickFace = face;
+    sourceMesh.userData.lastStickOpts = { ...customOpts, face, mode };
+
     if (mode === 'engrave') {
       sourceMesh.material = new THREE.MeshStandardMaterial({
-        color: 0x111827,
-        roughness: 0.85,
-        metalness: 0.05,
-        polygonOffset: true,
-        polygonOffsetFactor: -2
+        color: 0x181b20,
+        roughness: 0.9,
+        metalness: 0.05
       });
     }
   }
@@ -687,157 +806,275 @@ window.MJEngine = (function () {
   }
 
   /* ──────────────────────────────────────────────────────────────
-     5. Keychain, Charger Tag & Bag Tag 3D Generator (Multi-Color Group)
+     5. Keychain, Charger Tag & Bag Tag 3D Generator
+        Generates TRUE Contour-Hugging 2-Layer, 3-Layer (Faisal style),
+        Script Rim (Ali style), Bubble (Name style), and Monogram (N + Name style) 3D models!
      ────────────────────────────────────────────────────────────── */
+  function traceContourTextCanvas(text, fontFamily, strokePx, includeEyeletPos = null, scaleMmPerPx = 0.22, depthMm = 3.0) {
+    const fontPx = 135;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.font = `bold ${fontPx}px "${fontFamily}", "Cairo", sans-serif`;
+
+    const m = ctx.measureText(text);
+    const pad = 110;
+    canvas.width = Math.min(2600, Math.max(420, Math.ceil(m.width + pad * 2.4)));
+    canvas.height = 420;
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+
+    // First draw plain text to find exact ink bounds (leftmost & rightmost painted pixel)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.direction = /[\u0600-\u06FF]/.test(text) ? 'rtl' : 'ltr';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${fontPx}px "${fontFamily}", "Cairo", sans-serif`;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, cx, cy);
+
+    const rawData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
+    for (let y = 0; y < canvas.height; y += 2) {
+      for (let x = 0; x < canvas.width; x += 2) {
+        if (rawData[(y * canvas.width + x) * 4 + 3] > 80) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (minX >= maxX) {
+      minX = cx - 80; maxX = cx + 80; minY = cy - 40; maxY = cy + 40;
+    }
+
+    // Re-draw with desired round contour dilation (strokePx) + integrated keyring eyelet!
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.direction = /[\u0600-\u06FF]/.test(text) ? 'rtl' : 'ltr';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${fontPx}px "${fontFamily}", "Cairo", sans-serif`;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    if (strokePx > 0) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = strokePx;
+      ctx.strokeText(text, cx, cy);
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, cx, cy);
+
+    // Draw integrated Keyring Eyelet or Charger C-Clip directly connected to the organic text contour!
+    const midInkY = (minY + maxY) * 0.5;
+    if (includeEyeletPos === 'left' || includeEyeletPos === 'right') {
+      const isLeft = includeEyeletPos === 'left';
+      const outerR = 32;
+      const holeR = 14;
+      const ex = isLeft ? (minX - strokePx * 0.45 - 14) : (maxX + strokePx * 0.45 + 14);
+      const ey = midInkY;
+
+      // Bridge connecting eyelet smoothly into the contour body
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ex, ey, outerR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = outerR * 1.45;
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(isLeft ? minX + 12 : maxX - 12, ey);
+      ctx.stroke();
+
+      // Punch the keyring hole
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(ex, ey, holeR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    } else if (includeEyeletPos === 'top') {
+      const outerR = 32;
+      const holeR = 14;
+      const ex = cx;
+      const ey = minY - strokePx * 0.45 - 16;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ex, ey, outerR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = outerR * 1.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex, minY + 14);
+      ctx.stroke();
+
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(ex, ey, holeR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    } else if (includeEyeletPos === 'cable_clip' || includeEyeletPos === 'cable_hole') {
+      // Snap-on Charger Cable C-Clip attached to right edge of contour
+      const outerR = 34;
+      const holeR = 13;
+      const ex = maxX + strokePx * 0.45 + 18;
+      const ey = midInkY;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ex, ey, outerR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = outerR * 1.4;
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(maxX - 10, ey);
+      ctx.stroke();
+
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(ex, ey, holeR, 0, Math.PI * 2);
+      ctx.fill();
+      if (includeEyeletPos === 'cable_clip') {
+        // Open side slot so charger cable snaps in!
+        ctx.fillRect(ex, ey - 8, outerR + 6, 16);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    const loops = traceCanvasToShapes(canvas, 115, 0.55);
+    const shapes = loopsToThreeShapes(loops, scaleMmPerPx, cx, cy);
+    if (!shapes.length) {
+      return new THREE.BoxGeometry(30, depthMm, 15);
+    }
+    const geom = new THREE.ExtrudeGeometry(shapes, {
+      depth: depthMm,
+      bevelEnabled: false,
+      curveSegments: 7
+    });
+    geom.rotateX(-Math.PI / 2);
+    geom.computeBoundingBox();
+    geom.translate(0, -geom.boundingBox.min.y, 0);
+    geom.computeVertexNormals();
+    return geom;
+  }
+
   async function createKeychainGroup(opts = {}) {
     const {
-      text = 'علي',
+      text = 'فيصل',
       fontFamily = 'Cairo',
       template = window.MJCatalog.KEYCHAIN_TEMPLATES[0],
       baseThickness = 3.2,
       textHeight = 2.0,
       customBaseColor = null,
+      customMidColor = null,
       customTextColor = null
     } = opts;
 
-    const baseColorHex = customBaseColor || template.baseColor || '#1e293b';
-    const textColorHex = customTextColor || template.textColor || '#10b981';
-    const scaleMult = template.scale || 1.0;
-
-    // 1. Build 3D Arabic Text
-    const textGeom = await createArabicTextGeometry({
-      text,
-      fontFamily,
-      sizeMm: 16 * scaleMult,
-      depthMm: template.engrave ? baseThickness * 0.65 : textHeight
-    });
-    textGeom.computeBoundingBox();
-    const tbb = textGeom.boundingBox;
-    const textW = Math.max(24, (tbb.max.x - tbb.min.x));
-    const textD = Math.max(14, (tbb.max.z - tbb.min.z));
-
-    const padX = 16 * scaleMult;
-    const padZ = 10 * scaleMult;
-    const plateW = textW + padX;
-    const plateD = Math.max(24 * scaleMult, textD + padZ);
-
-    // 2. Build Base Shape with Hole / Clip
-    const shape = new THREE.Shape();
-    const hw = plateW / 2;
-    const hd = plateD / 2;
-
-    if (template.shape === 'circle') {
-      const r = Math.max(hw, hd) * 0.85;
-      shape.absarc(0, 0, r, 0, Math.PI * 2, false);
-    } else if (template.shape === 'hexagon') {
-      const r = Math.max(hw, hd) * 0.9;
-      for (let i = 0; i < 6; i++) {
-        const a = (i * Math.PI) / 3;
-        const px = Math.cos(a) * r;
-        const py = Math.sin(a) * r * 0.75;
-        if (i === 0) shape.moveTo(px, py);
-        else shape.lineTo(px, py);
+    try {
+      if (document.fonts && document.fonts.load) {
+        await Promise.race([
+          document.fonts.load(`bold 135px "${fontFamily}"`),
+          new Promise((r) => setTimeout(r, 800))
+        ]);
       }
-      shape.closePath();
-    } else if (template.shape === 'heart') {
-      const s = Math.max(hw, hd) * 0.05;
-      shape.moveTo(0, -10 * s);
-      shape.bezierCurveTo(12 * s, -2 * s, 22 * s, 8 * s, 0, 18 * s);
-      shape.bezierCurveTo(-22 * s, 8 * s, -12 * s, -2 * s, 0, -10 * s);
-    } else if (template.shape === 'shield') {
-      shape.moveTo(-hw, hd);
-      shape.lineTo(hw, hd);
-      shape.lineTo(hw, -hd * 0.2);
-      shape.quadraticCurveTo(0, -hd * 1.35, 0, -hd * 1.35);
-      shape.quadraticCurveTo(-hw, -hd * 0.2, -hw, -hd * 0.2);
-      shape.closePath();
-    } else {
-      // Rounded capsule / rectangle / luggage tag
-      const r = template.shape === 'capsule' ? hd * 0.95 : Math.min(8, hd * 0.45);
-      shape.moveTo(-hw + r, -hd);
-      shape.lineTo(hw - r, -hd);
-      shape.quadraticCurveTo(hw, -hd, hw, -hd + r);
-      shape.lineTo(hw, hd - r);
-      shape.quadraticCurveTo(hw, hd, hw - r, hd);
-      shape.lineTo(-hw + r, hd);
-      shape.quadraticCurveTo(-hw, hd, -hw, hd - r);
-      shape.lineTo(-hw, -hd + r);
-      shape.quadraticCurveTo(-hw, -hd, -hw + r, -hd);
-    }
+    } catch (e) {}
 
-    // Add Keychain Ring / Charger Cable Slot / Luggage Slot
-    let ringGeom = null;
-    if (template.holePos === 'right') {
-      // Side keyring tab with hole
-      const tabShape = new THREE.Shape();
-      tabShape.absarc(hw + 4, 0, 7, 0, Math.PI * 2, false);
-      const hole = new THREE.Path();
-      hole.absarc(hw + 4, 0, 3.2, 0, Math.PI * 2, true);
-      tabShape.holes.push(hole);
-      ringGeom = new THREE.ExtrudeGeometry(tabShape, { depth: baseThickness, bevelEnabled: false, curveSegments: 24 });
-      ringGeom.rotateX(-Math.PI / 2);
-    } else if (template.holePos === 'top') {
-      const tabShape = new THREE.Shape();
-      tabShape.absarc(0, hd + 4, 7, 0, Math.PI * 2, false);
-      const hole = new THREE.Path();
-      hole.absarc(0, hd + 4, 3.2, 0, Math.PI * 2, true);
-      tabShape.holes.push(hole);
-      ringGeom = new THREE.ExtrudeGeometry(tabShape, { depth: baseThickness, bevelEnabled: false, curveSegments: 24 });
-      ringGeom.rotateX(-Math.PI / 2);
-    } else if (template.holePos === 'slot') {
-      // Luggage strap slot inside plate
-      const slot = new THREE.Path();
-      slot.moveTo(hw - 7, -hd * 0.45);
-      slot.lineTo(hw - 3, -hd * 0.45);
-      slot.lineTo(hw - 3, hd * 0.45);
-      slot.lineTo(hw - 7, hd * 0.45);
-      slot.closePath();
-      shape.holes.push(slot);
-    } else if (template.holePos === 'cable_hole' || template.holePos === 'cable_clip') {
-      // Charger C-clip / USB cable collar (fits 3.8mm standard iPhone/Type-C cable)
-      const clipShape = new THREE.Shape();
-      const cx = hw + 6;
-      if (template.holePos === 'cable_clip') {
-        // Open C-clip so user can snap it directly onto the charger cable!
-        clipShape.absarc(cx, 0, 6.2, 0.45, Math.PI * 2 - 0.45, false);
-        clipShape.absarc(cx, 0, 2.3, Math.PI * 2 - 0.45, 0.45, true);
-        clipShape.closePath();
-      } else {
-        clipShape.absarc(cx, 0, 6.2, 0, Math.PI * 2, false);
-        const h = new THREE.Path();
-        h.absarc(cx, 0, 2.5, 0, Math.PI * 2, true);
-        clipShape.holes.push(h);
-      }
-      ringGeom = new THREE.ExtrudeGeometry(clipShape, { depth: baseThickness + 2.5, bevelEnabled: false, curveSegments: 28 });
-      ringGeom.rotateX(-Math.PI / 2);
-    }
-
-    let baseGeom = new THREE.ExtrudeGeometry(shape, {
-      depth: baseThickness,
-      bevelEnabled: false,
-      curveSegments: 24
-    });
-    baseGeom.rotateX(-Math.PI / 2);
-
-    if (ringGeom) {
-      baseGeom = mergeBufferGeometries([baseGeom, ringGeom]);
-    }
+    const baseColorHex = customBaseColor || template.baseColor || '#dc2626';
+    const midColorHex = customMidColor || template.midColor || '#111827';
+    const textColorHex = customTextColor || template.textColor || '#facc15';
+    const scaleMult = (template.scale || 1.0) * 0.21;
+    const style = template.style || 'contour_3layer';
+    const holePos = template.holePos || 'left';
 
     const group = new THREE.Group();
-    const baseMat = new THREE.MeshStandardMaterial({ color: baseColorHex, roughness: 0.35, metalness: 0.1 });
-    const textMat = new THREE.MeshStandardMaterial({ color: textColorHex, roughness: 0.25, metalness: 0.15 });
 
-    const baseMesh = new THREE.Mesh(baseGeom, baseMat);
-    baseMesh.name = 'قاعدة الميدالية';
-    baseMesh.castShadow = true;
-    baseMesh.receiveShadow = true;
-    group.add(baseMesh);
+    // STYLE 1: 3-Layer Organic Contour Keychain (Faisal style: Red bubble base + Black stroke outline + Yellow inner letters)
+    if (style === 'contour_3layer') {
+      const baseGeom = traceContourTextCanvas(text, fontFamily, 54, holePos, scaleMult, baseThickness);
+      const midGeom = traceContourTextCanvas(text, fontFamily, 18, null, scaleMult, textHeight * 0.65);
+      const topGeom = traceContourTextCanvas(text, fontFamily, 0, null, scaleMult, textHeight * 1.2);
 
-    const textMesh = new THREE.Mesh(textGeom, textMat);
-    textMesh.name = 'نص الميدالية (' + text + ')';
-    textMesh.position.y = template.engrave ? baseThickness - 1.1 : baseThickness - 0.2;
-    textMesh.castShadow = true;
-    group.add(textMesh);
+      const baseMesh = new THREE.Mesh(baseGeom, new THREE.MeshStandardMaterial({ color: baseColorHex, roughness: 0.35, metalness: 0.1 }));
+      baseMesh.name = 'القاعدة المحيطية (لون 1)';
+      group.add(baseMesh);
+
+      const midMesh = new THREE.Mesh(midGeom, new THREE.MeshStandardMaterial({ color: midColorHex, roughness: 0.3, metalness: 0.1 }));
+      midMesh.name = 'الإطار الأوسط البارز (لون 2)';
+      midMesh.position.y = baseThickness - 0.15;
+      group.add(midMesh);
+
+      const topMesh = new THREE.Mesh(topGeom, new THREE.MeshStandardMaterial({ color: textColorHex, roughness: 0.25, metalness: 0.12 }));
+      topMesh.name = `حروف الاسم (${text}) (لون 3)`;
+      topMesh.position.y = baseThickness - 0.15;
+      group.add(topMesh);
+    }
+    // STYLE 2: Script Rim Contour Keychain (Ali style: Tight white base + raised white border rim + sky blue inner script)
+    else if (style === 'contour_rim') {
+      const baseGeom = traceContourTextCanvas(text, fontFamily, 30, holePos, scaleMult, baseThickness);
+      const rimGeom = traceContourTextCanvas(text, fontFamily, 15, null, scaleMult, textHeight * 0.72);
+      const innerGeom = traceContourTextCanvas(text, fontFamily, 0, null, scaleMult, textHeight * 1.15);
+
+      const baseMesh = new THREE.Mesh(baseGeom, new THREE.MeshStandardMaterial({ color: baseColorHex, roughness: 0.3, metalness: 0.1 }));
+      baseMesh.name = 'قاعدة المخطوطة';
+      group.add(baseMesh);
+
+      const rimMesh = new THREE.Mesh(rimGeom, new THREE.MeshStandardMaterial({ color: midColorHex, roughness: 0.3, metalness: 0.1 }));
+      rimMesh.name = 'الحافة البارزة';
+      rimMesh.position.y = baseThickness - 0.15;
+      group.add(rimMesh);
+
+      const innerMesh = new THREE.Mesh(innerGeom, new THREE.MeshStandardMaterial({ color: textColorHex, roughness: 0.22, metalness: 0.15 }));
+      innerMesh.name = `المخطوطة الداخلية (${text})`;
+      innerMesh.position.y = baseThickness - 0.15;
+      group.add(innerMesh);
+    }
+    // STYLE 3: Monogram Big Letter + Name Bubble Overlay (N + Name style)
+    else if (style === 'monogram_overlay') {
+      const firstChar = Array.from(text.trim())[0] || 'M';
+      const monoGeom = traceContourTextCanvas(firstChar, fontFamily, 14, 'top', scaleMult * 1.85, baseThickness);
+      const bannerGeom = traceContourTextCanvas(text, fontFamily, 38, null, scaleMult * 0.82, textHeight * 0.85);
+      const nameGeom = traceContourTextCanvas(text, fontFamily, 0, null, scaleMult * 0.82, textHeight * 1.55);
+
+      const monoMesh = new THREE.Mesh(monoGeom, new THREE.MeshStandardMaterial({ color: baseColorHex, roughness: 0.32, metalness: 0.12 }));
+      monoMesh.name = `الحرف الكبير (${firstChar}) (لون 1)`;
+      group.add(monoMesh);
+
+      const bannerMesh = new THREE.Mesh(bannerGeom, new THREE.MeshStandardMaterial({ color: midColorHex, roughness: 0.3, metalness: 0.1 }));
+      bannerMesh.name = 'سحابة الاسم الوسطى (لون 2)';
+      bannerMesh.position.y = baseThickness - 0.2;
+      group.add(bannerMesh);
+
+      const nameMesh = new THREE.Mesh(nameGeom, new THREE.MeshStandardMaterial({ color: textColorHex, roughness: 0.25, metalness: 0.15 }));
+      nameMesh.name = `الاسم البارز (${text}) (لون 3)`;
+      nameMesh.position.y = baseThickness - 0.2;
+      group.add(nameMesh);
+    }
+    // STYLE 4: Organic Bubble Outline Keychain (Purple & White "Name" style)
+    else {
+      const baseGeom = traceContourTextCanvas(text, fontFamily, 48, holePos, scaleMult, baseThickness);
+      const topGeom = traceContourTextCanvas(text, fontFamily, 0, null, scaleMult, textHeight);
+
+      const baseMesh = new THREE.Mesh(baseGeom, new THREE.MeshStandardMaterial({ color: baseColorHex, roughness: 0.35, metalness: 0.1 }));
+      baseMesh.name = 'قاعدة الببل المحيطة بالاسم';
+      group.add(baseMesh);
+
+      const topMesh = new THREE.Mesh(topGeom, new THREE.MeshStandardMaterial({ color: textColorHex, roughness: 0.25, metalness: 0.15 }));
+      topMesh.name = `حروف الاسم (${text})`;
+      topMesh.position.y = template.engrave ? baseThickness - textHeight * 0.65 : baseThickness - 0.15;
+      group.add(topMesh);
+    }
+
+    // Center the whole multi-color group cleanly on the origin
+    const box = new THREE.Box3().setFromObject(group);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    group.children.forEach((ch) => {
+      ch.position.x -= center.x;
+      ch.position.z -= center.z;
+    });
 
     group.userData.isMultiColorGroup = true;
     return group;

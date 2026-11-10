@@ -93,7 +93,7 @@
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
         <div class="text-xs text-gray-400">إجمالي الإيرادات</div>
-        <div class="text-2xl font-extrabold text-emerald-400 mt-1"><span id="stat-revenue">0</span> <span class="text-xs">ر.س</span></div>
+        <div class="text-2xl font-extrabold text-emerald-400 mt-1">$<span id="stat-revenue">0</span> <span class="text-xs">USD</span></div>
       </div>
       <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
         <div class="text-xs text-gray-400">إجمالي المستخدمين</div>
@@ -179,13 +179,13 @@
       </div>
     </section>
 
-    <!-- TAB 2: PACKAGES & PRICING (Daily, Weekly, Monthly, Yearly + Coin Packs) -->
+    <!-- TAB 2: PACKAGES & PRICING (Coin Packs Never Expire + Monthly & Yearly Subscriptions) -->
     <section id="tab-packages" class="hidden space-y-4">
       <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-5">
         <div class="flex items-center justify-between mb-4">
           <div>
-            <h3 class="text-sm font-extrabold text-emerald-400">تحديد أسعار الباقات والكوينز في الموقع</h3>
-            <p class="text-xs text-gray-400">عدّل الأسعار بالريال وعدد الكوينز لكل باقة (يومية، أسبوعية، شهرية، سنوية، وباقات الشحن الفوري) ثم اضغط حفظ</p>
+            <h3 class="text-sm font-extrabold text-emerald-400">تحديد أسعار الباقات والكوينز في الموقع بالدولار ($)</h3>
+            <p class="text-xs text-gray-400">باقات الرصيد (10 كوينز بـ 3$، 30 كوينز بـ 8$، 50 كوينز بـ 10$ بدون تاريخ انتهاء) + اشتراك شهري (100 كوينز بـ 20$) وسنوي (500 كوينز بـ 80$)</p>
           </div>
           <button onclick="AdminApp.savePackages()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-5 py-2 rounded-xl text-xs">
             حفظ واعتماد جميع الأسعار
@@ -207,8 +207,8 @@
               <input id="gen-code-coins" type="number" value="50" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
             </div>
             <div>
-              <label class="block text-gray-400 mb-1">المبلغ المدفوع (ر.س)</label>
-              <input id="gen-code-amount" type="number" value="49" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+              <label class="block text-gray-400 mb-1">المبلغ المدفوع ($ دولار)</label>
+              <input id="gen-code-amount" type="number" value="10" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
             </div>
             <div>
               <label class="block text-gray-400 mb-1">الباقة المرفقة</label>
@@ -539,7 +539,12 @@
       }
 
       async function cancelAndRefundUser(targetUid) {
-        const amount = window.prompt('أدخل قيمة المبلغ المسترد للعميل بالريال (سيتم إلغاء الحساب وتصفير الرصيد وتوثيق الاسترداد):', '0');
+        const userObj = (overviewData?.users || []).find((u) => u.uid === targetUid);
+        if (userObj && Number(userObj.exportsCount || 0) > 0) {
+          window.alert('لا يمكن إلغاء الحساب وإرجاع المبلغ لهذا العميل لأنه قام باستخدام الرصيد بالفعل (' + userObj.exportsCount + ' عمليات تصدير).');
+          return;
+        }
+        const amount = window.prompt('أدخل قيمة المبلغ المسترد للعميل بالدولار $ (سيتم إلغاء الحساب وتصفير الرصيد وتوثيق الاسترداد):', '0');
         if (amount === null) return;
         await window.MJ.api('adminUpdateUser', { adminPin: currentPin, targetUid, op: 'cancelAndRefund', refundSar: Number(amount) });
         toast('تم إلغاء الحساب وتسجيل إعادة المبلغ للعميل');
@@ -567,8 +572,8 @@
               <input type="number" data-pkg-idx="${idx}" data-field="coins" value="${p.coins}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-amber-300 font-bold" />
             </div>
             <div>
-              <label class="text-[10px] text-emerald-400 block">السعر (ريال سعودي)</label>
-              <input type="number" data-pkg-idx="${idx}" data-field="priceSar" value="${p.priceSar}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-emerald-300 font-bold" />
+              <label class="text-[10px] text-emerald-400 block">السعر بالدولار ($ USD)</label>
+              <input type="number" data-pkg-idx="${idx}" data-field="priceUsd" value="${p.priceUsd !== undefined ? p.priceUsd : p.priceSar}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-emerald-300 font-bold" />
             </div>
           </div>
         `).join('');
@@ -580,11 +585,18 @@
           const i = Number(inp.getAttribute('data-pkg-idx'));
           const f = inp.getAttribute('data-field');
           if (pkgs[i]) {
-            pkgs[i][f] = f === 'nameAr' ? inp.value : Number(inp.value);
+            if (f === 'nameAr') {
+              pkgs[i].nameAr = inp.value;
+            } else if (f === 'priceUsd') {
+              pkgs[i].priceUsd = Number(inp.value);
+              pkgs[i].priceSar = Number(inp.value);
+            } else {
+              pkgs[i][f] = Number(inp.value);
+            }
           }
         });
         const res = await window.MJ.api('adminSavePackages', { adminPin: currentPin, packages: pkgs });
-        if (res.success) toast('تم حفظ واعتماد جميع أسعار الباقات في الموقع!');
+        if (res.success) toast('تم حفظ واعتماد جميع أسعار الباقات بالدولار في الموقع!');
       }
 
       async function generateCode() {

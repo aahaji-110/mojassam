@@ -823,6 +823,8 @@ window.MJApp = (function () {
   /* ──────────────────────────────────────────────────────────────
      8. Stick / Wrap onto Target Surface ("لصق وتشكيل على سطح المجسم أو حفر")
      ────────────────────────────────────────────────────────────── */
+  let lastStickFace = 'front';
+
   function openStickSurfaceModal() {
     if (sceneObjects.length < 2) {
       showToast('أضف مجسماً أساسياً ثم أضف نصاً عربياً أو شكلاً للصقه أو حفره على سطحه!', true);
@@ -843,7 +845,56 @@ window.MJApp = (function () {
     openModal('stick-surface-modal');
   }
 
+  function getStickCustomOpts(extra = {}) {
+    const offsetU = Number(document.getElementById('stick-offset-u')?.value || 0) / 100;
+    const offsetV = Number(document.getElementById('stick-offset-v')?.value || 0) / 100;
+    const scalePct = Number(document.getElementById('stick-scale-pct')?.value || 80) / 100;
+    const depthMm = Number(document.getElementById('stick-depth-mm')?.value || 2.2);
+
+    const uValEl = document.getElementById('stick-u-val');
+    const vValEl = document.getElementById('stick-v-val');
+    const scValEl = document.getElementById('stick-scale-val');
+    const dpValEl = document.getElementById('stick-depth-val');
+    if (uValEl) uValEl.textContent = `${Math.round(offsetU * 100)}%`;
+    if (vValEl) vValEl.textContent = `${Math.round(offsetV * 100)}%`;
+    if (scValEl) scValEl.textContent = `${Math.round(scalePct * 100)}%`;
+    if (dpValEl) dpValEl.textContent = `${depthMm.toFixed(1)} مم`;
+
+    return {
+      offsetU,
+      offsetV,
+      scalePct,
+      depthMm,
+      ...extra
+    };
+  }
+
+  function resetStickSliders() {
+    const uEl = document.getElementById('stick-offset-u');
+    const vEl = document.getElementById('stick-offset-v');
+    const scEl = document.getElementById('stick-scale-pct');
+    const dpEl = document.getElementById('stick-depth-mm');
+    if (uEl) uEl.value = 0;
+    if (vEl) vEl.value = 0;
+    if (scEl) scEl.value = 80;
+    if (dpEl) dpEl.value = 2.2;
+    previewStickSliders();
+  }
+
+  function previewStickSliders() {
+    const opts = getStickCustomOpts();
+    const srcIdx = Number(document.getElementById('stick-source-select')?.value || 0);
+    const tgtIdx = Number(document.getElementById('stick-target-select')?.value || 0);
+    const mode = document.querySelector('input[name="stick-op-mode"]:checked')?.value || 'emboss';
+    const srcObj = sceneObjects[srcIdx];
+    const tgtObj = sceneObjects[tgtIdx];
+    if (!srcObj || !tgtObj || srcObj === tgtObj) return;
+    window.MJEngine.stickMeshToTarget(srcObj, tgtObj, lastStickFace || 'front', mode, opts);
+    updateInspectorValues();
+  }
+
   function executeStickToSurface(face) {
+    lastStickFace = face || 'front';
     const srcIdx = Number(document.getElementById('stick-source-select').value || 0);
     const tgtIdx = Number(document.getElementById('stick-target-select').value || 0);
     const mode = document.querySelector('input[name="stick-op-mode"]:checked')?.value || 'emboss';
@@ -856,19 +907,19 @@ window.MJApp = (function () {
     }
 
     saveUndoSnapshot();
-    window.MJEngine.stickMeshToTarget(srcObj, tgtObj, face, mode);
-    closeModal('stick-surface-modal');
+    const opts = getStickCustomOpts();
+    window.MJEngine.stickMeshToTarget(srcObj, tgtObj, face, mode, opts);
     selectObject(srcObj);
     showToast(mode === 'engrave'
-      ? `تم حفر "${srcObj.name}" على سطح "${tgtObj.name}" (${face}) بنجاح!`
-      : `تم لصق وتشكيل "${srcObj.name}" ليأخذ انحناء سطح "${tgtObj.name}" (${face})!`);
+      ? `تم حفر "${srcObj.name}" داخل معدن/جسم "${tgtObj.name}" (${face}) بنجاح!`
+      : `تم لصق وتشكيل "${srcObj.name}" ليأخذ تطعجات وانحناءات "${tgtObj.name}" (${face})!`);
   }
 
   function startInteractiveSurfacePick() {
     closeModal('stick-surface-modal');
     interactiveSurfacePick = true;
     document.getElementById('surface-pick-banner').classList.remove('hidden');
-    showToast('انقر الآن بالماوس على أي جهة من المجسم الأساسي للصق القطعة عليها مباشرة');
+    showToast('انقر الآن بالماوس في المكان الذي تريده بالضبط على المجسم الأساسي للصق أو الحفر فيه مباشرة!');
   }
 
   function cancelSurfacePick() {
@@ -877,7 +928,7 @@ window.MJApp = (function () {
   }
 
   /* ──────────────────────────────────────────────────────────────
-     9. Keychain, Charger Tag & Bag Tag Maker
+     9. Keychain, Charger Tag & Bag Tag Maker (Contour 3-Layer, Rim, Bubble & Monogram)
      ────────────────────────────────────────────────────────────── */
   function setKeychainCategory(cat) {
     currentKeychainCat = cat;
@@ -895,41 +946,127 @@ window.MJApp = (function () {
   function renderKeychainGallery() {
     const grid = document.getElementById('kc-templates-grid');
     if (!grid) return;
-    const name = document.getElementById('kc-name-input')?.value || 'علي';
+    const name = document.getElementById('kc-name-input')?.value || 'فيصل';
     const font = document.getElementById('kc-font-select')?.value || 'Cairo';
     const templates = window.MJCatalog.KEYCHAIN_TEMPLATES.filter((t) => t.category === currentKeychainCat);
+    const safeName = window.MJSecurity.sanitizeText(name);
+    const firstChar = window.MJSecurity.sanitizeText((name.trim()[0] || 'N').toUpperCase());
 
-    grid.innerHTML = templates.map((t) => `
-      <div onclick="MJApp.buildKeychainFromTemplate('${t.id}')"
-           class="bg-[#1b1d21] hover:bg-[#282c34] border border-[#383d47] hover:border-pink-500 rounded-xl p-3 cursor-pointer transition flex flex-col justify-between">
-        <div class="flex items-center justify-between text-[10px] text-gray-400 mb-2">
-          <span>${t.nameAr}</span>
-          <span class="px-1.5 py-0.5 rounded bg-pink-500/15 text-pink-300">${t.engrave ? 'حفر' : 'بارز'}</span>
+    grid.innerHTML = templates.map((t) => {
+      const midCol = t.midColor || '#111827';
+      let badgeLabel = '3 طبقات كنتور';
+      let previewHtml = '';
+
+      if (t.style === 'contour_3layer') {
+        badgeLabel = '3 طبقات (مثل فيصل)';
+        previewHtml = `
+          <div class="py-3 px-2 rounded-2xl text-center my-1 flex items-center justify-center relative overflow-hidden bg-[#141619] border border-white/10">
+            <span class="w-3.5 h-3.5 rounded-full border-2 mr-1 inline-block shrink-0" style="border-color:${t.baseColor}; background:#141619"></span>
+            <span style="
+              font-family:'${font}',sans-serif;
+              font-size:21px;
+              font-weight:900;
+              color:${t.textColor};
+              -webkit-text-stroke: 2.5px ${midCol};
+              paint-order: stroke fill;
+              filter: drop-shadow(0 0 0 ${t.baseColor}) drop-shadow(0 0 4px ${t.baseColor});
+              background:${t.baseColor};
+              padding: 2px 12px;
+              border-radius: 999px;
+            ">${safeName}</span>
+          </div>
+        `;
+      } else if (t.style === 'contour_rim') {
+        badgeLabel = 'إطار بارز (مثل علي)';
+        previewHtml = `
+          <div class="py-3 px-2 rounded-2xl text-center my-1 flex items-center justify-center bg-[#141619] border border-white/10">
+            <span class="w-3.5 h-3.5 rounded-full border-2 mr-1 inline-block shrink-0" style="border-color:${midCol}"></span>
+            <span style="
+              font-family:'${font}',sans-serif;
+              font-size:22px;
+              font-weight:900;
+              color:${t.baseColor};
+              -webkit-text-stroke: 2.2px ${midCol};
+              paint-order: stroke fill;
+            ">${safeName}</span>
+          </div>
+        `;
+      } else if (t.style === 'contour_bubble') {
+        badgeLabel = 'فقاعي مجسم (Bubble)';
+        previewHtml = `
+          <div class="py-3 px-2 rounded-2xl text-center my-1 flex items-center justify-center bg-[#141619] border border-white/10">
+            <span class="w-4 h-4 rounded-full border-4 mr-1 inline-block shrink-0" style="border-color:${t.baseColor}"></span>
+            <span style="
+              font-family:'${font}',sans-serif;
+              font-size:20px;
+              font-weight:900;
+              color:${t.textColor};
+              background:${t.baseColor};
+              padding: 3px 14px;
+              border-radius: 999px;
+              box-shadow: 0 3px 0 rgba(0,0,0,0.45);
+            ">${safeName}</span>
+          </div>
+        `;
+      } else {
+        badgeLabel = 'حرف كبير + اسم';
+        previewHtml = `
+          <div class="py-2.5 px-2 rounded-2xl text-center my-1 flex items-center justify-center relative bg-[#141619] border border-white/10 h-16">
+            <span style="font-size:40px; font-weight:900; color:${t.baseColor}; opacity:0.92; line-height:1;">${firstChar}</span>
+            <span class="absolute px-2.5 py-0.5 rounded-full shadow" style="
+              background:${midCol};
+              color:${t.textColor};
+              font-family:'${font}',sans-serif;
+              font-size:14px;
+              font-weight:900;
+            ">${safeName}</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div onclick="MJApp.buildKeychainFromTemplate('${t.id}')"
+             class="bg-[#1b1d21] hover:bg-[#282c34] border border-[#383d47] hover:border-pink-500 rounded-xl p-3 cursor-pointer transition flex flex-col justify-between">
+          <div class="flex items-center justify-between text-[10px] text-gray-300 mb-1 gap-1">
+            <span class="font-bold truncate">${t.nameAr}</span>
+            <span class="px-1.5 py-0.5 rounded bg-pink-500/15 text-pink-300 whitespace-nowrap">${badgeLabel}</span>
+          </div>
+          ${previewHtml}
+          <div class="mt-1.5 flex items-center justify-between text-[10px]">
+            <div class="flex items-center gap-1">
+              <span class="w-3 h-3 rounded-full inline-block border border-white/30" style="background:${t.baseColor}"></span>
+              <span class="w-3 h-3 rounded-full inline-block border border-white/30" style="background:${midCol}"></span>
+              <span class="w-3 h-3 rounded-full inline-block border border-white/30" style="background:${t.textColor}"></span>
+            </div>
+            <span class="text-emerald-400 font-bold flex items-center gap-1">
+              <i class="fa-solid fa-plus-circle"></i>
+              <span>توليد 3D</span>
+            </span>
+          </div>
         </div>
-        <div class="py-3 px-2 rounded-lg text-center my-1 border border-white/10"
-             style="background:${t.baseColor}; color:${t.textColor}; font-family:'${font}',sans-serif; font-size:18px; font-weight:bold;">
-          ${window.MJSecurity.sanitizeText(name)}
-        </div>
-        <div class="mt-2 text-[11px] text-emerald-400 font-bold flex items-center justify-center gap-1">
-          <i class="fa-solid fa-plus-circle"></i>
-          <span>إنشاء وإضافة للوحة</span>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   async function buildKeychainFromTemplate(templateId) {
     const template = window.MJCatalog.KEYCHAIN_TEMPLATES.find((t) => t.id === templateId);
     if (!template) return;
 
-    const text = document.getElementById('kc-name-input').value.trim() || 'علي';
+    // Sync color pickers to the selected template's signature colors if user clicks directly
+    const text = document.getElementById('kc-name-input').value.trim() || 'فيصل';
     const fontFamily = document.getElementById('kc-font-select').value || 'Cairo';
-    const baseThickness = Number(document.getElementById('kc-base-thick').value || 3.2);
-    const textHeight = Number(document.getElementById('kc-text-height').value || 2.0);
-    const customBaseColor = document.getElementById('kc-base-color').value || template.baseColor;
-    const customTextColor = document.getElementById('kc-text-color').value || template.textColor;
+    const baseThickness = Number(document.getElementById('kc-base-thick').value || 3.4);
+    const textHeight = Number(document.getElementById('kc-text-height').value || 2.2);
 
-    showToast('جاري تصميم الميدالية/التاق ثلاثي الأبعاد...');
+    const customBaseColor = template.baseColor || document.getElementById('kc-base-color').value;
+    const customMidColor = template.midColor || document.getElementById('kc-mid-color')?.value || '#111827';
+    const customTextColor = template.textColor || document.getElementById('kc-text-color').value;
+
+    document.getElementById('kc-base-color').value = customBaseColor;
+    if (document.getElementById('kc-mid-color')) document.getElementById('kc-mid-color').value = customMidColor;
+    document.getElementById('kc-text-color').value = customTextColor;
+
+    showToast('جاري نحت الميدالية الكنتورية ثلاثية الأبعاد بطبقاتها وحلقة التعليق...');
     const grp = await window.MJEngine.createKeychainGroup({
       text,
       fontFamily,
@@ -937,12 +1074,13 @@ window.MJApp = (function () {
       baseThickness,
       textHeight,
       customBaseColor,
+      customMidColor,
       customTextColor
     });
 
     registerSceneObject(grp, `${template.nameAr} (${text})`, 0);
     closeModal('keychain-modal');
-    showToast(`تم إنشاء "${template.nameAr}" بالاسم (${text})! يمكنك فصل ألوانها بزر (فصل الألوان)`);
+    showToast(`تم إنشاء "${template.nameAr}" بالاسم (${text})! يمكنك فصل كل طبقة ولون في لوحة مستقلة بزر (فصل الألوان)`);
   }
 
   /* ──────────────────────────────────────────────────────────────
@@ -1318,7 +1456,7 @@ window.MJApp = (function () {
           hitObj = hitObj.parent;
         }
 
-        // If Interactive Surface Pick is active, stick selectedObject onto hitObj at the clicked normal!
+        // If Interactive Surface Pick is active, stick selectedObject onto hitObj at the EXACT clicked point & normal!
         if (interactiveSurfacePick && selectedObject && hitObj !== selectedObject) {
           const n = hits[0].face ? hits[0].face.normal.clone() : new THREE.Vector3(0, 0, 1);
           n.transformDirection(hits[0].object.matrixWorld);
@@ -1330,11 +1468,16 @@ window.MJApp = (function () {
           } else {
             face = n.z > 0 ? 'front' : 'back';
           }
+          lastStickFace = face;
           const mode = document.querySelector('input[name="stick-op-mode"]:checked')?.value || 'emboss';
+          const opts = getStickCustomOpts({ anchorPoint: hits[0].point.clone() });
           saveUndoSnapshot();
-          window.MJEngine.stickMeshToTarget(selectedObject, hitObj, face, mode);
+          window.MJEngine.stickMeshToTarget(selectedObject, hitObj, face, mode, opts);
           cancelSurfacePick();
-          showToast(`تم لصق "${selectedObject.name}" على جهة (${face}) من "${hitObj.name}"!`);
+          updateInspectorValues();
+          showToast(mode === 'engrave'
+            ? `تم حفر "${selectedObject.name}" في الموضع المحدد داخل "${hitObj.name}" (${face})!`
+            : `تم لصق "${selectedObject.name}" في الموضع المحدد ليأخذ تطعجات "${hitObj.name}" (${face})!`);
           return;
         }
 
@@ -1481,6 +1624,28 @@ window.MJApp = (function () {
     document.getElementById('acc-email').textContent = userProfile.email || '';
     document.getElementById('acc-coins').textContent = userProfile.coins ?? 0;
     document.getElementById('acc-plan').textContent = planNames[userProfile.plan] || 'مجانية';
+
+    // Strict No-Refund-If-Used UI update
+    const usedStatusEl = document.getElementById('acc-used-status');
+    const refundBtnEl = document.getElementById('acc-refund-btn');
+    const hasUsed = Number(userProfile.exportsCount || 0) > 0;
+    if (usedStatusEl) {
+      usedStatusEl.textContent = hasUsed
+        ? `تم استخدام الرصيد (${userProfile.exportsCount} عمليات تصدير) — الاسترداد غير متاح`
+        : 'لم يتم استخدام الرصيد بعد — مؤهل للاسترداد';
+      usedStatusEl.className = hasUsed ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold';
+    }
+    if (refundBtnEl) {
+      if (hasUsed) {
+        refundBtnEl.disabled = true;
+        refundBtnEl.className = 'w-full bg-gray-700 text-gray-400 font-bold py-2 rounded-lg cursor-not-allowed';
+        refundBtnEl.textContent = 'لا يمكن إلغاء الحساب وإرجاع المبلغ (تم استخدام الرصيد)';
+      } else {
+        refundBtnEl.disabled = false;
+        refundBtnEl.className = 'w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg transition';
+        refundBtnEl.textContent = 'طلب إلغاء الحساب وإعادة المبلغ';
+      }
+    }
   }
 
   function switchAuthTab(tab) {
@@ -1540,19 +1705,26 @@ window.MJApp = (function () {
     const subs = packagesList.filter((p) => p.category === 'subscription');
     const coins = packagesList.filter((p) => p.category !== 'subscription');
 
-    const renderCard = (p) => `
-      <div class="bg-[#1b1d21] border ${p.popular ? 'border-emerald-500 ring-1 ring-emerald-500/40' : 'border-[#383d47]'} rounded-xl p-4 flex flex-col justify-between relative">
-        ${p.badgeAr ? `<span class="absolute -top-2.5 left-3 bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">${p.badgeAr}</span>` : ''}
-        <div>
-          <div class="font-extrabold text-white text-sm mt-1">${p.nameAr}</div>
-          <div class="text-2xl font-extrabold text-emerald-400 my-2">${p.priceSar} <span class="text-xs font-normal text-gray-400">ر.س</span></div>
-          <div class="text-xs text-amber-300 font-bold mb-1"><i class="fa-solid fa-coins ml-1"></i>${p.coins} كوينز (${Math.floor(p.coins / 2)} عملية تصدير)</div>
+    const renderCard = (p) => {
+      const priceVal = p.priceUsd !== undefined ? p.priceUsd : p.priceSar;
+      const validityText = p.noExpiry || p.category === 'coins'
+        ? '<div class="text-[11px] text-emerald-400 font-bold">✓ بدون تاريخ انتهاء الصلاحية</div>'
+        : `<div class="text-[11px] text-sky-300 font-bold">↻ تتجدد ${p.plan === 'yearly' ? 'سنوياً (365 يوم)' : 'شهرياً (30 يوم)'}</div>`;
+      return `
+        <div class="bg-[#1b1d21] border ${p.popular ? 'border-emerald-500 ring-1 ring-emerald-500/40' : 'border-[#383d47]'} rounded-xl p-4 flex flex-col justify-between relative">
+          ${p.badgeAr ? `<span class="absolute -top-2.5 left-3 bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">${p.badgeAr}</span>` : ''}
+          <div>
+            <div class="font-extrabold text-white text-sm mt-1">${p.nameAr}</div>
+            <div class="text-2xl font-extrabold text-emerald-400 my-2">$${priceVal} <span class="text-xs font-normal text-gray-400">دولار</span></div>
+            <div class="text-xs text-amber-300 font-bold mb-1"><i class="fa-solid fa-coins ml-1"></i>${p.coins} كوينز (${Math.floor(p.coins / 2)} عملية تصدير)</div>
+            ${validityText}
+          </div>
+          <button onclick="MJApp.buyPackage('${p.id}')" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-lg text-xs transition">
+            ${p.category === 'subscription' ? 'اشترك الآن' : 'اشحن الرصيد الآن'} ($${priceVal})
+          </button>
         </div>
-        <button onclick="MJApp.buyPackage('${p.id}')" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-lg text-xs transition">
-          اشترك / اشحن الآن
-        </button>
-      </div>
-    `;
+      `;
+    };
 
     subGrid.innerHTML = subs.map(renderCard).join('');
     coinGrid.innerHTML = coins.map(renderCard).join('');
@@ -1562,14 +1734,13 @@ window.MJApp = (function () {
     if (!window.MJ.getCurrentUser()) {
       closeModal('pricing-modal');
       openModal('auth-modal');
-      showToast('سجّل دخولك أولاً لشراء الباقة واستلام كود التفعيل على إيميلك', true);
+      showToast('سجّل دخولك أولاً لشراء الباقة واستلام كود الشحن تلقائياً على إيميلك', true);
       return;
     }
 
     const method = document.querySelector('input[name="pay-method"]:checked')?.value || 'mada_visa';
     const coupon = document.getElementById('checkout-coupon').value.trim();
 
-    // If admin configured a direct Moyasar or PayPal payment link, open it in a new tab as well
     if (method === 'paypal' && siteSettings.paypalPaymentLink) {
       window.open(siteSettings.paypalPaymentLink, '_blank');
     } else if (siteSettings.moyasarPaymentLink) {
@@ -1585,18 +1756,19 @@ window.MJApp = (function () {
     activePaymentOrder = res.data;
     const box = document.getElementById('active-order-box');
     const det = document.getElementById('active-order-details');
+    const amt = res.data.amountUsd !== undefined ? res.data.amountUsd : res.data.amountSar;
     box.classList.remove('hidden');
     det.innerHTML = `
-      <div>• الباقة: <strong>${res.data.packageName}</strong> (${res.data.coins} كوينز) — المبلغ: <strong>${res.data.amountSar} ر.س</strong></div>
-      <div>• البريد المرسل إليه: <strong>${res.data.email}</strong></div>
+      <div>• الباقة: <strong>${res.data.packageName}</strong> (${res.data.coins} كوينز) — المبلغ: <strong>$${amt} دولار</strong></div>
+      <div>• تم توليد وإرسال كود الشحن تلقائياً إلى بريدك: <strong class="text-emerald-300">${res.data.email}</strong></div>
       <div class="mt-2 p-2.5 bg-[#16181c] border border-emerald-500/40 rounded-lg flex items-center justify-between">
-        <span>كود التفعيل الفوري الخاص بك: <strong class="font-mono text-emerald-400 text-sm">${res.data.activationCode}</strong></span>
+        <span>كود الشحن التلقائي الصادر لك: <strong class="font-mono text-emerald-400 text-sm">${res.data.activationCode}</strong></span>
         <button onclick="MJApp.quickRedeemGenerated('${res.data.activationCode}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded font-bold">
           تفعيل الكود الآن
         </button>
       </div>
     `;
-    showToast('تم إصدار كود التفعيل وإرساله لبريدك الإلكتروني!');
+    showToast('تم توليد كود الشحن تلقائياً وإرساله لبريدك الإلكتروني!');
   }
 
   function quickRedeemGenerated(code) {
@@ -1661,14 +1833,18 @@ window.MJApp = (function () {
   }
 
   async function requestCancelAndRefund() {
-    const ok = window.confirm('هل أنت متأكد من رغبتك في تقديم طلب إلغاء الحساب واسترداد المبلغ المتبقي؟');
+    if (userProfile && Number(userProfile.exportsCount || 0) > 0) {
+      showToast('عذراً، لا يمكن إلغاء الحساب وإرجاع المبلغ لأنه تم استخدام الرصيد بالفعل.', true);
+      return;
+    }
+    const ok = window.confirm('هل أنت متأكد من رغبتك في تقديم طلب إلغاء الحساب واسترداد المبلغ؟ (متاح فقط في حال عدم استخدام الرصيد)');
     if (!ok) return;
     const res = await window.MJ.requestCancelAccountRefund('طلب استرداد مباشر من المستخدم');
     if (res.success) {
       closeModal('account-modal');
       showToast(res.message);
     } else {
-      showToast(res.error || 'تعذر إرسال الطلب', true);
+      showToast(res.error || 'لا يمكن إلغاء الحساب وإرجاع المبلغ إذا تم استخدام الرصيد', true);
     }
   }
 
@@ -1703,18 +1879,18 @@ window.MJApp = (function () {
         <p><strong>منصة مجسمات (Mojassamat)</strong> هي المنصة العربية الأولى المتخصصة في تصميم وتحرير وفحص المجسمات ثلاثية الأبعاد والكتابة بالخطوط العربية المتصلة قبل الطباعة.</p>
         <ul class="list-disc list-inside space-y-1">
           <li>تحرير ملفات STL و OBJ و 3MF و SVG مباشرة عبر المتصفح.</li>
-          <li>الكتابة بأكثر من 48 خطاً عربياً متصلاً مع إمكانية اللصق أو الحفر على الأسطح الأسطوانية والمربعة.</li>
-          <li>صانع الميداليات وتاق الشاحن وتاق الحقائب والأكواد ثلاثية الأبعاد QR.</li>
+          <li>الكتابة بأكثر من 48 خطاً عربياً متصلاً مع إمكانية اللصق البارز بالتطعجات أو الحفر الغائر داخل نفس المجسم.</li>
+          <li>صانع الميداليات الكنتورية المفرغة (3 طبقات وإطار بارز ومونوغرام) وتاق الشاحن وتاق الحقائب والأكواد ثلاثية الأبعاد QR.</li>
           <li>محول الصيغ الشامل من الصور PNG/JPG إلى SVG وإلى مجسمات 3D، وفصل الألوان.</li>
           <li>المنصة موثقة رسمياً في المملكة العربية السعودية بموجب وثيقة العمل الحر رقم <strong>${docNum}</strong>.</li>
         </ul>
       `;
     } else if (section === 'terms') {
-      title.textContent = 'اتفاقية وشروط الاستخدام وضمان استرداد المبلغ';
+      title.textContent = 'اتفاقية وشروط الاستخدام وسياسة استرداد المبلغ';
       content.innerHTML = `
         <p><strong>1. الملكية وحماية الموقع:</strong> جميع البرمجيات والتصاميم والواجهات محمية بموجب أنظمة الملكية الفكرية والتجارة الإلكترونية في المملكة العربية السعودية.</p>
-        <p><strong>2. نظام الكوينز والاشتراكات:</strong> يحصل كل مستخدم جديد على 6 كوينز مجانية عند التسجيل، وتكلفة كل عملية تصدير هي 2 كوينز.</p>
-        <p><strong>3. ضمان إعادة المبلغ عند إلغاء الحساب (Refund Policy):</strong> تضمن المنصة للمشترك حق إلغاء عملية الدفع قبل التفعيل أو طلب إلغاء الحساب واسترداد المبلغ المقابل للرصيد المدفوع غير المستخدم إلى وسيلة الدفع الأصلية.</p>
+        <p><strong>2. نظام الباقات والكوينز:</strong> يحصل كل مستخدم جديد على 6 كوينز مجانية عند التسجيل، وتكلفة كل عملية تصدير هي 2 كوينز. باقات الرصيد (10 كوينز بـ 3$، 30 كوينز بـ 8$، 50 كوينز بـ 10$) تبقى بدون تاريخ انتهاء، وباقات الاشتراك تتجدد شهرياً (100 كوينز بـ 20$) أو سنوياً (500 كوينز بـ 80$).</p>
+        <p><strong>3. سياسة إلغاء الحساب وإعادة المبلغ (Refund Policy):</strong> يحق للمشترك طلب إلغاء الحساب واسترداد المبلغ المدفوع طالما لم يتم استخدام الرصيد. <strong>لا يمكن إلغاء الحساب وإرجاع المبلغ إذا تم استخدام الرصيد.</strong></p>
         <p><strong>4. الاستخدام المشروع:</strong> يمنع رفع أي مجسمات محظورة قانونياً أو محمية بحقوق الغير دون إذن، ويحق للإدارة إيقاف الحساب المخالف فوراً.</p>
       `;
     } else {
@@ -1723,7 +1899,7 @@ window.MJApp = (function () {
         <p>تلتزم منصة مجسمات بحماية بيانات المستخدمين وفق نظام حماية البيانات الشخصية في المملكة العربية السعودية (PDPL):</p>
         <ul class="list-disc list-inside space-y-1">
           <li>جميع ملفات المجسمات المرفوعة (STL, OBJ, 3MF, SVG, PNG) تتم معالجتها هندسياً داخل متصفحك ولا يتم نشرها أو مشاركتها مع أي طرف ثالث.</li>
-          <li>تتم عمليات الدفع عبر بوابات مشفرة ومعتمدة (مدى، Apple Pay، Visa، ميسر، PayPal).</li>
+          <li>تتم عمليات الدفع عبر بوابات مشفرة ومعتمدة (مدى، Apple Pay، Visa، ميسر، PayPal) ويتم توليد وإرسال كود الشحن تلقائياً للبريد الإلكتروني فور الدفع.</li>
           <li>للتواصل المباشر مع إدارة المنصة: <strong>${email}</strong></li>
         </ul>
       `;
@@ -1775,6 +1951,8 @@ window.MJApp = (function () {
     addPrimitive,
     openStickSurfaceModal,
     executeStickToSurface,
+    previewStickSliders,
+    resetStickSliders,
     startInteractiveSurfacePick,
     cancelSurfacePick,
     setKeychainCategory,

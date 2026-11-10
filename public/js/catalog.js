@@ -110,35 +110,37 @@ window.MJCatalog = (function () {
     { id: 'square_prism_z', group: 'calib', nameEn: 'Square prism Z axis', nameAr: 'منشور هرمي محور Z', icon: 'fa-monument' }
   ];
 
-  // 4. Keychain, Charger Tag & Bag Tag Templates
+  // 4. Keychain, Charger Tag & Bag Tag Templates (Modeled after real 3D-printed contour & monogram keychains!)
   const KEYCHAIN_TEMPLATES = [
-    // Category: keychain (ميدالية مفاتيح)
-    { id: 'kc_capsule', category: 'keychain', nameAr: 'كبسولة كلاسيكية', nameEn: 'Classic Capsule', shape: 'capsule', border: true, holePos: 'right', baseColor: '#1e293b', textColor: '#10b981' },
-    { id: 'kc_rounded_rect', category: 'keychain', nameAr: 'مستطيل بحواف ناعمة', nameEn: 'Rounded Plate', shape: 'rounded_rect', border: true, holePos: 'right', baseColor: '#0f172a', textColor: '#38bdf8' },
-    { id: 'kc_cloud', category: 'keychain', nameAr: 'سحابة الاسم البارزة', nameEn: 'Name Cloud', shape: 'cloud', border: false, holePos: 'right', baseColor: '#ffffff', textColor: '#ec4899' },
-    { id: 'kc_shield', category: 'keychain', nameAr: 'درع ملكي', nameEn: 'Royal Shield', shape: 'shield', border: true, holePos: 'top', baseColor: '#18181b', textColor: '#f59e0b' },
-    { id: 'kc_hex', category: 'keychain', nameAr: 'سداسي هندسي', nameEn: 'Hexagon Tag', shape: 'hexagon', border: true, holePos: 'right', baseColor: '#111827', textColor: '#22c55e' },
-    { id: 'kc_heart', category: 'keychain', nameAr: 'ميدالية القلب', nameEn: 'Heart Keychain', shape: 'heart', border: false, holePos: 'top', baseColor: '#be123c', textColor: '#ffffff' },
-    { id: 'kc_circle', category: 'keychain', nameAr: 'قرص دائري مزدوج', nameEn: 'Circle Coin', shape: 'circle', border: true, holePos: 'top', baseColor: '#1e1b4b', textColor: '#a78bfa' },
-    { id: 'kc_car_plate', category: 'keychain', nameAr: 'لوحة مميزة عريضة', nameEn: 'Wide Plate', shape: 'wide_plate', border: true, holePos: 'right', baseColor: '#ffffff', textColor: '#111827' },
-    { id: 'kc_engrave_bar', category: 'keychain', nameAr: 'سبيكة محفورة (حفر)', nameEn: 'Engraved Bar', shape: 'rounded_rect', border: false, engrave: true, holePos: 'right', baseColor: '#d97706', textColor: '#1f2937' },
-    { id: 'kc_floating', category: 'keychain', nameAr: 'خط حر متصل', nameEn: 'Floating Script', shape: 'strip', border: false, holePos: 'right', baseColor: '#065f46', textColor: '#34d399' },
+    // Category: keychain (ميداليات مفاتيح احترافية بحواف الحروف)
+    { id: 'kc_faisal_3layer', category: 'keychain', nameAr: 'ميدالية 3 طبقات بحواف الاسم (ستايل فيصل)', nameEn: '3-Layer Contour Keychain', style: 'contour_3layer', holePos: 'left', baseColor: '#dc2626', midColor: '#111827', textColor: '#facc15' },
+    { id: 'kc_ali_rim', category: 'keychain', nameAr: 'ميدالية مخطوطة بحافة بارزة (ستايل علي)', nameEn: 'Script Rim Contour', style: 'contour_rim', holePos: 'right', baseColor: '#ffffff', midColor: '#ffffff', textColor: '#38bdf8' },
+    { id: 'kc_purple_bubble', category: 'keychain', nameAr: 'ميدالية ببل مجسمة حول الحروف (ستايل Name)', nameEn: 'Bubble Outline Keychain', style: 'contour_bubble', holePos: 'left', baseColor: '#7c3aed', midColor: '#6d28d9', textColor: '#ffffff' },
+    { id: 'kc_monogram_n', category: 'keychain', nameAr: 'ميدالية الحرف الكبير مع الاسم (ستايل الحرف البارز)', nameEn: 'Big Letter + Name Overlay', style: 'monogram_overlay', holePos: 'top', baseColor: '#8b5cf6', midColor: '#ffffff', textColor: '#1e293b' },
+    { id: 'kc_gold_3layer', category: 'keychain', nameAr: 'ميدالية ملكية 3 طبقات (أسود وذهبي وأبيض)', nameEn: 'Royal Gold 3-Layer', style: 'contour_3layer', holePos: 'right', baseColor: '#18181b', midColor: '#eab308', textColor: '#ffffff' },
+    { id: 'kc_neon_bubble', category: 'keychain', nameAr: 'ميدالية نيون بحواف الحروف (كربوني وأخضر)', nameEn: 'Neon Contour Bubble', style: 'contour_bubble', holePos: 'right', baseColor: '#0f172a', midColor: '#10b981', textColor: '#00e676' },
+    { id: 'kc_pink_3layer', category: 'keychain', nameAr: 'ميدالية وردية 3 طبقات بحواف الاسم', nameEn: 'Pink 3-Layer Contour', style: 'contour_3layer', holePos: 'left', baseColor: '#db2777', midColor: '#ffffff', textColor: '#fce7f3' },
+    { id: 'kc_cyan_rim', category: 'keychain', nameAr: 'ميدالية بحافة مزدوجة (كحلي وسماوي)', nameEn: 'Navy & Cyan Rim', style: 'contour_rim', holePos: 'right', baseColor: '#0f172a', midColor: '#38bdf8', textColor: '#e0f2fe' },
+    { id: 'kc_engrave_bubble', category: 'keychain', nameAr: 'ميدالية ببل محفورة بالاسم (حفر غائر)', nameEn: 'Engraved Bubble Keychain', style: 'contour_bubble', engrave: true, holePos: 'right', baseColor: '#f59e0b', midColor: '#d97706', textColor: '#111827' },
+    { id: 'kc_emerald_3layer', category: 'keychain', nameAr: 'ميدالية زمردية 3 طبقات فاخرة', nameEn: 'Emerald 3-Layer', style: 'contour_3layer', holePos: 'right', baseColor: '#064e3b', midColor: '#10b981', textColor: '#ffffff' },
+    { id: 'kc_monogram_gold', category: 'keychain', nameAr: 'ميدالية الحرف الملكي الذهبي مع الاسم', nameEn: 'Gold Monogram + Name', style: 'monogram_overlay', holePos: 'top', baseColor: '#d97706', midColor: '#18181b', textColor: '#ffffff' },
+    { id: 'kc_capsule', category: 'keychain', nameAr: 'كبسولة كلاسيكية بإطار بارز', nameEn: 'Classic Framed Capsule', style: 'capsule', border: true, holePos: 'right', baseColor: '#1e293b', midColor: '#10b981', textColor: '#10b981' },
 
-    // Category: charger (تاق شاحن / سلك)
-    { id: 'ch_clip_c', category: 'charger', nameAr: 'كلبس سلك شاحن (تركيب مباشر)', nameEn: 'Cable Snap Clip', shape: 'charger_clip', border: false, holePos: 'cable_clip', baseColor: '#1e293b', textColor: '#10b981' },
-    { id: 'ch_ring_usb', category: 'charger', nameAr: 'حلقة كابل تايب سي / آيفون', nameEn: 'USB Cable Ring', shape: 'charger_ring', border: true, holePos: 'cable_hole', baseColor: '#0f172a', textColor: '#f43f5e' },
-    { id: 'ch_sleeve', category: 'charger', nameAr: 'طوق سلك شاحن أسطواني', nameEn: 'Cable Sleeve Tag', shape: 'charger_sleeve', border: false, holePos: 'cable_clip', baseColor: '#312e81', textColor: '#fbbf24' },
-    { id: 'ch_flag', category: 'charger', nameAr: 'راية سلك الشاحن بالاسم', nameEn: 'Cable Flag Tag', shape: 'charger_flag', border: true, holePos: 'cable_hole', baseColor: '#064e3b', textColor: '#ffffff' },
-    { id: 'ch_dual', category: 'charger', nameAr: 'تاق شاحن مزدوج الحماية', nameEn: 'Dual Cable Guard', shape: 'charger_clip', border: true, holePos: 'cable_clip', baseColor: '#27272a', textColor: '#38bdf8' },
-    { id: 'ch_engrave', category: 'charger', nameAr: 'تاق شاحن محفور', nameEn: 'Engraved Cable Tag', shape: 'charger_ring', border: false, engrave: true, holePos: 'cable_hole', baseColor: '#10b981', textColor: '#0f172a' },
+    // Category: charger (تاق شاحن / سلك بحواف الحروف وكلبس مباشر)
+    { id: 'ch_contour_clip', category: 'charger', nameAr: 'تاق شاحن بحواف الاسم (كلبس سلك مباشر)', nameEn: 'Contour Cable Clip', style: 'contour_bubble', holePos: 'cable_clip', baseColor: '#7c3aed', midColor: '#ffffff', textColor: '#ffffff' },
+    { id: 'ch_3layer_clip', category: 'charger', nameAr: 'تاق شاحن 3 طبقات (ستايل فيصل للسلك)', nameEn: '3-Layer Cable Clip', style: 'contour_3layer', holePos: 'cable_clip', baseColor: '#dc2626', midColor: '#111827', textColor: '#facc15' },
+    { id: 'ch_rim_ring', category: 'charger', nameAr: 'تاق شاحن مخطوطة بحلقة كابل (ستايل علي)', nameEn: 'Rim Script Cable Ring', style: 'contour_rim', holePos: 'cable_hole', baseColor: '#ffffff', midColor: '#ffffff', textColor: '#0284c7' },
+    { id: 'ch_neon_clip', category: 'charger', nameAr: 'كلبس شاحن نيون بارز بالاسم', nameEn: 'Neon Charger Clip', style: 'contour_bubble', holePos: 'cable_clip', baseColor: '#0f172a', midColor: '#10b981', textColor: '#00e676' },
+    { id: 'ch_monogram_clip', category: 'charger', nameAr: 'تاق شاحن بالحرف الكبير والاسم', nameEn: 'Monogram Charger Tag', style: 'monogram_overlay', holePos: 'cable_clip', baseColor: '#2563eb', midColor: '#ffffff', textColor: '#0f172a' },
+    { id: 'ch_engrave_clip', category: 'charger', nameAr: 'تاق شاحن ببل محفور', nameEn: 'Engraved Cable Clip', style: 'contour_bubble', engrave: true, holePos: 'cable_clip', baseColor: '#10b981', midColor: '#065f46', textColor: '#0f172a' },
 
-    // Category: bag (تاق شنطة / حقيبة سفر)
-    { id: 'bg_luggage', category: 'bag', nameAr: 'بطاقة حقيبة سفر احترافية', nameEn: 'Luggage Name Tag', shape: 'luggage_tag', border: true, holePos: 'slot', baseColor: '#0f172a', textColor: '#10b981' },
-    { id: 'bg_school', category: 'bag', nameAr: 'تاق شنطة مدرسية', nameEn: 'School Backpack Tag', shape: 'capsule', border: true, scale: 1.25, holePos: 'right', baseColor: '#1d4ed8', textColor: '#ffffff' },
-    { id: 'bg_badge', category: 'bag', nameAr: 'وسام حقيبة دائري', nameEn: 'Round Bag Badge', shape: 'circle', border: true, scale: 1.25, holePos: 'top', baseColor: '#7c2d12', textColor: '#fed7aa' },
-    { id: 'bg_shield', category: 'bag', nameAr: 'تاق شنطة رياضية (درع)', nameEn: 'Sports Bag Shield', shape: 'shield', border: true, scale: 1.25, holePos: 'top', baseColor: '#111827', textColor: '#ef4444' },
-    { id: 'bg_vip', category: 'bag', nameAr: 'بطاقة VIP محفورة للشنطة', nameEn: 'VIP Engraved Bag Tag', shape: 'luggage_tag', border: true, engrave: true, holePos: 'slot', baseColor: '#eab308', textColor: '#18181b' },
-    { id: 'bg_kids', category: 'bag', nameAr: 'تاق شنطة أطفال (سحابة)', nameEn: 'Kids Cloud Bag Tag', shape: 'cloud', border: false, scale: 1.2, holePos: 'right', baseColor: '#8b5cf6', textColor: '#ffffff' }
+    // Category: bag (تاق شنطة / حقيبة سفر بحواف الحروف)
+    { id: 'bg_3layer_tag', category: 'bag', nameAr: 'تاق شنطة 3 طبقات بحواف الاسم (ستايل فيصل)', nameEn: '3-Layer Bag Contour Tag', style: 'contour_3layer', scale: 1.25, holePos: 'left', baseColor: '#dc2626', midColor: '#111827', textColor: '#facc15' },
+    { id: 'bg_bubble_tag', category: 'bag', nameAr: 'تاق شنطة ببل عريض (ستايل Name)', nameEn: 'Bubble Bag Name Tag', style: 'contour_bubble', scale: 1.25, holePos: 'left', baseColor: '#7c3aed', midColor: '#ffffff', textColor: '#ffffff' },
+    { id: 'bg_monogram_tag', category: 'bag', nameAr: 'تاق شنطة بالحرف الكبير والاسم (ستايل N)', nameEn: 'Monogram Bag Tag', style: 'monogram_overlay', scale: 1.25, holePos: 'top', baseColor: '#8b5cf6', midColor: '#ffffff', textColor: '#1e293b' },
+    { id: 'bg_rim_tag', category: 'bag', nameAr: 'تاق شنطة مخطوطة بحافة بارزة (ستايل علي)', nameEn: 'Script Rim Bag Tag', style: 'contour_rim', scale: 1.25, holePos: 'right', baseColor: '#ffffff', midColor: '#ffffff', textColor: '#0284c7' },
+    { id: 'bg_luggage', category: 'bag', nameAr: 'بطاقة حقيبة سفر احترافية بفتحة حزام', nameEn: 'Luggage Strap Tag', style: 'luggage_tag', border: true, scale: 1.2, holePos: 'slot', baseColor: '#0f172a', midColor: '#10b981', textColor: '#10b981' },
+    { id: 'bg_vip_gold', category: 'bag', nameAr: 'تاق شنطة ملكي 3 طبقات (ذهبي وأسود)', nameEn: 'VIP Gold 3-Layer Bag Tag', style: 'contour_3layer', scale: 1.25, holePos: 'right', baseColor: '#18181b', midColor: '#eab308', textColor: '#ffffff' }
   ];
 
   // 5. Translations (AR / EN)
