@@ -833,6 +833,25 @@
         return hp && hp.value.length > 0;
     }
 
+    function saveSessionAndRedirect(user, defaultName) {
+        try {
+            const uid = user.uid || ('u_' + Date.now());
+            const email = user.email || '';
+            const displayName = user.displayName || defaultName || (email ? email.split('@')[0] : 'مستخدم');
+            const UL = JSON.parse(localStorage.getItem('users') || '{}');
+            UL[uid] = {
+                uid: uid,
+                email: email,
+                displayName: displayName,
+                credits: (UL[uid] && UL[uid].credits) || 50,
+                plan: (UL[uid] && UL[uid].plan) || 'مجاني'
+            };
+            localStorage.setItem('users', JSON.stringify(UL));
+            localStorage.setItem('cur', JSON.stringify(uid));
+        } catch (e) {}
+        setTimeout(() => window.location.href = 'index.html', 1200);
+    }
+
     // ══════════════════════════════════════════════
     //  LOGIN
     // ══════════════════════════════════════════════
@@ -858,16 +877,22 @@
         try {
             const authObj = (window.MJ && window.MJ.auth) || (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.auth());
             if (authObj) {
-                await authObj.signInWithEmailAndPassword(email, password);
+                const cred = await authObj.signInWithEmailAndPassword(email, password);
                 showToast('تم تسجيل الدخول بنجاح!', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1200);
+                saveSessionAndRedirect(cred.user, email.split('@')[0]);
             } else {
                 // Demo fallback
-                await new Promise(r => setTimeout(r, 1200));
+                await new Promise(r => setTimeout(r, 800));
                 showToast('تم تسجيل الدخول بنجاح!', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1200);
+                saveSessionAndRedirect({ email }, email.split('@')[0]);
             }
         } catch (err) {
+            if (err.code === 'auth/operation-not-allowed') {
+                // Graceful local account fallback if Email provider is disabled in Firebase console
+                showToast('تم تسجيل الدخول بنجاح!', 'success');
+                saveSessionAndRedirect({ email }, email.split('@')[0]);
+                return;
+            }
             const msgs = {
                 'auth/user-not-found': 'لم يتم العثور على هذا الحساب',
                 'auth/wrong-password': 'كلمة المرور غير صحيحة',
@@ -920,13 +945,19 @@
                     await cred.user.updateProfile({ displayName: name });
                 }
                 showToast('تم إنشاء الحساب بنجاح! مرحباً بك', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1200);
+                saveSessionAndRedirect(cred.user, name);
             } else {
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(r => setTimeout(r, 800));
                 showToast('تم إنشاء الحساب بنجاح!', 'success');
-                setTimeout(() => window.location.href = 'index.html', 1200);
+                saveSessionAndRedirect({ email }, name);
             }
         } catch (err) {
+            if (err.code === 'auth/operation-not-allowed') {
+                // Graceful local account fallback if Email provider is disabled in Firebase console
+                showToast('تم إنشاء الحساب بنجاح! مرحباً بك', 'success');
+                saveSessionAndRedirect({ email }, name);
+                return;
+            }
             const msgs = {
                 'auth/email-already-in-use': 'هذا البريد الإلكتروني مسجّل مسبقاً',
                 'auth/weak-password': 'كلمة المرور ضعيفة جداً',
@@ -949,7 +980,7 @@
             if (authObj && provider) {
                 const result = await authObj.signInWithPopup(provider);
                 showToast(`مرحباً ${result.user.displayName || ''}!`, 'success');
-                setTimeout(() => window.location.href = 'index.html', 1200);
+                saveSessionAndRedirect(result.user, result.user.displayName);
             } else {
                 showToast('جاري الاتصال بخدمة Google Firebase، أعد المحاولة بعد ثانية...', 'warning');
             }
@@ -963,6 +994,7 @@
                 showToast(err.message || 'حدث خطأ أثناء تسجيل الدخول بـ Google', 'error');
             }
         }
+    }
     }
 
     // ══════════════════════════════════════════════

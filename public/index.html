@@ -1514,6 +1514,23 @@ new ResizeObserver(rs).observe($('#stage'));
 const objs = [];
 let sel = null;
 
+/* ── Global 3D Workspace & Bed State ── */
+let BW = 220, NB = 1, bedG = null, bedK = '', cur = 0;
+const GAP = 40, BP = () => BW + GAP;
+
+let tool = 'm', pv = null, uni = 1;
+let pvOn = 0, pvM = null;
+let sliceOn = 0, sliceG = null, sliceTimer = null, sliceLayer = 1, sliceMaxLayer = 1, sliceLH = 0.2;
+let eraseRadius = 5, eraseMode = 'carve', erasing = false;
+
+function root(n) {
+  while (n && n.parent && n.parent !== sc && !n.userData.kind) n = n.parent;
+  return n;
+}
+function tgt() {
+  return sel ? root(sel) : null;
+}
+
 // Crisp Selection Wireframe Box (never tints material emissive color so Black stays pure Black!)
 const selBox = new THREE.BoxHelper(new THREE.Mesh(), 0x00b4d8);
 selBox.material.depthTest = false;
@@ -1531,13 +1548,13 @@ function updateSelBox() {
   }
 }
 
-(function animate() {
+function animate() {
   requestAnimationFrame(animate);
   oc.update();
   if (selBox.visible && sel) selBox.update();
   if (typeof updateMoveGizmoScale === 'function') updateMoveGizmoScale();
   R.render(sc, cam);
-})();
+}
 
 // Fix: c == null ? 0x00b4d8 : c so 0x000000 (Black) is never replaced by cyan!
 const mat = c => new THREE.MeshStandardMaterial({
@@ -1978,7 +1995,6 @@ const ray = e => {
 };
 
 const own = n => { while (n && !objs.includes(n)) n = n.parent; return n; };
-const root = n => { while (n.parent && n.parent !== sc) n = n.parent; return n; };
 const mshs = p => { const r = []; p.traverse(n => { if (n.isMesh && own(n) === p) r.push(n); }); return r; };
 
 function place(m, par, h, q) {
@@ -2031,12 +2047,7 @@ function bend(m) {
 }
 
 /* ── 6-Direction 3D Move Arrows Gizmo & Manual 3D Eraser ── */
-let tool = 'm', pv = null, uni = 1;
-let pvOn = 0, pvM = null;
-let sliceOn = 0, sliceG = null, sliceTimer = null, sliceLayer = 1, sliceMaxLayer = 1, sliceLH = 0.2;
-let eraseRadius = 5, eraseMode = 'carve', erasing = false;
-
-const tgt = () => (sel ? root(sel) : null);
+// (tool, pvOn, sliceOn, tgt declared at top scope)
 
 // 3D Brush Sphere Cursor for Manual Eraser
 const eraseCursor = new THREE.Mesh(
@@ -2989,8 +3000,7 @@ stageEl.addEventListener('drop', e => {
 });
 
 /* ── Beds, Build Plates, Arranging & Multi-Color Separation ── */
-let BW = 220, NB = 1, bedG = null, bedK = '', cur = 0;
-const GAP = 40, BP = () => BW + GAP;
+// (BW, NB, bedG, bedK, cur, GAP, BP declared at top scope)
 
 const cen = o => {
   const g = o.geometry;
@@ -4619,6 +4629,7 @@ $('#bl').onclick = () => {
     M(`
       <h3 class="text-sm font-bold text-white mb-2"><i class="fa-solid fa-user text-[#00b4d8]"></i> بيانات الحساب</h3>
       <div class="bg-[#14171c] p-3 rounded-xl border border-[#2c333f] text-xs space-y-2 mb-4">
+        <div class="flex justify-between"><span class="text-[#818f9e]">الاسم:</span><span class="text-white font-bold">${U.displayName || '—'}</span></div>
         <div class="flex justify-between"><span class="text-[#818f9e]">البريد:</span><span class="text-white font-mono">${U.email}</span></div>
         <div class="flex justify-between"><span class="text-[#818f9e]">الرصيد المتوفر:</span><span class="text-amber-400 font-bold font-mono">🪙 ${U.credits || 0}</span></div>
         <div class="flex justify-between"><span class="text-[#818f9e]">الباقة الحالية:</span><span class="text-[#00b4d8] font-bold">${U.plan || 'مجاني'}</span></div>
@@ -4634,10 +4645,56 @@ $('#bl').onclick = () => {
 };
 
 function logoutUser() {
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    try { firebase.auth().signOut(); } catch (e) {}
+  }
   U = null;
+  sv('cur', null);
   save();
   $('#md').close();
-  toast('تم تسجيل الخروج');
+  if ($('#user-label')) $('#user-label').textContent = t('login');
+  if ($('#cr')) $('#cr').textContent = '🪙 0';
+  toast('تم تسجيل الخروج بنجاح');
+}
+
+function syncFirebaseAuth() {
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    try {
+      firebase.auth().onAuthStateChanged(fbUser => {
+        if (fbUser) {
+          const email = fbUser.email || (fbUser.isAnonymous ? 'زائر' : 'مستخدم');
+          const displayName = fbUser.displayName || (email.includes('@') ? email.split('@')[0] : email);
+          if (!U || U.uid !== fbUser.uid) {
+            U = {
+              uid: fbUser.uid,
+              email: email,
+              displayName: displayName,
+              credits: (U && U.credits) || 50,
+              plan: (U && U.plan) || 'مجاني'
+            };
+            sv('cur', fbUser.uid);
+            UL[fbUser.uid] = U;
+            sv('users', UL);
+          }
+          if ($('#user-label')) $('#user-label').textContent = displayName;
+          if ($('#cr')) $('#cr').textContent = '🪙 ' + (U.credits || 0);
+        } else {
+          const curId = ld('cur', null);
+          if (curId && UL[curId]) {
+            U = UL[curId];
+            if ($('#user-label')) $('#user-label').textContent = U.displayName || U.email.split('@')[0];
+            if ($('#cr')) $('#cr').textContent = '🪙 ' + (U.credits || 0);
+          } else {
+            U = null;
+            if ($('#user-label')) $('#user-label').textContent = t('login');
+            if ($('#cr')) $('#cr').textContent = '🪙 0';
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Firebase auth sync error:', e);
+    }
+  }
 }
 
 /* ──────────────────────────────────────────────
@@ -4773,6 +4830,8 @@ tr();
 rs();
 drawBeds();
 hsnap();
+syncFirebaseAuth();
+animate();
 </script>
 </body>
 </html>
