@@ -453,6 +453,8 @@
         if (!currentPin) return;
         const res = await window.MJ.api('adminOverview', { adminPin: currentPin });
         if (!res.success) {
+          const errEl = document.getElementById('pin-err');
+          if (errEl) errEl.textContent = res.error || 'تعذر تحميل بيانات الإدارة — تحقق من اتصال قاعدة البيانات';
           document.getElementById('pin-gate-modal').classList.remove('hidden');
           return;
         }

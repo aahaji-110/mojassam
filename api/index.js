@@ -237,8 +237,21 @@ function publicSettings(s) {
   };
 }
 
+function getHeader(req, name) {
+  if (!req) return '';
+  if (req.headers) {
+    if (typeof req.headers.get === 'function') {
+      return req.headers.get(name) || '';
+    }
+    const val = req.headers[name.toLowerCase()] || req.headers[name];
+    if (Array.isArray(val)) return val[0] || '';
+    return val || '';
+  }
+  return '';
+}
+
 async function verifyUser(req) {
-  const h = req.headers.get('authorization') || '';
+  const h = getHeader(req, 'authorization');
   const token = h.startsWith('Bearer ') ? h.slice(7) : null;
   if (!token) return null;
   try {
@@ -427,7 +440,7 @@ export default async function handler(req, res) {
       await sql`INSERT INTO security_logs (uid, type, details, user_agent)
         VALUES (${body.uid || null}, ${String(body.type || 'event').slice(0, 80)},
                 ${JSON.stringify(details).slice(0, 2000)}::jsonb,
-                ${(req.headers.get('user-agent') || '').slice(0, 400)})`;
+                ${getHeader(req, 'user-agent').slice(0, 400)})`;
       return json(200, { success: true });
     }
 
@@ -436,7 +449,7 @@ export default async function handler(req, res) {
       const ok = await checkAdminPin(body.pin);
       if (!ok) {
         await sql`INSERT INTO security_logs (type, details, user_agent)
-          VALUES ('admin_pin_failed', ${JSON.stringify({ attempted: String(body.pin || '').slice(0, 10) })}::jsonb, ${(req.headers.get('user-agent') || '').slice(0, 300)})`;
+          VALUES ('admin_pin_failed', ${JSON.stringify({ attempted: String(body.pin || '').slice(0, 10) })}::jsonb, ${getHeader(req, 'user-agent').slice(0, 300)})`;
         return json(401, { success: false, error: 'رمز الإدارة غير صحيح' });
       }
       const [changedRow] = await sql`SELECT value FROM app_meta WHERE key = 'admin_pin_changed'`;
