@@ -8,7 +8,7 @@ import { neon } from '@neondatabase/serverless';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'mojassam-9666e';
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'aahaji.110@gmail.com,aahaji_110@gmail.com')
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'aahaji.110@gmail.com,alwalhan.az@gmail.com,aahaji_110@gmail.com')
   .split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
 
 const JWKS = createRemoteJWKSet(new URL(
