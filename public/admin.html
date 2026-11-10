@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة التحكم والإدارة | منصة مجسمات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Cairo', sans-serif; background: #141619; color: #e5e7eb; }
+    .tab-btn.active { background: #10b981; color: #09130e; font-weight: 800; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- 1. PIN ENTRY GATE -->
+  <div id="pin-gate-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+    <div class="bg-[#202329] border border-[#363b46] rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-3 text-emerald-400 text-2xl">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h1 class="text-lg font-extrabold text-white">بوابة إدارة مجسمات</h1>
+      <p class="text-xs text-gray-400 mt-1 mb-5">أدخل الرقم السري للإدارة للمتابعة</p>
+      <form onsubmit="AdminApp.verifyPin(event)" class="space-y-3">
+        <input id="pin-input" type="password" dir="ltr" inputmode="numeric" maxlength="8" placeholder="••••••" required
+               class="w-full bg-[#141619] border-2 border-[#363b46] focus:border-emerald-500 rounded-xl py-3 text-center text-2xl font-mono tracking-widest text-emerald-400 outline-none" />
+        <div id="pin-err" class="text-xs text-rose-400 min-h-[18px]"></div>
+        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold py-2.5 rounded-xl">
+          دخول للوحة التحكم
+        </button>
+      </form>
+      <a href="index.html" class="inline-block mt-4 text-xs text-gray-400 hover:text-white">العودة للاستوديو الرئيسي</a>
+    </div>
+  </div>
+
+  <!-- 2. MANDATORY FIRST-TIME PIN CHANGE MODAL -->
+  <div id="force-pin-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#202329] border-2 border-amber-500 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <h2 class="text-base font-extrabold text-amber-400 flex items-center gap-2 mb-2">
+        <i class="fa-solid fa-key"></i>
+        <span>تعيين رقم الإدارة الخاص بك (إجباري لأول مرة)</span>
+      </h2>
+      <p class="text-xs text-gray-300 mb-4 leading-relaxed">
+        لحماية موقعك، يرجى تغيير الرقم الافتراضي الآن. سيتم حفظ رقمك الجديد في قاعدة البيانات ويثبت معك على جميع أجهزتك دائماً إلا إذا قررت تبديله لاحقاً.
+      </p>
+      <form onsubmit="AdminApp.submitNewPin(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">الرقم السري الجديد (4 إلى 8 أرقام):</label>
+          <input id="new-pin-1" type="password" dir="ltr" inputmode="numeric" pattern="[0-9]{4,8}" required placeholder="أدخل الرقم الجديد"
+                 class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2.5 text-center text-lg font-mono text-emerald-400" />
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">تأكيد الرقم السري الجديد:</label>
+          <input id="new-pin-2" type="password" dir="ltr" inputmode="numeric" pattern="[0-9]{4,8}" required placeholder="أعد إدخال الرقم الجديد"
+                 class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2.5 text-center text-lg font-mono text-emerald-400" />
+        </div>
+        <div id="force-pin-err" class="text-rose-400 text-center"></div>
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-2.5 rounded-xl">
+          حفظ وتثبيت الرقم الجديد
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. MAIN ADMIN DASHBOARD -->
+  <header class="bg-[#1e2127] border-b border-[#323741] px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+        <i class="fa-solid fa-sliders"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-base text-white">لوحة التحكم الشاملة — منصة مجسمات</h1>
+        <p class="text-[11px] text-gray-400">إدارة المستخدمين، الأرصدة، الأسعار، بوابات الدفع (ميسر / PayPal)، والتوثيق</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-xs">
+      <button onclick="AdminApp.loadOverview()" class="bg-[#2a2e37] hover:bg-[#343944] text-gray-200 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
+        <i class="fa-solid fa-rotate"></i><span>تحديث البيانات</span>
+      </button>
+      <button onclick="AdminApp.openManualPinChange()" class="bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
+        <i class="fa-solid fa-key"></i><span>تغيير رقم الإدارة</span>
+      </button>
+      <a href="index.html" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg font-extrabold flex items-center gap-1.5">
+        <i class="fa-solid fa-cube"></i><span>فتح الاستوديو 3D</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-7xl w-full mx-auto p-6 space-y-6 flex-1">
+
+    <!-- Top KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
+        <div class="text-xs text-gray-400">إجمالي الإيرادات</div>
+        <div class="text-2xl font-extrabold text-emerald-400 mt-1"><span id="stat-revenue">0</span> <span class="text-xs">ر.س</span></div>
+      </div>
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
+        <div class="text-xs text-gray-400">إجمالي المستخدمين</div>
+        <div id="stat-users" class="text-2xl font-extrabold text-white mt-1">0</div>
+      </div>
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
+        <div class="text-xs text-gray-400">الحسابات النشطة</div>
+        <div id="stat-active" class="text-2xl font-extrabold text-sky-400 mt-1">0</div>
+      </div>
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
+        <div class="text-xs text-gray-400">عمليات التصدير 3D</div>
+        <div id="stat-exports" class="text-2xl font-extrabold text-amber-400 mt-1">0</div>
+      </div>
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
+        <div class="text-xs text-gray-400">أكواد شحن جاهزة</div>
+        <div id="stat-codes" class="text-2xl font-extrabold text-purple-400 mt-1">0</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex flex-wrap gap-2 bg-[#1e2127] p-1.5 rounded-2xl border border-[#323741] text-xs font-bold">
+      <button onclick="AdminApp.switchTab('users')" id="tab-btn-users" class="tab-btn active px-4 py-2 rounded-xl transition">
+        <i class="fa-solid fa-users ml-1"></i>المستخدمين والأرصدة والاسترداد
+      </button>
+      <button onclick="AdminApp.switchTab('packages')" id="tab-btn-packages" class="tab-btn px-4 py-2 rounded-xl transition">
+        <i class="fa-solid fa-tags ml-1"></i>الباقات والأسعار (يومي/أسبوعي/شهري/سنوي)
+      </button>
+      <button onclick="AdminApp.switchTab('payments')" id="tab-btn-payments" class="tab-btn px-4 py-2 rounded-xl transition">
+        <i class="fa-solid fa-credit-card ml-1"></i>المدفوعات وأكواد الشحن والكوبونات
+      </button>
+      <button onclick="AdminApp.switchTab('gateways')" id="tab-btn-gateways" class="tab-btn px-4 py-2 rounded-xl transition">
+        <i class="fa-solid fa-plug ml-1"></i>ربط ميسر و PayPal والإيميل
+      </button>
+      <button onclick="AdminApp.switchTab('settings')" id="tab-btn-settings" class="tab-btn px-4 py-2 rounded-xl transition">
+        <i class="fa-solid fa-certificate ml-1"></i>بيانات الموقع ووثيقة العمل الحر والواتساب
+      </button>
+      <button onclick="AdminApp.switchTab('security')" id="tab-btn-security" class="tab-btn px-4 py-2 rounded-xl transition">
+        <i class="fa-solid fa-shield-virus ml-1"></i>سجل الحماية والأمان
+      </button>
+    </div>
+
+    <!-- TAB 1: USERS & BALANCES & ACCOUNT REFUND -->
+    <section id="tab-users" class="space-y-4">
+      <!-- Create New User Box -->
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
+        <h3 class="text-sm font-extrabold text-emerald-400 mb-3">إضافة حساب مستخدم جديد يدوياً</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2.5 text-xs">
+          <input id="new-user-name" type="text" placeholder="اسم المستخدم" class="bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          <input id="new-user-email" type="email" dir="ltr" placeholder="البريد الإلكتروني" class="bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          <input id="new-user-coins" type="number" value="6" placeholder="رصيد الكوينز" class="bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          <select id="new-user-plan" class="bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white">
+            <option value="free">باقة مجانية</option>
+            <option value="daily">اشتراك يومي</option>
+            <option value="weekly">اشتراك أسبوعي</option>
+            <option value="monthly">اشتراك شهري</option>
+            <option value="yearly">اشتراك سنوي</option>
+          </select>
+          <button onclick="AdminApp.createUser()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl py-2">
+            + إضافة الحساب
+          </button>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4 overflow-x-auto">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-extrabold text-white">جميع الحسابات المسجلة والتحكم الكامل بها</h3>
+          <input id="user-search-input" type="text" oninput="AdminApp.renderUsersTable()" placeholder="بحث بالاسم أو الإيميل..." class="bg-[#141619] border border-[#363b46] rounded-xl px-3 py-1.5 text-xs text-white w-64" />
+        </div>
+        <table class="w-full text-xs text-right">
+          <thead class="text-gray-400 border-b border-[#323741]">
+            <tr>
+              <th class="py-2 px-2">المستخدم</th>
+              <th class="py-2 px-2">البريد</th>
+              <th class="py-2 px-2">الكوينز</th>
+              <th class="py-2 px-2">الباقة</th>
+              <th class="py-2 px-2">الحالة</th>
+              <th class="py-2 px-2">إجراءات التحكم والأرصدة والاسترداد</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody" class="divide-y divide-[#2a2e37]"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 2: PACKAGES & PRICING (Daily, Weekly, Monthly, Yearly + Coin Packs) -->
+    <section id="tab-packages" class="hidden space-y-4">
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-extrabold text-emerald-400">تحديد أسعار الباقات والكوينز في الموقع</h3>
+            <p class="text-xs text-gray-400">عدّل الأسعار بالريال وعدد الكوينز لكل باقة (يومية، أسبوعية، شهرية، سنوية، وباقات الشحن الفوري) ثم اضغط حفظ</p>
+          </div>
+          <button onclick="AdminApp.savePackages()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-5 py-2 rounded-xl text-xs">
+            حفظ واعتماد جميع الأسعار
+          </button>
+        </div>
+        <div id="admin-packages-editor" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PAYMENTS, REDEEM CODES & COUPONS -->
+    <section id="tab-payments" class="hidden space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Generate Activation Code for Customer -->
+        <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4 space-y-3 text-xs">
+          <h3 class="text-sm font-extrabold text-emerald-400">توليد وإرسال كود شحن لعميل</h3>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-gray-400 mb-1">عدد الكوينز</label>
+              <input id="gen-code-coins" type="number" value="50" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">المبلغ المدفوع (ر.س)</label>
+              <input id="gen-code-amount" type="number" value="49" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">الباقة المرفقة</label>
+              <select id="gen-code-plan" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white">
+                <option value="free">كوينز فقط</option>
+                <option value="daily">اشتراك يومي (1 يوم)</option>
+                <option value="weekly">اشتراك أسبوعي (7 أيام)</option>
+                <option value="monthly">اشتراك شهري (30 يوم)</option>
+                <option value="yearly">اشتراك سنوي (365 يوم)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">إيميل العميل (لإرسال الكود)</label>
+              <input id="gen-code-email" type="email" dir="ltr" placeholder="customer@mail.com" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+            </div>
+          </div>
+          <button onclick="AdminApp.generateCode()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl">
+            توليد كود التفعيل وإرساله بالإيميل
+          </button>
+          <div id="generated-code-display" class="hidden bg-[#141619] border border-emerald-500/40 rounded-xl p-2.5 text-center font-mono text-base font-extrabold text-emerald-400"></div>
+        </div>
+
+        <!-- Discount Coupons Manager -->
+        <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4 space-y-3 text-xs">
+          <h3 class="text-sm font-extrabold text-amber-400">إدارة أكواد الخصم الترويجية</h3>
+          <div class="grid grid-cols-3 gap-2">
+            <input id="cpn-code" type="text" dir="ltr" placeholder="RAMADAN30" class="bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white uppercase" />
+            <input id="cpn-pct" type="number" placeholder="الخصم %" value="20" class="bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+            <input id="cpn-bonus" type="number" placeholder="كوينز إضافية" value="5" class="bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          </div>
+          <button onclick="AdminApp.saveCoupon()" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-2 rounded-xl">
+            حفظ كود الخصم
+          </button>
+          <div id="coupons-list" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <!-- Redeem Codes List -->
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4 overflow-x-auto">
+        <h3 class="text-sm font-extrabold text-white mb-3">أكواد التفعيل الصادرة (مع إمكانية إلغاء الكود/الدفعة)</h3>
+        <table class="w-full text-xs text-right">
+          <thead class="text-gray-400 border-b border-[#323741]">
+            <tr>
+              <th class="py-2 px-2">الكود</th>
+              <th class="py-2 px-2">الإيميل</th>
+              <th class="py-2 px-2">الكوينز</th>
+              <th class="py-2 px-2">المبلغ</th>
+              <th class="py-2 px-2">الحالة</th>
+              <th class="py-2 px-2">إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="codes-tbody" class="divide-y divide-[#2a2e37]"></tbody>
+        </table>
+      </div>
+
+      <!-- Transactions List -->
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4 overflow-x-auto">
+        <h3 class="text-sm font-extrabold text-white mb-3">سجل المدفوعات والعمليات (إيقاف / إلغاء / استرداد)</h3>
+        <table class="w-full text-xs text-right">
+          <thead class="text-gray-400 border-b border-[#323741]">
+            <tr>
+              <th class="py-2 px-2">#</th>
+              <th class="py-2 px-2">البريد</th>
+              <th class="py-2 px-2">الوصف</th>
+              <th class="py-2 px-2">الكوينز</th>
+              <th class="py-2 px-2">المبلغ (ر.س)</th>
+              <th class="py-2 px-2">الحالة</th>
+              <th class="py-2 px-2">تحكم بالعملية</th>
+            </tr>
+          </thead>
+          <tbody id="tx-tbody" class="divide-y divide-[#2a2e37]"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 4: PAYMENT GATEWAYS (Moyasar Link / Code, PayPal, Resend Email) -->
+    <section id="tab-gateways" class="hidden space-y-4">
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-5 space-y-4 text-xs">
+        <div class="flex items-center justify-between border-b border-[#323741] pb-3">
+          <div>
+            <h3 class="text-sm font-extrabold text-emerald-400">إعدادات بوابات الدفع (ميسر Moyasar + PayPal + Resend)</h3>
+            <p class="text-gray-400 mt-0.5">ضع رابط الدفع أو مفاتيح الربط متى ما صدرت الموافقة على حسابك في ميسر، ويمكنك إيقاف أو تشغيل الدفع في الموقع بضغطة زر</p>
+          </div>
+          <label class="flex items-center gap-2 bg-[#141619] border border-[#363b46] px-3 py-2 rounded-xl cursor-pointer">
+            <input id="set-payment-enabled" type="checkbox" checked class="accent-emerald-500 w-4 h-4" />
+            <span class="font-extrabold text-white">تفعيل استقبال المدفوعات في الموقع</span>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-[#141619] border border-[#363b46] rounded-xl p-4 space-y-3">
+            <div class="font-extrabold text-emerald-400 text-sm">1. بوابة ميسر السعودية (مدى / Apple Pay / Visa)</div>
+            <div>
+              <label class="block text-gray-400 mb-1">رابط الدفع المباشر من ميسر (Moyasar Payment Link - اختياري):</label>
+              <input id="set-moyasar-link" type="text" dir="ltr" placeholder="https://moyasar.com/..." class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg px-3 py-2 text-white" />
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">مفتاح النشر (Publishable API Key - pk_live_... أو pk_test_...):</label>
+              <input id="set-moyasar-pk" type="text" dir="ltr" placeholder="pk_live_..." class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg px-3 py-2 text-white font-mono" />
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">المفتاح السري (Secret Key - sk_live_...):</label>
+              <input id="set-moyasar-sk" type="password" dir="ltr" placeholder="sk_live_..." class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg px-3 py-2 text-white font-mono" />
+            </div>
+          </div>
+
+          <div class="bg-[#141619] border border-[#363b46] rounded-xl p-4 space-y-3">
+            <div class="font-extrabold text-sky-400 text-sm">2. بوابة PayPal الدولية + إرسال الإيميلات (Resend)</div>
+            <div>
+              <label class="block text-gray-400 mb-1">رابط PayPal.me أو رابط الدفع المباشر:</label>
+              <input id="set-paypal-link" type="text" dir="ltr" placeholder="https://paypal.me/..." class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg px-3 py-2 text-white" />
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">PayPal Client ID:</label>
+              <input id="set-paypal-cid" type="text" dir="ltr" placeholder="AZ..." class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg px-3 py-2 text-white font-mono" />
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">مفتاح Resend API Key (لإرسال أكواد التفعيل للإيميل مجاناً حتى 3000/شهر):</label>
+              <input id="set-resend-key" type="password" dir="ltr" placeholder="re_..." class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg px-3 py-2 text-white font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <button onclick="AdminApp.saveSettings()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-6 py-2.5 rounded-xl">
+          حفظ إعدادات الدفع والإيميل
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 5: SITE FOOTER, WHATSAPP, FREELANCE DOC & LOYALTY SETTINGS -->
+    <section id="tab-settings" class="hidden space-y-4">
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-5 space-y-4 text-xs">
+        <h3 class="text-sm font-extrabold text-emerald-400">بيانات التواصل والتوثيق الرسمي ونظام الكوينز</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">رقم الواتساب للتذييل (مع 966):</label>
+            <input id="set-whatsapp" type="text" dir="ltr" placeholder="966500000000" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">البريد الإلكتروني الرسمي:</label>
+            <input id="set-email" type="email" dir="ltr" placeholder="aahaji.110@gmail.com" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">رقم وثيقة العمل الحر:</label>
+            <input id="set-freelance-doc" type="text" dir="ltr" placeholder="FL-76849201" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">كوينز هدية التسجيل لأول مرة:</label>
+            <input id="set-signup-coins" type="number" value="6" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">تكلفة التصدير الواحد (كوينز):</label>
+            <input id="set-export-cost" type="number" value="2" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">مكافأة دعوة الصديق (كوينز):</label>
+            <input id="set-ref-bonus" type="number" value="5" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">نص الشريط الإعلاني العلوي (عربي):</label>
+          <input id="set-announce-ar" type="text" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+        </div>
+        <button onclick="AdminApp.saveSettings()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-6 py-2.5 rounded-xl">
+          حفظ بيانات الموقع والتوثيق
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 6: SECURITY LOGS -->
+    <section id="tab-security" class="hidden space-y-4">
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4">
+        <h3 class="text-sm font-extrabold text-emerald-400 mb-3">سجل جدار الحماية السيبراني</h3>
+        <div id="sec-logs-list" class="space-y-1.5 text-xs font-mono max-h-96 overflow-y-auto"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="admin-toast" class="fixed bottom-5 right-5 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xl hidden z-50"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script>
+    const AdminApp = (function () {
+      let currentPin = sessionStorage.getItem('_mj_admin_session_pin') || '';
+      let overviewData = null;
+
+      async function verifyPin(e) {
+        if (e) e.preventDefault();
+        const pin = document.getElementById('pin-input').value.trim();
+        const errEl = document.getElementById('pin-err');
+        errEl.textContent = '';
+
+        const res = await window.MJ.api('verifyAdminPin', { pin });
+        if (!res.success) {
+          errEl.textContent = res.error || 'الرقم غير صحيح';
+          return;
+        }
+        currentPin = pin;
+        sessionStorage.setItem('_mj_admin_session_pin', currentPin);
+        document.getElementById('pin-gate-modal').classList.add('hidden');
+
+        if (res.data && res.data.mustChangePin) {
+          const fm = document.getElementById('force-pin-modal');
+          fm.classList.remove('hidden');
+          fm.classList.add('flex');
+        }
+        await loadOverview();
+      }
+
+      function openManualPinChange() {
+        const fm = document.getElementById('force-pin-modal');
+        fm.classList.remove('hidden');
+        fm.classList.add('flex');
+      }
+
+      async function submitNewPin(e) {
+        e.preventDefault();
+        const p1 = document.getElementById('new-pin-1').value.trim();
+        const p2 = document.getElementById('new-pin-2').value.trim();
+        const err = document.getElementById('force-pin-err');
+        if (p1 !== p2) {
+          err.textContent = 'الرقمان غير متطابقين!';
+          return;
+        }
+        const res = await window.MJ.api('changeAdminPin', { currentPin, newPin: p1 });
+        if (!res.success) {
+          err.textContent = res.error || 'تعذر تحديث الرقم';
+          return;
+        }
+        currentPin = p1;
+        sessionStorage.setItem('_mj_admin_session_pin', currentPin);
+        const fm = document.getElementById('force-pin-modal');
+        fm.classList.add('hidden');
+        fm.classList.remove('flex');
+        toast('تم حفظ وتثبيت رقم الإدارة الجديد في قاعدة البيانات بنجاح!');
+      }
+
+      async function loadOverview() {
+        if (!currentPin) return;
+        const res = await window.MJ.api('adminOverview', { adminPin: currentPin });
+        if (!res.success) {
+          document.getElementById('pin-gate-modal').classList.remove('hidden');
+          return;
+        }
+        overviewData = res.data;
+        renderStats();
+        renderUsersTable();
+        renderPackagesEditor();
+        renderCodesAndTransactions();
+        populateSettingsFields();
+        renderSecurityLogs();
+      }
+
+      function renderStats() {
+        const s = overviewData.stats || {};
+        document.getElementById('stat-revenue').textContent = s.totalRevenue || 0;
+        document.getElementById('stat-users').textContent = s.totalUsers || 0;
+        document.getElementById('stat-active').textContent = s.activeUsers || 0;
+        document.getElementById('stat-exports').textContent = s.totalExports || 0;
+        document.getElementById('stat-codes').textContent = s.unusedCodes || 0;
+      }
+
+      function renderUsersTable() {
+        const q = (document.getElementById('user-search-input')?.value || '').toLowerCase();
+        const users = (overviewData?.users || []).filter(
+          (u) => !q || (u.displayName || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+        );
+        const tbody = document.getElementById('users-tbody');
+        tbody.innerHTML = users.map((u) => `
+          <tr class="hover:bg-[#262a33]">
+            <td class="py-2.5 px-2 font-bold text-white">${u.displayName || '—'}</td>
+            <td class="py-2.5 px-2 font-mono text-gray-300">${u.email || u.uid}</td>
+            <td class="py-2.5 px-2 font-extrabold text-amber-400">${u.coins}</td>
+            <td class="py-2.5 px-2 text-emerald-400 font-bold">${u.plan}</td>
+            <td class="py-2.5 px-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                u.status === 'active' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+              }">${u.status}</span>
+            </td>
+            <td class="py-2.5 px-2 flex flex-wrap gap-1">
+              <button onclick="AdminApp.adjustUserCoins('${u.uid}')" class="bg-emerald-600/25 hover:bg-emerald-600 text-emerald-200 px-2 py-1 rounded text-[11px] font-bold">رصيد ±</button>
+              <button onclick="AdminApp.changeUserPlan('${u.uid}', '${u.plan}')" class="bg-sky-600/25 hover:bg-sky-600 text-sky-200 px-2 py-1 rounded text-[11px] font-bold">الباقة</button>
+              <button onclick="AdminApp.toggleUserStatus('${u.uid}', '${u.status}')" class="bg-amber-600/25 hover:bg-amber-600 text-amber-200 px-2 py-1 rounded text-[11px] font-bold">
+                ${u.status === 'active' ? 'إيقاف' : 'تفعيل'}
+              </button>
+              <button onclick="AdminApp.cancelAndRefundUser('${u.uid}')" class="bg-purple-600/25 hover:bg-purple-600 text-purple-200 px-2 py-1 rounded text-[11px] font-bold">إلغاء وإعادة المبلغ</button>
+              <button onclick="AdminApp.deleteUser('${u.uid}')" class="bg-rose-600/25 hover:bg-rose-600 text-rose-200 px-2 py-1 rounded text-[11px] font-bold">حذف</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      async function createUser() {
+        const displayName = document.getElementById('new-user-name').value;
+        const email = document.getElementById('new-user-email').value;
+        const coins = document.getElementById('new-user-coins').value;
+        const plan = document.getElementById('new-user-plan').value;
+        const res = await window.MJ.api('adminCreateUser', { adminPin: currentPin, displayName, email, coins, plan });
+        if (!res.success) return toast(res.error, true);
+        toast('تم إنشاء الحساب بنجاح');
+        loadOverview();
+      }
+
+      async function adjustUserCoins(targetUid) {
+        const val = window.prompt('أدخل الرصيد الجديد للكوينز لهذا المستخدم:');
+        if (val === null) return;
+        await window.MJ.api('adminUpdateUser', { adminPin: currentPin, targetUid, op: 'setCoins', coinsAmount: Number(val) });
+        toast('تم تحديث رصيد الكوينز');
+        loadOverview();
+      }
+
+      async function changeUserPlan(targetUid, curPlan) {
+        const plan = window.prompt('أدخل الباقة (free / daily / weekly / monthly / yearly):', curPlan);
+        if (!plan) return;
+        await window.MJ.api('adminUpdateUser', { adminPin: currentPin, targetUid, op: 'setPlan', plan: plan.trim() });
+        toast('تم تحديث باقة المستخدم');
+        loadOverview();
+      }
+
+      async function toggleUserStatus(targetUid, curStatus) {
+        const next = curStatus === 'active' ? 'suspended' : 'active';
+        await window.MJ.api('adminUpdateUser', { adminPin: currentPin, targetUid, op: 'setStatus', status: next });
+        toast(next === 'suspended' ? 'تم إيقاف الحساب' : 'تم تفعيل الحساب');
+        loadOverview();
+      }
+
+      async function cancelAndRefundUser(targetUid) {
+        const amount = window.prompt('أدخل قيمة المبلغ المسترد للعميل بالريال (سيتم إلغاء الحساب وتصفير الرصيد وتوثيق الاسترداد):', '0');
+        if (amount === null) return;
+        await window.MJ.api('adminUpdateUser', { adminPin: currentPin, targetUid, op: 'cancelAndRefund', refundSar: Number(amount) });
+        toast('تم إلغاء الحساب وتسجيل إعادة المبلغ للعميل');
+        loadOverview();
+      }
+
+      async function deleteUser(targetUid) {
+        if (!window.confirm('هل أنت متأكد من حذف هذا الحساب نهائياً؟')) return;
+        await window.MJ.api('adminUpdateUser', { adminPin: currentPin, targetUid, op: 'delete' });
+        toast('تم حذف الحساب نهائياً');
+        loadOverview();
+      }
+
+      function renderPackagesEditor() {
+        const pkgs = overviewData?.packages || [];
+        const wrap = document.getElementById('admin-packages-editor');
+        wrap.innerHTML = pkgs.map((p, idx) => `
+          <div class="bg-[#141619] border border-[#363b46] rounded-xl p-3.5 grid grid-cols-3 gap-2 items-center">
+            <div>
+              <label class="text-[10px] text-gray-400 block">اسم الباقة</label>
+              <input type="text" data-pkg-idx="${idx}" data-field="nameAr" value="${p.nameAr}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-white font-bold" />
+            </div>
+            <div>
+              <label class="text-[10px] text-amber-400 block">عدد الكوينز</label>
+              <input type="number" data-pkg-idx="${idx}" data-field="coins" value="${p.coins}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-amber-300 font-bold" />
+            </div>
+            <div>
+              <label class="text-[10px] text-emerald-400 block">السعر (ريال سعودي)</label>
+              <input type="number" data-pkg-idx="${idx}" data-field="priceSar" value="${p.priceSar}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-emerald-300 font-bold" />
+            </div>
+          </div>
+        `).join('');
+      }
+
+      async function savePackages() {
+        const pkgs = [...(overviewData?.packages || [])];
+        document.querySelectorAll('[data-pkg-idx]').forEach((inp) => {
+          const i = Number(inp.getAttribute('data-pkg-idx'));
+          const f = inp.getAttribute('data-field');
+          if (pkgs[i]) {
+            pkgs[i][f] = f === 'nameAr' ? inp.value : Number(inp.value);
+          }
+        });
+        const res = await window.MJ.api('adminSavePackages', { adminPin: currentPin, packages: pkgs });
+        if (res.success) toast('تم حفظ واعتماد جميع أسعار الباقات في الموقع!');
+      }
+
+      async function generateCode() {
+        const coins = Number(document.getElementById('gen-code-coins').value || 20);
+        const amountSar = Number(document.getElementById('gen-code-amount').value || 0);
+        const plan = document.getElementById('gen-code-plan').value;
+        const email = document.getElementById('gen-code-email').value.trim();
+        const durMap = { free: 0, daily: 1, weekly: 7, monthly: 30, yearly: 365 };
+        const res = await window.MJ.api('adminGenerateCode', {
+          adminPin: currentPin,
+          coins,
+          amountSar,
+          plan,
+          durationDays: durMap[plan] || 0,
+          email
+        });
+        if (res.success) {
+          const box = document.getElementById('generated-code-display');
+          box.classList.remove('hidden');
+          box.textContent = `الكود الصادر: ${res.data.code} ${res.data.emailSent ? '(تم الإرسال للإيميل ✔)' : ''}`;
+          toast('تم إصدار كود التفعيل بنجاح');
+          loadOverview();
+        }
+      }
+
+      async function cancelCode(code) {
+        await window.MJ.api('adminCancelCode', { adminPin: currentPin, code });
+        toast('تم إلغاء الكود');
+        loadOverview();
+      }
+
+      async function updateTxStatus(txId, status) {
+        await window.MJ.api('adminUpdateTransaction', { adminPin: currentPin, txId, status });
+        toast('تم تحديث حالة العملية');
+        loadOverview();
+      }
+
+      async function saveCoupon() {
+        const code = document.getElementById('cpn-code').value;
+        const discountPercent = document.getElementById('cpn-pct').value;
+        const bonusCoins = document.getElementById('cpn-bonus').value;
+        const res = await window.MJ.api('adminSaveCoupon', { adminPin: currentPin, code, discountPercent, bonusCoins });
+        if (res.success) {
+          toast('تم حفظ الكوبون');
+          loadOverview();
+        }
+      }
+
+      async function deleteCoupon(code) {
+        await window.MJ.api('adminDeleteCoupon', { adminPin: currentPin, code });
+        loadOverview();
+      }
+
+      function renderCodesAndTransactions() {
+        const codes = overviewData?.redeemCodes || [];
+        document.getElementById('codes-tbody').innerHTML = codes.map((c) => `
+          <tr>
+            <td class="py-2 px-2 font-mono font-bold text-emerald-400">${c.code}</td>
+            <td class="py-2 px-2">${c.email || '—'}</td>
+            <td class="py-2 px-2 font-bold text-amber-400">${c.coins}</td>
+            <td class="py-2 px-2">${c.amount_sar} ر.س</td>
+            <td class="py-2 px-2">${c.status}</td>
+            <td class="py-2 px-2">
+              ${c.status === 'unused' ? `<button onclick="AdminApp.cancelCode('${c.code}')" class="bg-rose-600/30 hover:bg-rose-600 text-rose-200 px-2 py-0.5 rounded">إلغاء الكود</button>` : '—'}
+            </td>
+          </tr>
+        `).join('');
+
+        const coupons = overviewData?.coupons || [];
+        document.getElementById('coupons-list').innerHTML = coupons.map((c) => `
+          <div class="flex items-center justify-between bg-[#141619] px-3 py-1.5 rounded-lg border border-[#323741]">
+            <span><strong class="text-amber-400 font-mono">${c.code}</strong> — خصم ${c.discount_percent}% (+${c.bonus_coins} كوينز)</span>
+            <button onclick="AdminApp.deleteCoupon('${c.code}')" class="text-rose-400 hover:underline">حذف</button>
+          </div>
+        `).join('');
+
+        const txs = overviewData?.transactions || [];
+        document.getElementById('tx-tbody').innerHTML = txs.map((t) => `
+          <tr>
+            <td class="py-2 px-2 font-mono">${t.id}</td>
+            <td class="py-2 px-2">${t.email || t.uid || '—'}</td>
+            <td class="py-2 px-2">${t.description || t.type}</td>
+            <td class="py-2 px-2 font-bold ${Number(t.coins_delta) >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${t.coins_delta}</td>
+            <td class="py-2 px-2">${t.amount_sar || 0}</td>
+            <td class="py-2 px-2">${t.status}</td>
+            <td class="py-2 px-2 flex gap-1">
+              <button onclick="AdminApp.updateTxStatus(${t.id}, 'cancelled')" class="bg-rose-600/25 hover:bg-rose-600 text-rose-200 px-2 py-0.5 rounded">إلغاء</button>
+              <button onclick="AdminApp.updateTxStatus(${t.id}, 'refunded')" class="bg-purple-600/25 hover:bg-purple-600 text-purple-200 px-2 py-0.5 rounded">تم الاسترداد</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      function populateSettingsFields() {
+        const s = overviewData?.settings || {};
+        document.getElementById('set-payment-enabled').checked = s.paymentEnabled !== false;
+        document.getElementById('set-moyasar-link').value = s.moyasarPaymentLink || '';
+        document.getElementById('set-moyasar-pk').value = s.moyasarPublishableKey || '';
+        document.getElementById('set-moyasar-sk').value = s.moyasarSecretKey || '';
+        document.getElementById('set-paypal-link').value = s.paypalPaymentLink || '';
+        document.getElementById('set-paypal-cid').value = s.paypalClientId || '';
+        document.getElementById('set-resend-key').value = s.resendApiKey || '';
+
+        document.getElementById('set-whatsapp').value = s.whatsappNumber || '';
+        document.getElementById('set-email').value = s.contactEmail || '';
+        document.getElementById('set-freelance-doc').value = s.freelanceDocNumber || '';
+        document.getElementById('set-signup-coins').value = s.signupBonusCoins ?? 6;
+        document.getElementById('set-export-cost').value = s.exportCostCoins ?? 2;
+        document.getElementById('set-ref-bonus').value = s.referralBonusCoins ?? 5;
+        document.getElementById('set-announce-ar').value = s.announcementAr || '';
+      }
+
+      async function saveSettings() {
+        const settings = {
+          paymentEnabled: document.getElementById('set-payment-enabled').checked,
+          moyasarPaymentLink: document.getElementById('set-moyasar-link').value.trim(),
+          moyasarPublishableKey: document.getElementById('set-moyasar-pk').value.trim(),
+          moyasarSecretKey: document.getElementById('set-moyasar-sk').value.trim(),
+          paypalPaymentLink: document.getElementById('set-paypal-link').value.trim(),
+          paypalClientId: document.getElementById('set-paypal-cid').value.trim(),
+          resendApiKey: document.getElementById('set-resend-key').value.trim(),
+          whatsappNumber: document.getElementById('set-whatsapp').value.trim(),
+          contactEmail: document.getElementById('set-email').value.trim(),
+          freelanceDocNumber: document.getElementById('set-freelance-doc').value.trim(),
+          signupBonusCoins: Number(document.getElementById('set-signup-coins').value || 6),
+          exportCostCoins: Number(document.getElementById('set-export-cost').value || 2),
+          referralBonusCoins: Number(document.getElementById('set-ref-bonus').value || 5),
+          announcementAr: document.getElementById('set-announce-ar').value.trim()
+        };
+        const res = await window.MJ.api('adminSaveSettings', { adminPin: currentPin, settings });
+        if (res.success) {
+          toast('تم حفظ الإعدادات وتحديث الموقع فوراً!');
+          loadOverview();
+        }
+      }
+
+      function renderSecurityLogs() {
+        const logs = overviewData?.securityLogs || [];
+        document.getElementById('sec-logs-list').innerHTML = logs.length
+          ? logs.map((l) => `<div class="bg-[#141619] p-2 rounded border border-[#2d323b] text-gray-300">[${l.created_at}] <strong class="text-amber-400">${l.type}</strong> — ${JSON.stringify(l.details || {})}</div>`).join('')
+          : '<div class="text-gray-500">لا توجد تهديدات مسجلة — النظام آمن</div>';
+      }
+
+      function switchTab(tab) {
+        ['users', 'packages', 'payments', 'gateways', 'settings', 'security'].forEach((t) => {
+          document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+          document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
+        });
+      }
+
+      function toast(msg) {
+        const el = document.getElementById('admin-toast');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        setTimeout(() => el.classList.add('hidden'), 3500);
+      }
+
+      if (currentPin) {
+        document.getElementById('pin-input').value = currentPin;
+        verifyPin(null);
+      }
+
+      return {
+        verifyPin,
+        openManualPinChange,
+        submitNewPin,
+        loadOverview,
+        switchTab,
+        renderUsersTable,
+        createUser,
+        adjustUserCoins,
+        changeUserPlan,
+        toggleUserStatus,
+        cancelAndRefundUser,
+        deleteUser,
+        savePackages,
+        generateCode,
+        cancelCode,
+        updateTxStatus,
+        saveCoupon,
+        deleteCoupon,
+        saveSettings
+      };
+    })();
+  </script>
+</body>
+</html>

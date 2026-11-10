@@ -1,78 +1,1322 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مُجسَّم</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مجسمات | استوديو التصميم والتحرير ثلاثي الأبعاد (Mojassamat 3D Studio)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-dark: #1b1d21;
+      --panel-bg: #26292e;
+      --panel-header: #2f333a;
+      --border-col: #3a3f48;
+      --creality-green: #00c853;
+      --accent-emerald: #10b981;
+    }
+    * { box-sizing: border-box; user-select: none; }
     body {
-      font-family: 'Cairo', sans-serif;
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: #0f1115; color: #e6e8eb;
+      margin: 0;
+      font-family: 'Cairo', 'Tajawal', sans-serif;
+      background-color: var(--bg-dark);
+      color: #e5e7eb;
+      overflow-x: hidden;
     }
-    .card { text-align: center; padding: 40px 32px; max-width: 380px; width: 100%; }
-    h1 { font-size: 28px; margin-bottom: 8px; }
-    p.sub { color: #8a919c; font-size: 14px; margin-bottom: 28px; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 10px; justify-content: center;
-      width: 100%; padding: 12px 18px; border-radius: 10px; border: 1px solid #2a2f37;
-      background: #fff; color: #1f1f1f; font: 600 15px 'Cairo', sans-serif; cursor: pointer;
+
+    /* Creative Rotating 3D Cube Logo */
+    .cube-scene {
+      width: 28px;
+      height: 28px;
+      perspective: 90px;
+      display: inline-block;
     }
-    .btn:disabled { opacity: .6; cursor: wait; }
-    .btn.secondary { background: transparent; color: #e6e8eb; margin-top: 16px; }
-    .avatar { width: 72px; height: 72px; border-radius: 50%; margin-bottom: 12px; }
-    .err { color: #f87171; font-size: 13px; margin-top: 14px; min-height: 18px; }
-    .hidden { display: none; }
+    .cube-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: spinCubeCreative 7s infinite cubic-bezier(0.45, 0.05, 0.55, 0.95);
+    }
+    .cube-face {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      left: 3px;
+      top: 3px;
+      border: 1.5px solid #00e676;
+      background: rgba(0, 200, 83, 0.18);
+      box-shadow: 0 0 8px rgba(0, 230, 118, 0.35) inset;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .cube-face.front  { transform: rotateY(  0deg) translateZ(11px); }
+    .cube-face.back   { transform: rotateY(180deg) translateZ(11px); }
+    .cube-face.right  { transform: rotateY( 90deg) translateZ(11px); }
+    .cube-face.left   { transform: rotateY(-90deg) translateZ(11px); }
+    .cube-face.top    { transform: rotateX( 90deg) translateZ(11px); background: rgba(16, 185, 129, 0.35); }
+    .cube-face.bottom { transform: rotateX(-90deg) translateZ(11px); }
+
+    @keyframes spinCubeCreative {
+      0%   { transform: rotateX(-22deg) rotateY(0deg) rotateZ(0deg); }
+      35%  { transform: rotateX(25deg) rotateY(140deg) rotateZ(12deg); }
+      70%  { transform: rotateX(-30deg) rotateY(260deg) rotateZ(-10deg); }
+      100% { transform: rotateX(-22deg) rotateY(360deg) rotateZ(0deg); }
+    }
+
+    /* Creality Toolbar Button Styling */
+    .tool-btn {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 5px 9px;
+      border-radius: 8px;
+      background: #2b2f36;
+      border: 1px solid #3c424d;
+      color: #d1d5db;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      white-space: nowrap;
+    }
+    .tool-btn i { font-size: 14px; color: #9ca3af; transition: color 0.16s; }
+    .tool-btn:hover {
+      background: #353b45;
+      border-color: #00c853;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+    .tool-btn:hover i { color: #00e676; }
+    .tool-btn.active {
+      background: rgba(0, 200, 83, 0.18);
+      border-color: #00c853;
+      color: #00e676;
+    }
+    .tool-btn.active i { color: #00e676; }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1b1d21; }
+    ::-webkit-scrollbar-thumb { background: #3f4550; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00c853; }
+
+    /* Primitive Dropdown Menu (Exact Creality Dark List) */
+    .primitive-menu {
+      background: #23262b;
+      border: 1px solid #3e4451;
+      border-radius: 10px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.65);
+    }
+    .primitive-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 14px;
+      font-size: 12.5px;
+      color: #e5e7eb;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .primitive-item:hover {
+      background: #323741;
+      color: #00e676;
+    }
+    .primitive-item i {
+      color: #00e676;
+      width: 18px;
+      text-align: center;
+    }
   </style>
 </head>
-<body>
-  <main class="card">
-    <section id="signed-out" class="hidden">
-      <h1>مُجسَّم</h1>
-      <p class="sub">سجّل دخولك للمتابعة</p>
-      <button id="google-btn" class="btn">
-        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        تسجيل الدخول بحساب Google
+<body class="flex flex-col min-h-screen">
+
+  <!-- ════════════════════════════════════════════════════════════════
+       0. TOP ANNOUNCEMENT BAR
+       ════════════════════════════════════════════════════════════════ -->
+  <div id="announcement-bar" class="bg-gradient-to-r from-emerald-900/90 via-teal-900/90 to-emerald-900/90 border-b border-emerald-500/30 text-emerald-100 text-xs py-1.5 px-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="bg-emerald-500 text-black font-bold px-2 py-0.5 rounded text-[10px]">جديد</span>
+      <span id="announcement-text">🎁 سجّل الآن واحصل على 6 كوينز مجاناً + مكافآت تسجيل دخول يومي و20% عمولة دعوة الأصدقاء!</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="MJApp.openModal('loyalty-modal')" class="text-amber-300 hover:underline font-bold flex items-center gap-1">
+        <i class="fa-solid fa-gift"></i><span>مكافأة اليوم</span>
       </button>
-      <div id="err" class="err"></div>
-    </section>
+      <button onclick="MJApp.openModal('redeem-modal')" class="text-emerald-300 hover:underline font-bold flex items-center gap-1">
+        <i class="fa-solid fa-ticket"></i><span>تفعيل كود شحن</span>
+      </button>
+    </div>
+  </div>
 
-    <section id="signed-in" class="hidden">
-      <img id="avatar" class="avatar" alt="" referrerpolicy="no-referrer">
-      <h1 id="name"></h1>
-      <p class="sub" id="email"></p>
-      <button id="logout-btn" class="btn secondary">تسجيل الخروج</button>
-    </section>
-  </main>
+  <!-- ════════════════════════════════════════════════════════════════
+       1. CREALITY PRINT HEADER & DESIGN TOOLBAR (TOOLS AT TOP)
+       ════════════════════════════════════════════════════════════════ -->
+  <header class="bg-[#23262b] border-b border-[#383d47] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 z-30">
 
+    <!-- Right side (in RTL): User Info, Coins, Loyalty, Lang, Admin -->
+    <div class="flex items-center gap-2 order-1">
+      <!-- Creative Rotating 3D Cube Logo + Brand Name -->
+      <div class="flex items-center gap-2.5 pl-3 border-l border-[#383d47]">
+        <div class="cube-scene" title="مجسمات">
+          <div class="cube-3d">
+            <div class="cube-face front">3D</div>
+            <div class="cube-face back">M</div>
+            <div class="cube-face right">م</div>
+            <div class="cube-face left">ج</div>
+            <div class="cube-face top">★</div>
+            <div class="cube-face bottom">•</div>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span id="brand-title" class="font-extrabold text-base tracking-wide text-white">مجسمات</span>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">PRO</span>
+          </div>
+          <p id="brand-sub" class="text-[10px] text-gray-400 -mt-1">استوديو التصميم والطباعة 3D</p>
+        </div>
+      </div>
+
+      <!-- User & Coins Pill (Top Right as requested) -->
+      <div id="user-top-area" class="flex items-center gap-1.5 bg-[#1b1d21] border border-[#383d47] rounded-xl px-2.5 py-1">
+        <!-- Guest View -->
+        <button id="top-login-btn" onclick="MJApp.openModal('auth-modal')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-user-plus"></i>
+          <span data-i18n="loginBtn">تسجيل الدخول / حساب جديد</span>
+        </button>
+
+        <!-- Logged-in View -->
+        <div id="top-user-info" class="hidden flex items-center gap-2">
+          <img id="top-user-avatar" src="" alt="" class="w-6 h-6 rounded-full border border-emerald-400 hidden" referrerpolicy="no-referrer" />
+          <div class="text-right">
+            <div id="top-user-name" class="text-xs font-bold text-white leading-tight">مستخدم</div>
+            <div id="top-user-plan" class="text-[10px] text-emerald-400 leading-tight">الباقة المجانية</div>
+          </div>
+          <!-- Coins Balance Badge -->
+          <button onclick="MJApp.openModal('pricing-modal')" class="bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 transition" title="شحن كوينز">
+            <i class="fa-solid fa-coins text-amber-400"></i>
+            <span id="top-user-coins">6</span>
+            <span class="text-[10px]">كوينز</span>
+            <i class="fa-solid fa-circle-plus text-emerald-400 mr-0.5"></i>
+          </button>
+          <button onclick="MJApp.openModal('account-modal')" class="text-gray-400 hover:text-white p-1" title="إعدادات الحساب واسترداد الرصيد">
+            <i class="fa-solid fa-gear text-xs"></i>
+          </button>
+          <button onclick="MJApp.handleLogout()" class="text-red-400 hover:text-red-300 p-1" title="تسجيل الخروج">
+            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loyalty & Daily Checkin Button -->
+      <button onclick="MJApp.openModal('loyalty-modal')" class="bg-[#2b2f36] hover:bg-[#353b45] border border-amber-500/40 text-amber-300 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5" title="نظام الولاء والتحديات ودعوة الأصدقاء">
+        <i class="fa-solid fa-trophy text-amber-400"></i>
+        <span data-i18n="loyaltyBtn" class="hidden sm:inline">الولاء والمكافآت</span>
+      </button>
+
+      <!-- Pricing / Store Button -->
+      <button onclick="MJApp.openModal('pricing-modal')" class="bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5">
+        <i class="fa-solid fa-bolt text-emerald-400"></i>
+        <span data-i18n="topupBtn" class="hidden sm:inline">الباقات والشحن</span>
+      </button>
+
+      <!-- Language Switcher AR / EN -->
+      <button id="lang-toggle-btn" onclick="MJApp.toggleLanguage()" class="bg-[#2b2f36] hover:bg-[#353b45] border border-[#3c424d] text-gray-200 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
+        <i class="fa-solid fa-globe text-emerald-400"></i>
+        <span id="lang-label">EN</span>
+      </button>
+
+      <!-- Admin Dashboard Link -->
+      <a href="admin.html" class="bg-[#2b2f36] hover:bg-[#353b45] border border-[#3c424d] text-gray-300 hover:text-emerald-400 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1" title="لوحة التحكم والإدارة">
+        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+        <span data-i18n="adminBtn" class="hidden md:inline">الإدارة</span>
+      </a>
+    </div>
+
+    <!-- Center: Main Design & Editing Tools Bar (All Requested Tools!) -->
+    <div class="flex items-center flex-wrap gap-1.5 order-2">
+
+      <!-- 1. New Build Plate -->
+      <button onclick="MJApp.confirmNewWorkspace()" class="tool-btn" title="بدء مشروع جديد ومسح اللوحة">
+        <i class="fa-solid fa-file-circle-plus text-rose-400"></i>
+        <span data-i18n="newBtn">جديد</span>
+      </button>
+
+      <!-- 2. Undo / Redo (Ctrl+Z / Ctrl+Y) -->
+      <button onclick="MJApp.undo()" class="tool-btn" title="تراجع (Ctrl+Z)">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>تراجع</span>
+      </button>
+      <button onclick="MJApp.redo()" class="tool-btn" title="إعادة (Ctrl+Y)">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span>إعادة</span>
+      </button>
+
+      <div class="h-6 w-[1px] bg-[#383d47] mx-0.5"></div>
+
+      <!-- 3. Upload 3D / SVG File -->
+      <label class="tool-btn cursor-pointer border-emerald-500/50 bg-emerald-950/30" title="رفع مجسم STL, OBJ, 3MF, SVG">
+        <i class="fa-solid fa-cloud-arrow-up !text-emerald-400"></i>
+        <span data-i18n="uploadBtn" class="text-emerald-300">رفع مجسم</span>
+        <input id="file-upload-input" type="file" accept=".stl,.obj,.3mf,.svg" multiple class="hidden" onchange="MJApp.handleFilesUpload(this.files)" />
+      </label>
+
+      <!-- 4. Add Arabic 3D Text (48 Fonts) -->
+      <button onclick="MJApp.openModal('arabic-text-modal')" class="tool-btn" title="إضافة نص عربي ثلاثي الأبعاد (48 خط عربي)">
+        <i class="fa-solid fa-font !text-emerald-400"></i>
+        <span data-i18n="arabicTextBtn">نص عربي</span>
+      </button>
+
+      <!-- 5. Add Primitive / Calibration Shape (Dropdown matching uploaded image) -->
+      <div class="relative" id="primitive-dropdown-wrap">
+        <button onclick="MJApp.togglePrimitiveMenu()" class="tool-btn" title="إضافة مجسم أو نموذج اختبار">
+          <i class="fa-solid fa-cubes !text-emerald-400"></i>
+          <span data-i18n="addShapeBtn">إضافة مجسم</span>
+        </button>
+        <div id="primitive-menu" class="primitive-menu hidden absolute top-full mt-1 right-0 w-64 py-2 z-50 max-h-[420px] overflow-y-auto">
+          <div class="px-3 py-1 text-[11px] font-bold text-gray-400 border-b border-[#383d47] flex items-center justify-between">
+            <span>طريقة الإضافة:</span>
+            <select id="primitive-add-mode" class="bg-[#1b1d21] border border-[#3c424d] rounded px-1.5 py-0.5 text-[11px] text-emerald-400">
+              <option value="part">قطعة إضافية</option>
+              <option value="emboss">لصق بارز على المجسم</option>
+              <option value="engrave">حفر داخل المجسم</option>
+            </select>
+          </div>
+          <div id="primitive-list-basic" class="py-1"></div>
+          <div class="border-t border-[#383d47] my-1"></div>
+          <div id="primitive-list-calib" class="py-1"></div>
+          <div class="px-3 pt-1 text-[10px] text-gray-500 border-t border-[#383d47]">
+            3DBenchy مرخص بموجب CC BY-ND (CreativeTools)
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Stick / Wrap onto Model Surface ("لصق على سطح المجسم أو حفر") -->
+      <button onclick="MJApp.openStickSurfaceModal()" class="tool-btn" title="لصق النص أو الشكل ليتشكل على سطح المجسم (أسطوانة/مربع/كرة) أو حفره">
+        <i class="fa-solid fa-wand-magic-sparkles !text-amber-400"></i>
+        <span data-i18n="stickSurfaceBtn">لصق / حفر بالسطح</span>
+      </button>
+
+      <!-- 7. Keychain, Charger Tag & Bag Tag Maker -->
+      <button onclick="MJApp.openModal('keychain-modal')" class="tool-btn" title="صانع الميداليات وتاق الشاحن وتاق الشنطة بالعربي">
+        <i class="fa-solid fa-key !text-pink-400"></i>
+        <span data-i18n="keychainBtn">ميدالية / تاق</span>
+      </button>
+
+      <!-- 8. Universal File Format Converter (PNG <-> SVG <-> STL <-> OBJ <-> 3MF) -->
+      <button onclick="MJApp.openModal('converter-modal')" class="tool-btn" title="تحويل صيغ الملفات (PNG إلى SVG وإلى STL/OBJ/3MF)">
+        <i class="fa-solid fa-repeat !text-sky-400"></i>
+        <span data-i18n="converterBtn">تحويل الصيغ</span>
+      </button>
+
+      <!-- 9. 3D QR Code Generator -->
+      <button onclick="MJApp.openModal('qr-modal')" class="tool-btn" title="صانع باركود QR ثلاثي الأبعاد (رابط، واتساب، واي فاي، نص)">
+        <i class="fa-solid fa-qrcode !text-purple-400"></i>
+        <span data-i18n="qrBtn">QR ثلاثي الأبعاد</span>
+      </button>
+
+      <div class="h-6 w-[1px] bg-[#383d47] mx-0.5"></div>
+
+      <!-- 10. Magnet (Snap Selected Object to Build Plate) -->
+      <button onclick="MJApp.snapSelectedToBed()" class="tool-btn" title="مغناطيس: إلصاق المجسم المحدد مباشرة على سطح لوحة البناء">
+        <i class="fa-solid fa-magnet !text-red-400"></i>
+        <span data-i18n="magnetBtn">مغناطيس</span>
+      </button>
+
+      <!-- 11. Rotate 0-360 Professional Panel -->
+      <button id="btn-rotate-panel" onclick="MJApp.toggleTransformPopover('rotate')" class="tool-btn" title="تدوير المجسم من 0 إلى 360 درجة">
+        <i class="fa-solid fa-arrows-spin"></i>
+        <span data-i18n="rotateBtn">تدوير 360°</span>
+      </button>
+
+      <!-- 12. Scale Length/Width/Height Professional Panel -->
+      <button id="btn-scale-panel" onclick="MJApp.toggleTransformPopover('scale')" class="tool-btn" title="تكبير وتصغير المجسم (طول وعرض وارتفاع)">
+        <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+        <span data-i18n="scaleBtn">تحجيم وأبعاد</span>
+      </button>
+
+      <!-- 13. Eye Preview Button (Toggle Clean Preview vs Edit Mode) -->
+      <button id="btn-eye-preview" onclick="MJApp.toggleEyePreview()" class="tool-btn" title="معاينة التعديلات النهائية / العودة للتحرير">
+        <i class="fa-solid fa-eye !text-cyan-400"></i>
+        <span data-i18n="previewBtn">معاينة</span>
+      </button>
+
+      <!-- 14. Checkmark Button (✔ Full Print Check & Slicer Settings Advisor) -->
+      <button onclick="MJApp.runPrintCheck()" class="tool-btn border-emerald-500/40" title="فحص المجسم بالكامل واقتراح إعدادات الطباعة والدعامات والسرعة">
+        <i class="fa-solid fa-circle-check !text-emerald-400"></i>
+        <span data-i18n="checkBtn">فحص الطباعة ✔</span>
+      </button>
+
+      <!-- 15. Build Plates + / - (Square Grid Layout) -->
+      <div class="flex items-center bg-[#1b1d21] border border-[#3c424d] rounded-lg px-1.5 py-0.5 gap-1" title="إضافة أو حذف لوحة بناء (توزيع مربع)">
+        <button onclick="MJApp.addBuildPlate()" class="w-6 h-6 rounded bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 font-bold text-sm flex items-center justify-center" title="إضافة لوحة بناء (+)">+</button>
+        <div class="text-center px-1">
+          <div class="text-[9px] text-gray-400 leading-none">لوحات</div>
+          <div id="plates-count-label" class="text-xs font-extrabold text-emerald-400">01</div>
+        </div>
+        <button onclick="MJApp.removeBuildPlate()" class="w-6 h-6 rounded bg-rose-600/20 hover:bg-rose-600/40 text-rose-400 font-bold text-sm flex items-center justify-center" title="حذف لوحة بناء (-)">−</button>
+      </div>
+
+      <!-- 16. Split Colors to Separate Build Plates -->
+      <button onclick="MJApp.splitColorsToPlates()" class="tool-btn" title="فصل الألوان: وضع كل لون في لوحة بناء مستقلة للطابعات ذات اللون الواحد">
+        <i class="fa-solid fa-palette !text-amber-400"></i>
+        <span data-i18n="splitColorsBtn">فصل الألوان</span>
+      </button>
+
+      <!-- 17. Export Dropdown (STL, SVG, OBJ, 3MF) - Costs 2 Coins -->
+      <button onclick="MJApp.openModal('export-modal')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-xs font-extrabold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 transition">
+        <i class="fa-solid fa-download"></i>
+        <span data-i18n="exportBtn">تصدير</span>
+      </button>
+    </div>
+
+  </header>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       2. MAIN WORKSPACE AREA (3D BUILD PLATE + LEFT PREVIEW PANEL)
+       Note: In RTL, flex-row-reverse places the sidebar on the LEFT as requested!
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="flex-1 flex flex-row-reverse relative overflow-hidden" style="min-height: calc(100vh - 135px);">
+
+    <!-- ── 3D WORKSPACE (Creality Print Style Viewport) ── -->
+    <main class="flex-1 relative bg-[#2d3037]" id="viewport-container">
+      <!-- Three.js Canvas attaches here -->
+      <div id="three-canvas-wrap" class="w-full h-full"></div>
+
+      <!-- Top-Left Viewport Mode Pill (Prepare / Preview Status) -->
+      <div class="absolute top-3 right-4 flex items-center gap-2 pointer-events-none">
+        <div id="mode-indicator-pill" class="bg-[#1f2228]/90 border border-[#3e4450] px-3 py-1 rounded-lg text-xs font-bold text-emerald-400 flex items-center gap-2 shadow">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="mode-indicator-text">وضع التحرير (Prepare)</span>
+        </div>
+        <div id="surface-pick-banner" class="hidden bg-amber-500 text-black font-extrabold px-3 py-1 rounded-lg text-xs shadow-lg pointer-events-auto flex items-center gap-2">
+          <i class="fa-solid fa-hand-pointer"></i>
+          <span>انقر مباشرة على أي جهة من المجسم للصق أو اختر من النافذة</span>
+          <button onclick="MJApp.cancelSurfacePick()" class="bg-black/20 hover:bg-black/40 text-white px-2 py-0.5 rounded text-[10px]">إلغاء</button>
+        </div>
+      </div>
+
+      <!-- Camera View Cube Shortcuts (TOP / FRONT / RIGHT / HOME like Creality Print) -->
+      <div class="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
+        <div class="bg-[#23262b]/90 border border-[#3e4450] rounded-lg p-1.5 flex flex-col gap-1 shadow-xl">
+          <button onclick="MJApp.setCameraView('top')" class="px-2.5 py-1 text-[10px] font-extrabold bg-[#32363f] hover:bg-emerald-600 text-gray-200 hover:text-white rounded transition">TOP</button>
+          <button onclick="MJApp.setCameraView('front')" class="px-2.5 py-1 text-[10px] font-extrabold bg-[#32363f] hover:bg-emerald-600 text-gray-200 hover:text-white rounded transition">FRONT</button>
+          <button onclick="MJApp.setCameraView('side')" class="px-2.5 py-1 text-[10px] font-extrabold bg-[#32363f] hover:bg-emerald-600 text-gray-200 hover:text-white rounded transition">SIDE</button>
+          <button onclick="MJApp.setCameraView('iso')" class="px-2.5 py-1 text-xs bg-[#2b2f36] hover:bg-emerald-600 text-emerald-400 hover:text-white rounded transition" title="الوضع الافتراضي">
+            <i class="fa-solid fa-house"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Floating Professional Rotate (0-360°) & Scale Window -->
+      <div id="transform-popover" class="hidden absolute top-16 right-4 w-80 bg-[#23262b]/95 backdrop-blur border border-emerald-500/50 rounded-xl p-4 shadow-2xl z-20">
+        <div class="flex items-center justify-between border-b border-[#383d47] pb-2 mb-3">
+          <h3 id="transform-popover-title" class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-Sliders"></i>
+            <span>التحكم الدقيق بالمجسم</span>
+          </h3>
+          <button onclick="MJApp.closeTransformPopover()" class="text-gray-400 hover:text-white text-sm">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Rotate Section (0 to 360 deg) -->
+        <div id="popover-rotate-section" class="space-y-3">
+          <div class="text-[11px] text-gray-400 mb-1">تدوير احترافي بالدرجات (0° إلى 360°):</div>
+          <!-- X Axis -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-red-400 font-bold">محور X (أحمر)</span>
+              <span id="rot-x-val" class="font-mono text-white">0°</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="rot-x-slider" type="range" min="0" max="360" step="1" value="0" class="flex-1 accent-red-500" oninput="MJApp.applyRotationInput('x', this.value)" />
+              <input id="rot-x-num" type="number" min="0" max="360" value="0" class="w-16 bg-[#1b1d21] border border-[#3c424d] rounded px-1.5 py-0.5 text-xs text-center" oninput="MJApp.applyRotationInput('x', this.value)" />
+            </div>
+          </div>
+          <!-- Y Axis -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-emerald-400 font-bold">محور Y (أخضر)</span>
+              <span id="rot-y-val" class="font-mono text-white">0°</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="rot-y-slider" type="range" min="0" max="360" step="1" value="0" class="flex-1 accent-emerald-500" oninput="MJApp.applyRotationInput('y', this.value)" />
+              <input id="rot-y-num" type="number" min="0" max="360" value="0" class="w-16 bg-[#1b1d21] border border-[#3c424d] rounded px-1.5 py-0.5 text-xs text-center" oninput="MJApp.applyRotationInput('y', this.value)" />
+            </div>
+          </div>
+          <!-- Z Axis -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-sky-400 font-bold">محور Z (أزرق)</span>
+              <span id="rot-z-val" class="font-mono text-white">0°</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="rot-z-slider" type="range" min="0" max="360" step="1" value="0" class="flex-1 accent-sky-500" oninput="MJApp.applyRotationInput('z', this.value)" />
+              <input id="rot-z-num" type="number" min="0" max="360" value="0" class="w-16 bg-[#1b1d21] border border-[#3c424d] rounded px-1.5 py-0.5 text-xs text-center" oninput="MJApp.applyRotationInput('z', this.value)" />
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-1 pt-2 border-t border-[#383d47]">
+            <button onclick="MJApp.quickRotate('x', 90)" class="flex-1 bg-[#2b2f36] hover:bg-[#383d47] text-[11px] py-1 rounded">X +90°</button>
+            <button onclick="MJApp.quickRotate('y', 90)" class="flex-1 bg-[#2b2f36] hover:bg-[#383d47] text-[11px] py-1 rounded">Y +90°</button>
+            <button onclick="MJApp.quickRotate('z', 90)" class="flex-1 bg-[#2b2f36] hover:bg-[#383d47] text-[11px] py-1 rounded">Z +90°</button>
+            <button onclick="MJApp.resetRotation()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[11px] px-2.5 py-1 rounded">تصفير</button>
+          </div>
+        </div>
+
+        <!-- Scale Section (Length, Width, Height in mm & %) -->
+        <div id="popover-scale-section" class="space-y-3 hidden">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-gray-400">الأبعاد بالمليمتر (مم):</span>
+            <label class="flex items-center gap-1 text-emerald-400 cursor-pointer">
+              <input id="scale-uniform-lock" type="checkbox" checked class="accent-emerald-500" />
+              <span>قفل التناسب</span>
+            </label>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="text-[10px] text-red-400 block mb-0.5">الطول X (مم)</label>
+              <input id="dim-x-mm" type="number" step="0.5" min="1" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded px-2 py-1 text-xs text-center" onchange="MJApp.applyDimensionMm('x', this.value)" />
+            </div>
+            <div>
+              <label class="text-[10px] text-sky-400 block mb-0.5">العرض Z (مم)</label>
+              <input id="dim-z-mm" type="number" step="0.5" min="1" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded px-2 py-1 text-xs text-center" onchange="MJApp.applyDimensionMm('z', this.value)" />
+            </div>
+            <div>
+              <label class="text-[10px] text-emerald-400 block mb-0.5">الارتفاع Y (مم)</label>
+              <input id="dim-y-mm" type="number" step="0.5" min="0.5" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded px-2 py-1 text-xs text-center" onchange="MJApp.applyDimensionMm('y', this.value)" />
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-gray-400">نسبة التكبير والتصغير:</span>
+              <span id="scale-pct-label" class="font-mono text-emerald-400">100%</span>
+            </div>
+            <input id="scale-pct-slider" type="range" min="10" max="300" value="100" class="w-full accent-emerald-500" oninput="MJApp.applyUniformPercent(this.value)" />
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="MJApp.applyUniformPercent(50)" class="flex-1 bg-[#2b2f36] hover:bg-[#383d47] text-[11px] py-1 rounded">50%</button>
+            <button onclick="MJApp.applyUniformPercent(100)" class="flex-1 bg-[#2b2f36] hover:bg-[#383d47] text-[11px] py-1 rounded">100%</button>
+            <button onclick="MJApp.applyUniformPercent(150)" class="flex-1 bg-[#2b2f36] hover:bg-[#383d47] text-[11px] py-1 rounded">150%</button>
+            <button onclick="MJApp.applyUniformPercent(200)" class="flex-1 bg-[#2b2f36] hover:bg-[#383d47] text-[11px] py-1 rounded">200%</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Floating Quick Action Bar (Like Creality Slice/Export Pill) -->
+      <div class="absolute bottom-3 left-4 flex items-center gap-2 z-10">
+        <button onclick="MJApp.runPrintCheck()" class="bg-[#23262b]/95 hover:bg-[#2f343d] border border-[#454c59] text-gray-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-xl">
+          <i class="fa-solid fa-clipboard-check text-emerald-400"></i>
+          <span>فحص المجسم والنصائح</span>
+        </button>
+        <button onclick="MJApp.openModal('export-modal')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-xs font-extrabold flex items-center gap-2 shadow-xl">
+          <i class="fa-solid fa-cube"></i>
+          <span>تصدير للطباعة (2 كوينز)</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- ── LEFT PANEL: PRINTER BED SELECTOR, PREVIEW & OBJECT INSPECTOR (Creality Style) ── -->
+    <aside class="w-80 bg-[#23262b] border-r border-[#383d47] flex flex-col z-20 overflow-y-auto">
+
+      <!-- 1. Printer & Build Plate Selector -->
+      <div class="p-3 border-b border-[#383d47]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-print"></i>
+            <span>الطابعة ولوحة البناء (Printer)</span>
+          </span>
+          <span id="plate-size-badge" class="text-[10px] font-mono bg-[#1b1d21] text-gray-300 px-2 py-0.5 rounded border border-[#383d47]">260×260×300</span>
+        </div>
+        <select id="printer-select" onchange="MJApp.changePrinter(this.value)" class="w-full bg-[#1b1d21] border border-[#3c424d] focus:border-emerald-500 rounded-lg px-2.5 py-2 text-xs text-white font-semibold outline-none">
+        </select>
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <div class="bg-[#1b1d21] border border-[#343942] rounded-lg px-2.5 py-1.5">
+            <div class="text-[10px] text-gray-400">نوع السطح (Bed Type)</div>
+            <div class="text-[11px] font-bold text-gray-200 truncate" id="printer-plate-label">Textured PEI Plate</div>
+          </div>
+          <div class="bg-[#1b1d21] border border-[#343942] rounded-lg px-2.5 py-1.5">
+            <div class="text-[10px] text-gray-400">قطر الفوهة (Nozzle)</div>
+            <div class="text-[11px] font-bold text-emerald-400">0.4mm Standard</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Selected Object Preview & Color Swatches -->
+      <div class="p-3 border-b border-[#383d47]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-extrabold text-white flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders text-emerald-400"></i>
+            <span>معاينة وخصائص المجسم</span>
+          </span>
+          <span id="selected-obj-plate-tag" class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">لوحة 01</span>
+        </div>
+
+        <div id="no-selection-msg" class="text-xs text-gray-400 bg-[#1b1d21] rounded-lg p-3 text-center">
+          انقر على أي مجسم في لوحة البناء لمعاينته والتحكم بأبعاده ولونه
+        </div>
+
+        <div id="selected-inspector" class="hidden space-y-2.5">
+          <div class="flex items-center justify-between bg-[#1b1d21] px-2.5 py-1.5 rounded-lg border border-[#343942]">
+            <span id="selected-obj-name" class="text-xs font-bold text-emerald-300 truncate">مجسم</span>
+            <div class="flex items-center gap-1">
+              <button onclick="MJApp.duplicateSelected()" class="text-xs text-gray-300 hover:text-emerald-400 px-1.5" title="تكرار المجسم">
+                <i class="fa-solid fa-clone"></i>
+              </button>
+              <button onclick="MJApp.deleteSelected()" class="text-xs text-rose-400 hover:text-rose-300 px-1.5" title="حذف المجسم">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Color Picker & Filament Presets -->
+          <div>
+            <div class="flex items-center justify-between text-[11px] text-gray-400 mb-1">
+              <span>لون الفلمنت / المجسم:</span>
+              <input id="obj-color-picker" type="color" value="#10b981" onchange="MJApp.setSelectedColor(this.value)" class="w-6 h-5 rounded cursor-pointer bg-transparent border-0" />
+            </div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button onclick="MJApp.setSelectedColor('#10b981')" class="w-5 h-5 rounded-full bg-[#10b981] border border-white/30" title="أخضر Creality"></button>
+              <button onclick="MJApp.setSelectedColor('#ffffff')" class="w-5 h-5 rounded-full bg-[#ffffff] border border-white/30" title="أبيض"></button>
+              <button onclick="MJApp.setSelectedColor('#1e293b')" class="w-5 h-5 rounded-full bg-[#1e293b] border border-white/30" title="أسود كربوني"></button>
+              <button onclick="MJApp.setSelectedColor('#ef4444')" class="w-5 h-5 rounded-full bg-[#ef4444] border border-white/30" title="أحمر"></button>
+              <button onclick="MJApp.setSelectedColor('#3b82f6')" class="w-5 h-5 rounded-full bg-[#3b82f6] border border-white/30" title="أزرق"></button>
+              <button onclick="MJApp.setSelectedColor('#f59e0b')" class="w-5 h-5 rounded-full bg-[#f59e0b] border border-white/30" title="ذهبي"></button>
+              <button onclick="MJApp.setSelectedColor('#ec4899')" class="w-5 h-5 rounded-full bg-[#ec4899] border border-white/30" title="وردي"></button>
+              <button onclick="MJApp.setSelectedColor('#a855f7')" class="w-5 h-5 rounded-full bg-[#a855f7] border border-white/30" title="بنفسجي"></button>
+            </div>
+          </div>
+
+          <!-- Live Dimensions Summary -->
+          <div class="grid grid-cols-3 gap-1.5 text-center bg-[#1b1d21] p-2 rounded-lg border border-[#343942]">
+            <div>
+              <div class="text-[10px] text-gray-400">طول X</div>
+              <div id="insp-dim-x" class="text-xs font-mono font-bold text-white">0.0</div>
+            </div>
+            <div>
+              <div class="text-[10px] text-gray-400">عرض Z</div>
+              <div id="insp-dim-z" class="text-xs font-mono font-bold text-white">0.0</div>
+            </div>
+            <div>
+              <div class="text-[10px] text-gray-400">ارتفاع Y</div>
+              <div id="insp-dim-y" class="text-xs font-mono font-bold text-white">0.0</div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons inside Left Inspector -->
+          <div class="grid grid-cols-2 gap-1.5">
+            <button onclick="MJApp.snapSelectedToBed()" class="bg-[#2b2f36] hover:bg-[#363b44] border border-[#3e4450] rounded-lg py-1.5 text-[11px] font-bold flex items-center justify-center gap-1">
+              <i class="fa-solid fa-magnet text-red-400"></i>
+              <span>تثبيت باللوحة</span>
+            </button>
+            <button onclick="MJApp.openStickSurfaceModal()" class="bg-[#2b2f36] hover:bg-[#363b44] border border-[#3e4450] rounded-lg py-1.5 text-[11px] font-bold flex items-center justify-center gap-1">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+              <span>لصق / حفر</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Scene Objects List -->
+      <div class="p-3 border-b border-[#383d47] flex-1">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-extrabold text-white flex items-center gap-1.5">
+            <i class="fa-solid fa-layer-group text-emerald-400"></i>
+            <span>قائمة المجسمات في اللوحات</span>
+          </span>
+          <span id="objects-count-badge" class="text-[10px] bg-[#1b1d21] px-2 py-0.5 rounded text-gray-400">0</span>
+        </div>
+        <div id="objects-list" class="space-y-1.5 max-h-56 overflow-y-auto"></div>
+      </div>
+
+      <!-- 4. Live Print Advisor Summary Card (Left Panel Preview) -->
+      <div class="p-3 bg-[#1e2126]">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-microchip"></i>
+            <span>ملخص المعاينة والطباعة</span>
+          </span>
+          <button onclick="MJApp.runPrintCheck()" class="text-[11px] text-emerald-300 hover:underline">تقرير كامل</button>
+        </div>
+        <div id="quick-print-summary" class="text-[11px] text-gray-300 space-y-1 bg-[#16181c] p-2.5 rounded-lg border border-[#323640]">
+          <div>• الحالة: <span class="text-emerald-400 font-bold">جاهز للتحرير</span></div>
+          <div>• الدعامات: <span id="quick-support-txt">اضغط ✔ للفحص</span></div>
+          <div>• الوزن والوقت التقريبي: <span id="quick-est-txt">—</span></div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       3. FOOTER (Contact, Trust Badges, Legal Policies, Services)
+       ════════════════════════════════════════════════════════════════ -->
+  <footer class="bg-[#16181c] border-t border-[#2e323b] px-6 py-4 text-xs text-gray-400 z-20">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="font-extrabold text-white text-sm">منصة مجسمات (Mojassamat)</span>
+        <span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>موقع سعودي موثوق</span>
+          <span id="footer-freelance-doc" class="font-mono text-[10px]">(وثيقة عمل حر: FL-76849201)</span>
+        </span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-4">
+        <button onclick="MJApp.openLegalModal('services')" class="hover:text-emerald-400 transition">خدمات الموقع</button>
+        <button onclick="MJApp.openLegalModal('terms')" class="hover:text-emerald-400 transition">شروط الاستخدام وضمان الاسترداد</button>
+        <button onclick="MJApp.openLegalModal('privacy')" class="hover:text-emerald-400 transition">سياسة الخصوصية</button>
+        <a id="footer-email-link" href="mailto:aahaji.110@gmail.com" class="hover:text-emerald-400 flex items-center gap-1">
+          <i class="fa-solid fa-envelope text-emerald-400"></i>
+          <span id="footer-email-text">aahaji.110@gmail.com</span>
+        </a>
+        <a id="footer-wa-link" href="https://wa.me/966500000000" target="_blank" rel="noopener" class="hover:text-emerald-400 flex items-center gap-1">
+          <i class="fa-brands fa-whatsapp text-emerald-400"></i>
+          <span>تواصل واتساب</span>
+        </a>
+      </div>
+
+      <div class="flex items-center gap-2 text-[11px] text-gray-500">
+        <span>وسائل الدفع المعتمدة:</span>
+        <span class="bg-[#23262b] px-2 py-0.5 rounded text-gray-300">مدى</span>
+        <span class="bg-[#23262b] px-2 py-0.5 rounded text-gray-300">Apple Pay</span>
+        <span class="bg-[#23262b] px-2 py-0.5 rounded text-gray-300">Visa / MasterCard</span>
+        <span class="bg-[#23262b] px-2 py-0.5 rounded text-gray-300">PayPal</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       4. MODALS (Arabic Text, Surface Stick, Keychain/Tag Maker,
+          Converter, 3D QR, Print Check, Export, Auth, Pricing/Payment,
+          Redeem Code, Loyalty/Referrals, Account/Refund, Legal)
+       ════════════════════════════════════════════════════════════════ -->
+
+  <!-- MODAL 1: Add Arabic 3D Text (48 Arabic Fonts!) -->
+  <div id="arabic-text-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-lg w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-font text-emerald-400"></i>
+          <span>إضافة نص عربي ثلاثي الأبعاد (48 خط عربي متصل)</span>
+        </h3>
+        <button onclick="MJApp.closeModal('arabic-text-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">النص العربي أو الإنجليزي:</label>
+          <input id="ar-text-input" type="text" value="مجسمات" placeholder="اكتب النص هنا..." oninput="MJApp.updateArabicTextPreview()" class="w-full bg-[#1b1d21] border border-[#3c424d] focus:border-emerald-500 rounded-xl px-3 py-2.5 text-base font-bold text-white outline-none" />
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">اختر الخط العربي (48 خط احترافي):</label>
+          <select id="ar-font-select" onchange="MJApp.updateArabicTextPreview()" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-xs text-white outline-none"></select>
+        </div>
+        <!-- Live Font Preview Box -->
+        <div class="bg-[#16181c] border border-[#343942] rounded-xl p-3 text-center">
+          <div class="text-[10px] text-gray-500 mb-1">معاينة شكل الخط المتصل:</div>
+          <div id="ar-font-preview-box" class="text-2xl font-bold text-emerald-400 py-1" style="font-family: 'Cairo', sans-serif;">مجسمات</div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">الحجم (مم)</label>
+            <input id="ar-text-size" type="number" value="28" min="6" max="200" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">السماكة / البروز (مم)</label>
+            <input id="ar-text-depth" type="number" value="4" min="0.8" max="50" step="0.5" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">اللون</label>
+            <input id="ar-text-color" type="color" value="#10b981" class="w-full h-8 bg-[#1b1d21] border border-[#3c424d] rounded-lg cursor-pointer" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">طريقة الإضافة للمشهد:</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="bg-[#1b1d21] border border-[#3c424d] rounded-lg p-2 flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="ar-text-mode" value="standalone" checked class="accent-emerald-500" />
+              <span>مجسم مستقل</span>
+            </label>
+            <label class="bg-[#1b1d21] border border-[#3c424d] rounded-lg p-2 flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="ar-text-mode" value="emboss" class="accent-emerald-500" />
+              <span>لصق بارز على المجسم</span>
+            </label>
+            <label class="bg-[#1b1d21] border border-[#3c424d] rounded-lg p-2 flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="ar-text-mode" value="engrave" class="accent-emerald-500" />
+              <span>حفر داخل المجسم</span>
+            </label>
+          </div>
+        </div>
+        <button id="ar-text-submit-btn" onclick="MJApp.addArabicTextToScene()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl shadow-lg transition">
+          إضافة النص الثلاثي الأبعاد الآن
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Stick / Wrap onto Target Surface ("لصق على سطح المجسم أو حفر") -->
+  <div id="stick-surface-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+          <span>لصق وتشكيل على سطح المجسم أو حفر</span>
+        </h3>
+        <button onclick="MJApp.closeModal('stick-surface-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3.5 text-xs">
+        <p class="text-gray-300 leading-relaxed">
+          يتشكل النص أو الشكل المضاف ليأخذ انحناء سطح المجسم الأساسي بالضبط (إذا كان أسطوانة يلتف معها، وإذا كان مربعاً أو مجسماً حراً ينطبق على سطحه).
+        </p>
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">1. اختر القطعة المراد لصقها (النص أو الشكل):</label>
+          <select id="stick-source-select" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white"></select>
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">2. اختر المجسم الأساسي (الهدف):</label>
+          <select id="stick-target-select" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white"></select>
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">3. اختر جهة اللصق من المجسم:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="MJApp.executeStickToSurface('front')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-2.5 text-right font-bold">
+              <i class="fa-solid fa-arrow-up-from-bracket text-emerald-400 ml-1"></i> الجهة الأمامية (Front)
+            </button>
+            <button type="button" onclick="MJApp.executeStickToSurface('top')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-2.5 text-right font-bold">
+              <i class="fa-solid fa-arrow-down text-emerald-400 ml-1"></i> السطح العلوي (Top)
+            </button>
+            <button type="button" onclick="MJApp.executeStickToSurface('right')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-2.5 text-right font-bold">
+              <i class="fa-solid fa-arrow-right text-emerald-400 ml-1"></i> الجهة اليمنى (Right)
+            </button>
+            <button type="button" onclick="MJApp.executeStickToSurface('left')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-2.5 text-right font-bold">
+              <i class="fa-solid fa-arrow-left text-emerald-400 ml-1"></i> الجهة اليسرى (Left)
+            </button>
+            <button type="button" onclick="MJApp.executeStickToSurface('back')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-2.5 text-right font-bold">
+              <i class="fa-solid fa-rotate text-emerald-400 ml-1"></i> الجهة الخلفية (Back)
+            </button>
+            <button type="button" onclick="MJApp.executeStickToSurface('cylinder_wrap')" class="bg-[#1b1d21] hover:bg-amber-500/20 border border-[#3c424d] hover:border-amber-500 rounded-xl p-2.5 text-right font-bold text-amber-300">
+              <i class="fa-solid fa-circle-notch ml-1"></i> التفاف أسطواني كامل
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1 font-bold">4. نوع الدمج:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="bg-[#1b1d21] border border-emerald-500/40 rounded-xl p-2.5 flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="stick-op-mode" value="emboss" checked class="accent-emerald-500" />
+              <span><strong>لصق بارز</strong> (جزء من المجسم)</span>
+            </label>
+            <label class="bg-[#1b1d21] border border-amber-500/40 rounded-xl p-2.5 flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="stick-op-mode" value="engrave" class="accent-amber-500" />
+              <span><strong>حفر غائر</strong> داخل المجسم</span>
+            </label>
+          </div>
+        </div>
+        <button type="button" onclick="MJApp.startInteractiveSurfacePick()" class="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-2.5 rounded-xl flex items-center justify-center gap-2">
+          <i class="fa-solid fa-hand-pointer"></i>
+          <span>أو اضغط هنا ثم انقر بالماوس على جهة المجسم مباشرة</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Keychain, Charger Tag & Bag Tag Maker -->
+  <div id="keychain-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-3xl w-full p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-key text-pink-400"></i>
+          <span>صانع الميداليات وتاق الشاحن وتاق الشنطة بالعربي</span>
+        </h3>
+        <button onclick="MJApp.closeModal('keychain-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">اكتب الاسم (عربي / إنجليزي):</label>
+            <input id="kc-name-input" type="text" value="علي" oninput="MJApp.renderKeychainGallery()" placeholder="اكتب الاسم هنا..." class="w-full bg-[#1b1d21] border border-pink-500/50 rounded-xl px-3 py-2 text-sm font-extrabold text-white outline-none" />
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">اختر الخط العربي:</label>
+            <select id="kc-font-select" onchange="MJApp.renderKeychainGallery()" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white"></select>
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">التصنيف:</label>
+            <div class="grid grid-cols-3 gap-1 bg-[#1b1d21] p-1 rounded-xl border border-[#3c424d]">
+              <button type="button" id="kc-tab-keychain" onclick="MJApp.setKeychainCategory('keychain')" class="py-1.5 rounded-lg font-bold bg-pink-600 text-white">ميدالية</button>
+              <button type="button" id="kc-tab-charger" onclick="MJApp.setKeychainCategory('charger')" class="py-1.5 rounded-lg font-bold text-gray-300 hover:text-white">تاق شاحن</button>
+              <button type="button" id="kc-tab-bag" onclick="MJApp.setKeychainCategory('bag')" class="py-1.5 rounded-lg font-bold text-gray-300 hover:text-white">تاق شنطة</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">سماكة القاعدة (مم)</label>
+            <input id="kc-base-thick" type="number" value="3.2" step="0.2" min="1.5" max="10" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2 py-1.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">بروز الاسم (مم)</label>
+            <input id="kc-text-height" type="number" value="2.0" step="0.2" min="0.8" max="8" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2 py-1.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">لون القاعدة</label>
+            <input id="kc-base-color" type="color" value="#1e293b" class="w-full h-8 bg-[#1b1d21] border border-[#3c424d] rounded-lg cursor-pointer" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">لون الاسم</label>
+            <input id="kc-text-color" type="color" value="#10b981" class="w-full h-8 bg-[#1b1d21] border border-[#3c424d] rounded-lg cursor-pointer" />
+          </div>
+        </div>
+
+        <div>
+          <div class="text-gray-300 font-bold mb-2">اختر التصميم الجاهز لإضافته فوراً إلى لوحة البناء:</div>
+          <div id="kc-templates-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: Universal File Converter (PNG/JPG <-> SVG <-> STL <-> OBJ <-> 3MF) -->
+  <div id="converter-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-xl w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-repeat text-sky-400"></i>
+          <span>محوّل صيغ الملفات الشامل (PNG / JPG ↔ SVG ↔ STL / OBJ / 3MF)</span>
+        </h3>
+        <button onclick="MJApp.closeModal('converter-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-4 text-xs">
+        <label class="block border-2 border-dashed border-sky-500/40 hover:border-sky-400 bg-[#1b1d21] rounded-2xl p-6 text-center cursor-pointer transition">
+          <i class="fa-solid fa-file-arrow-up text-3xl text-sky-400 mb-2"></i>
+          <div class="font-extrabold text-sm text-white">اختر الملف المراد تحويله (PNG, JPG, WEBP, SVG, STL, OBJ, 3MF)</div>
+          <div id="conv-file-label" class="text-gray-400 mt-1">أهم ميزة: تحويل أي صورة PNG أو شعار إلى SVG أو مجسم STL جاهز للطباعة!</div>
+          <input id="conv-file-input" type="file" accept=".png,.jpg,.jpeg,.webp,.svg,.stl,.obj,.3mf" class="hidden" onchange="MJApp.handleConverterFileSelect(this.files[0])" />
+        </label>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">تحويل إلى صيغة:</label>
+            <select id="conv-target-format" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white font-bold">
+              <option value="svg">SVG (ملف فيكتور 2D)</option>
+              <option value="stl">STL (مجسم ثلاثي الأبعاد)</option>
+              <option value="obj">OBJ (مجسم ثلاثي الأبعاد)</option>
+              <option value="3mf">3MF (مجسم ثلاثي الأبعاد)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">سماكة المجسم 3D (مم):</label>
+            <input id="conv-extrude-depth" type="number" value="4" min="1" max="50" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-300 mb-1 font-bold">حساسية التتبع (Threshold):</label>
+            <input id="conv-threshold" type="range" min="30" max="230" value="135" class="w-full accent-sky-400 mt-2" />
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button onclick="MJApp.runFileConversion(false)" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-extrabold py-2.5 rounded-xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-download"></i>
+            <span>تحويل وتنزيل الملف فوراً</span>
+          </button>
+          <button onclick="MJApp.runFileConversion(true)" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cube"></i>
+            <span>تحويل وإضافة للوحة البناء</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: 3D QR Code Generator (Link, WhatsApp, Wi-Fi, Text) -->
+  <div id="qr-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-lg w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-qrcode text-purple-400"></i>
+          <span>صانع QR Code ثلاثي الأبعاد القابل للمسح بالكاميرا</span>
+        </h3>
+        <button onclick="MJApp.closeModal('qr-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3.5 text-xs">
+        <!-- QR Type Selector -->
+        <div class="grid grid-cols-4 gap-1.5 bg-[#1b1d21] p-1 rounded-xl border border-[#3c424d]">
+          <button type="button" id="qr-type-url" onclick="MJApp.setQRType('url')" class="py-1.5 rounded-lg font-bold bg-purple-600 text-white">رابط</button>
+          <button type="button" id="qr-type-whatsapp" onclick="MJApp.setQRType('whatsapp')" class="py-1.5 rounded-lg font-bold text-gray-300">واتساب</button>
+          <button type="button" id="qr-type-wifi" onclick="MJApp.setQRType('wifi')" class="py-1.5 rounded-lg font-bold text-gray-300">واي فاي</button>
+          <button type="button" id="qr-type-text" onclick="MJApp.setQRType('text')" class="py-1.5 rounded-lg font-bold text-gray-300">نص</button>
+        </div>
+
+        <div>
+          <label id="qr-primary-label" class="block text-gray-300 mb-1 font-bold">الرابط (URL):</label>
+          <input id="qr-primary-input" type="text" value="https://mjar.netlify.app" placeholder="https://..." class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white outline-none" />
+        </div>
+
+        <div id="qr-secondary-wrap" class="hidden">
+          <label id="qr-secondary-label" class="block text-gray-300 mb-1 font-bold">الرسالة / كلمة المرور:</label>
+          <input id="qr-secondary-input" type="text" placeholder="..." class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white outline-none" />
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-gray-400 mb-1">الحجم (مم)</label>
+            <input id="qr-size-mm" type="number" value="50" min="25" max="200" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">ارتفاع الوحدات (مم)</label>
+            <input id="qr-module-height" type="number" value="1.8" step="0.2" min="0.6" max="10" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">سماكة القاعدة (مم)</label>
+            <input id="qr-base-thick" type="number" value="3.0" step="0.2" min="1" max="15" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">لون القاعدة</label>
+            <input id="qr-base-color" type="color" value="#ffffff" class="w-full h-8 bg-[#1b1d21] border border-[#3c424d] rounded-lg cursor-pointer" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">لون الحروف / الوحدات</label>
+            <input id="qr-module-color" type="color" value="#111827" class="w-full h-8 bg-[#1b1d21] border border-[#3c424d] rounded-lg cursor-pointer" />
+          </div>
+        </div>
+
+        <button onclick="MJApp.generate3DQR()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-extrabold py-2.5 rounded-xl shadow-lg">
+          إنشاء مجسم QR وإضافته للوحة البناء
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: Print Check & Slicer Settings Advisor ("✔ فحص الطباعة الشامل") -->
+  <div id="print-check-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-emerald-500/40 rounded-2xl max-w-xl w-full p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-emerald-400 flex items-center gap-2">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>تقرير فحص المجسم ونصائح إعدادات الطباعة الكاملة</span>
+        </h3>
+        <button onclick="MJApp.closeModal('print-check-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="print-check-body" class="space-y-3 text-xs"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: Export File (STL, SVG, OBJ, 3MF) -->
+  <div id="export-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-download text-emerald-400"></i>
+          <span>تصدير وتنزيل المجسم (STL / 3MF / OBJ / SVG)</span>
+        </h3>
+        <button onclick="MJApp.closeModal('export-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 flex items-center justify-between">
+          <span>تكلفة عملية التصدير الواحدة:</span>
+          <span class="font-extrabold text-amber-400 text-sm"><i class="fa-solid fa-coins ml-1"></i>2 كوينز</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <button onclick="MJApp.exportScene('stl')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-3 text-right transition">
+            <div class="font-extrabold text-sm text-white">صيغة STL</div>
+            <div class="text-[11px] text-gray-400">القياسية لكل برامج السلايسر</div>
+          </button>
+          <button onclick="MJApp.exportScene('3mf')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-3 text-right transition">
+            <div class="font-extrabold text-sm text-emerald-400">صيغة 3MF</div>
+            <div class="text-[11px] text-gray-400">تدعم تعدد القطع والألوان</div>
+          </button>
+          <button onclick="MJApp.exportScene('obj')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-3 text-right transition">
+            <div class="font-extrabold text-sm text-white">صيغة OBJ</div>
+            <div class="text-[11px] text-gray-400">متوافقة مع برامج التصميم</div>
+          </button>
+          <button onclick="MJApp.exportScene('svg')" class="bg-[#1b1d21] hover:bg-emerald-600/20 border border-[#3c424d] hover:border-emerald-500 rounded-xl p-3 text-right transition">
+            <div class="font-extrabold text-sm text-sky-400">صيغة SVG</div>
+            <div class="text-[11px] text-gray-400">إسقاط فيكتور ثنائي الأبعاد</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 8: Authentication (Sign In / Sign Up with Email + Google Sign-In) -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-user-shield text-emerald-400"></i>
+          <span>تسجيل الدخول / إنشاء حساب (6 كوينز مجاناً!)</span>
+        </h3>
+        <button onclick="MJApp.closeModal('auth-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Google Sign-In Button -->
+      <button onclick="MJApp.handleGoogleLogin()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-extrabold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2.5 text-xs shadow mb-4">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        <span>المتابعة السريعة بحساب Google</span>
+      </button>
+
+      <div class="relative flex py-1 items-center mb-3">
+        <div class="flex-grow border-t border-[#383d47]"></div>
+        <span class="flex-shrink mx-3 text-gray-400 text-[11px]">أو عبر البريد الإلكتروني</span>
+        <div class="flex-grow border-t border-[#383d47]"></div>
+      </div>
+
+      <!-- Tabs: Login / Register -->
+      <div class="grid grid-cols-2 gap-1 bg-[#1b1d21] p-1 rounded-xl mb-3 text-xs">
+        <button id="auth-tab-login" onclick="MJApp.switchAuthTab('login')" class="py-1.5 rounded-lg font-bold bg-emerald-600 text-white">تسجيل دخول</button>
+        <button id="auth-tab-register" onclick="MJApp.switchAuthTab('register')" class="py-1.5 rounded-lg font-bold text-gray-300">إنشاء حساب جديد</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div id="auth-name-wrap" class="hidden">
+          <label class="block text-gray-300 mb-1">الاسم الكريم:</label>
+          <input id="auth-name" type="text" placeholder="اسمك" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white" />
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1">البريد الإلكتروني:</label>
+          <input id="auth-email" type="email" dir="ltr" placeholder="name@example.com" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white" />
+        </div>
+        <div>
+          <label class="block text-gray-300 mb-1">كلمة المرور:</label>
+          <input id="auth-password" type="password" dir="ltr" placeholder="••••••••" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-white" />
+        </div>
+        <div id="auth-ref-wrap" class="hidden">
+          <label class="block text-gray-400 mb-1">كود دعوة صديق (اختياري):</label>
+          <input id="auth-ref-code" type="text" dir="ltr" placeholder="MJ..." class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2 text-emerald-400 uppercase" />
+        </div>
+        <div id="auth-error-msg" class="text-rose-400 text-center min-h-[18px]"></div>
+        <button id="auth-submit-btn" onclick="MJApp.handleEmailAuth()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl">
+          متابعة
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 9: Pricing, Packages (Coins + Daily, Weekly, Monthly, Yearly) & Multi-Gateway Checkout -->
+  <div id="pricing-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-4xl w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <div>
+          <h3 class="text-lg font-extrabold text-white flex items-center gap-2">
+            <i class="fa-solid fa-gem text-emerald-400"></i>
+            <span>شحن الكوينز وباقات الاشتراك (يومي / أسبوعي / شهري / سنوي)</span>
+          </h3>
+          <p class="text-xs text-gray-400 mt-0.5">التصدير الواحد = 2 كوينز • بمجرد الدفع يصلك كود التفعيل على إيميلك ويتفعل رصيدك فوراً</p>
+        </div>
+        <button onclick="MJApp.closeModal('pricing-modal')" class="text-gray-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Subscriptions Row (Daily, Weekly, Monthly, Yearly) -->
+      <div class="mb-5">
+        <div class="text-xs font-extrabold text-emerald-400 mb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>باقات الاشتراك الزمنية (يومية • أسبوعية • شهرية • سنوية):</span>
+        </div>
+        <div id="packages-sub-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3"></div>
+      </div>
+
+      <!-- Coin Packs Row -->
+      <div class="mb-5">
+        <div class="text-xs font-extrabold text-amber-400 mb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-coins"></i>
+          <span>باقات شحن الكوينز المباشرة (تبقى في حسابك ولا تنتهي صلاحيتها):</span>
+        </div>
+        <div id="packages-coins-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3"></div>
+      </div>
+
+      <!-- Payment Methods & Coupon Section -->
+      <div class="bg-[#1b1d21] border border-[#383d47] rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div>
+          <label class="block text-gray-300 font-bold mb-1.5">اختر وسيلة الدفع (داخل السعودية وخارجها):</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="bg-[#23262b] border border-emerald-500/50 rounded-lg p-2.5 flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="pay-method" value="mada_visa" checked class="accent-emerald-500" />
+              <span>مدى / Visa / MasterCard</span>
+            </label>
+            <label class="bg-[#23262b] border border-[#3c424d] rounded-lg p-2.5 flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="pay-method" value="apple_pay" class="accent-emerald-500" />
+              <span><i class="fa-brands fa-apple ml-1"></i>Apple Pay</span>
+            </label>
+            <label class="bg-[#23262b] border border-[#3c424d] rounded-lg p-2.5 flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="pay-method" value="paypal" class="accent-emerald-500" />
+              <span><i class="fa-brands fa-paypal text-sky-400 ml-1"></i>PayPal دولي</span>
+            </label>
+            <label class="bg-[#23262b] border border-[#3c424d] rounded-lg p-2.5 flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="pay-method" value="stc_pay" class="accent-emerald-500" />
+              <span>STC Pay / تحويل</span>
+            </label>
+          </div>
+        </div>
+        <div class="flex flex-col justify-between">
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">هل لديك كود خصم؟</label>
+            <input id="checkout-coupon" type="text" dir="ltr" placeholder="COUPON..." class="w-full bg-[#23262b] border border-[#3c424d] rounded-lg px-3 py-2 text-white uppercase" />
+          </div>
+          <div class="flex items-center justify-between mt-3 pt-2 border-t border-[#343942]">
+            <button onclick="MJApp.openModal('redeem-modal')" class="text-emerald-400 hover:underline font-bold">
+              <i class="fa-solid fa-key ml-1"></i>لدي كود تفعيل جاهز من الإيميل
+            </button>
+            <span class="text-[11px] text-gray-400">ضمان استرداد كامل</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Order / Cancel Payment Box (Appears immediately when an order is created) -->
+      <div id="active-order-box" class="hidden mt-4 bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-4 text-xs space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="font-extrabold text-emerald-300 text-sm">تم إصدار طلب الدفع وإرسال كود التفعيل لبريدك الإلكتروني!</span>
+          <button onclick="MJApp.cancelCurrentPaymentOrder()" class="bg-rose-600/30 hover:bg-rose-600 text-rose-200 px-3 py-1 rounded-lg font-bold">
+            إلغاء عملية الدفع
+          </button>
+        </div>
+        <div id="active-order-details" class="text-gray-200"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 10: Redeem Activation Code ("تفعيل كود الشحن المرسل للإيميل") -->
+  <div id="redeem-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-emerald-500/50 rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-ticket text-emerald-400"></i>
+          <span>تفعيل كود شحن الرصيد</span>
+        </h3>
+        <button onclick="MJApp.closeModal('redeem-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3.5 text-xs">
+        <p class="text-gray-300">أدخل الكود الذي وصلك على البريد الإلكتروني بعد عملية الدفع ليتم شحن حسابك بالكوينز والباقة فوراً:</p>
+        <input id="redeem-code-input" type="text" dir="ltr" placeholder="MJ-XXXX-XXXX" class="w-full bg-[#1b1d21] border-2 border-emerald-500/50 rounded-xl px-4 py-3 text-center font-mono text-lg font-extrabold text-emerald-400 tracking-widest uppercase outline-none" />
+        <button onclick="MJApp.submitRedeemCode()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl shadow-lg">
+          تفعيل الكود وإضافة الرصيد الآن
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 11: Loyalty & Challenges System (Daily Check-in + Friend Referral + 20% Commission) -->
+  <div id="loyalty-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-amber-500/40 rounded-2xl max-w-xl w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-amber-400 flex items-center gap-2">
+          <i class="fa-solid fa-trophy"></i>
+          <span>نظام الولاء والتحديات ومكافآت الأصدقاء</span>
+        </h3>
+        <button onclick="MJApp.closeModal('loyalty-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <!-- 1. Daily Check-in Card -->
+        <div class="bg-[#1b1d21] border border-[#383d47] rounded-xl p-4 flex items-center justify-between gap-3">
+          <div>
+            <div class="font-extrabold text-sm text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-day text-amber-400"></i>
+              <span>تسجيل الدخول اليومي</span>
+            </div>
+            <p class="text-gray-400 mt-1">احصل على <strong>1 كوينز</strong> كل يوم، و<strong>+5 كوينز إضافية</strong> عند إكمال 7 أيام متتالية!</p>
+            <div class="mt-2 text-emerald-400 font-bold">سلسلة أيامك الحالية: <span id="loyalty-streak-days">0</span> / 7 أيام</div>
+          </div>
+          <button onclick="MJApp.claimDailyCheckin()" class="bg-amber-500 hover:bg-amber-400 text-black font-extrabold px-4 py-2.5 rounded-xl whitespace-nowrap shadow">
+            استلام مكافأة اليوم +1
+          </button>
+        </div>
+
+        <!-- 2. Refer a Friend (5 Coins per friend, max 10/month + 20% of friend's purchases!) -->
+        <div class="bg-[#1b1d21] border border-[#383d47] rounded-xl p-4 space-y-2.5">
+          <div class="font-extrabold text-sm text-white flex items-center gap-1.5">
+            <i class="fa-solid fa-users text-emerald-400"></i>
+            <span>دعوة صديق (5 كوينز فورية + 20% من مشترياته!)</span>
+          </div>
+          <ul class="text-gray-300 space-y-1 list-disc list-inside">
+            <li>احصل على <strong>5 كوينز</strong> لكل صديق يسجل بكودك (بحد أقصى <strong>10 أصدقاء في الشهر</strong>).</li>
+            <li>احصل تلقائياً على <strong>20% من رصيد أي باقة يشتريها صديقك</strong> مدى الحياة!</li>
+          </ul>
+          <div class="flex items-center gap-2 pt-1">
+            <input id="my-referral-code-box" type="text" readonly dir="ltr" value="سجل دخولك لإظهار كودك" class="flex-1 bg-[#23262b] border border-emerald-500/40 rounded-lg px-3 py-2 font-mono font-bold text-emerald-400 text-center" />
+            <button onclick="MJApp.copyReferralLink()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3.5 py-2 rounded-lg">
+              نسخ رابط الدعوة
+            </button>
+          </div>
+          <div class="text-[11px] text-gray-400 flex justify-between pt-1">
+            <span>دعواتك هذا الشهر: <strong id="ref-month-count" class="text-white">0</strong> / 10</span>
+            <span>إجمالي المدعوين: <strong id="ref-total-count" class="text-white">0</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 12: Account & Cancel Account with Full Refund Guarantee -->
+  <div id="account-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-user-gear text-emerald-400"></i>
+          <span>إدارة الحساب وضمان استرداد المبلغ</span>
+        </h3>
+        <button onclick="MJApp.closeModal('account-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div class="bg-[#1b1d21] p-3 rounded-xl border border-[#383d47] space-y-1">
+          <div>البريد: <strong id="acc-email" class="text-white"></strong></div>
+          <div>الرصيد الحالي: <strong id="acc-coins" class="text-amber-400"></strong> كوينز</div>
+          <div>الباقة: <strong id="acc-plan" class="text-emerald-400"></strong></div>
+        </div>
+        <div class="bg-rose-950/30 border border-rose-500/40 rounded-xl p-3 space-y-2">
+          <div class="font-extrabold text-rose-300">إلغاء الحساب وإعادة المبلغ (Refund Guarantee)</div>
+          <p class="text-gray-300">تضمن منصة مجسمات حقك الكامل في طلب إلغاء الحساب واسترداد المبلغ المدفوع للرصيد المتبقي إلى وسيلة الدفع الخاصة بك.</p>
+          <button onclick="MJApp.requestCancelAndRefund()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-lg">
+            طلب إلغاء الحساب وإعادة المبلغ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 13: Legal & Trust Pages (Terms, Privacy, Services) -->
+  <div id="legal-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 id="legal-modal-title" class="text-base font-extrabold text-emerald-400">السياسات والشروط القانونية</h3>
+        <button onclick="MJApp.closeModal('legal-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="legal-modal-content" class="space-y-3 text-xs text-gray-300 leading-relaxed"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-box" class="fixed bottom-5 right-5 bg-[#23262b] border border-emerald-500 text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-bold hidden z-50 flex items-center gap-2"></div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       5. SCRIPTS (Three.js + OrbitControls + TransformControls + JSZip + QRCode + Firebase + App)
+       ════════════════════════════════════════════════════════════════ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <script src="js/security.js"></script>
   <script src="js/firebase-config.js"></script>
-  <script>
-    const $ = (id) => document.getElementById(id);
-
-    MJ.onAuthChange(async (user) => {
-      $('signed-out').classList.toggle('hidden', !!user);
-      $('signed-in').classList.toggle('hidden', !user);
-      if (!user) return;
-      $('name').textContent = user.displayName || 'مرحباً';
-      $('email').textContent = user.email || '';
-      if (user.photoURL) $('avatar').src = user.photoURL; else $('avatar').classList.add('hidden');
-      MJ.api('login'); // sync user to database
-    });
-
-    $('google-btn').addEventListener('click', async () => {
-      $('err').textContent = '';
-      $('google-btn').disabled = true;
-      const r = await MJ.signInWithGoogle();
-      $('google-btn').disabled = false;
-      if (!r.success) $('err').textContent = r.error;
-    });
-
-    $('logout-btn').addEventListener('click', () => MJ.signOut());
-  </script>
+  <script src="js/catalog.js"></script>
+  <script src="js/engine3d.js"></script>
+  <script src="js/loaders.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
