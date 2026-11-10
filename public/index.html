@@ -18,32 +18,21 @@
 <style>
 :root {
   box-sizing: border-box;
-  --bg: #0f1318;
-  --panel: #161b22;
-  --card: #1f2631;
-  --line: #2d3748;
-  --line-light: #4a5568;
-  --ink: #f1f5f9;
-  --mute: #94a3b8;
+  --bg: #121519;
+  --panel: #1a1e24;
+  --card: #222730;
+  --line: #2c333f;
+  --line-light: #3a4352;
+  --ink: #e8edf2;
+  --mute: #818f9e;
   --acc: #00b4d8;
   --acc-hover: #0096c7;
-  --teal: #10b981;
-  --onacc: #0f1318;
-  --vp: #0b0e12;
+  --teal: #2fb59a;
+  --onacc: #121519;
+  --vp: #0f1216;
   --danger: #ef4444;
   --warning: #f59e0b;
   --success: #10b981;
-}
-
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-html, body, button, input, select, textarea, .font-sans, .font-mono {
-  font-family: 'Cairo', sans-serif !important;
-}
-.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands {
-  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
 }
 
 html, body {
@@ -51,14 +40,14 @@ html, body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
+  font-family: 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
   overflow: hidden;
   user-select: none;
-  letter-spacing: 0;
 }
 
 #app {
   display: grid;
-  grid-template-rows: auto auto 1fr 30px;
+  grid-template-rows: auto auto 1fr 28px;
   height: 100vh;
 }
 
@@ -67,7 +56,7 @@ header {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 6px 14px;
+  padding: 0 14px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   z-index: 20;
@@ -76,9 +65,10 @@ header {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 900;
-  font-size: 17px;
+  font-weight: 800;
+  font-size: 16px;
   color: #fff;
+  letter-spacing: -0.5px;
 }
 .brand-logo i {
   color: var(--acc);
@@ -88,7 +78,7 @@ header {
 main {
   position: relative;
   display: grid;
-  grid-template-columns: var(--wl, 225px) 1fr var(--wr, 330px);
+  grid-template-columns: var(--wl, 210px) 1fr var(--wr, 310px);
   min-height: 0;
 }
 .rz {
@@ -104,380 +94,205 @@ main {
   background: var(--acc);
   opacity: 0.6;
 }
-#r1 { inset-inline-start: calc(var(--wl, 225px) - 3px); }
-#r2 { inset-inline-end: calc(var(--wr, 330px) - 3px); }
+#r1 { inset-inline-start: calc(var(--wl, 210px) - 3px); }
+#r2 { inset-inline-end: calc(var(--wr, 310px) - 3px); }
 
 aside {
   background: var(--panel);
   overflow-y: auto;
-  padding: 14px;
+  padding: 12px;
 }
 #tools { border-inline-end: 1px solid var(--line); }
 #props { border-inline-start: 1px solid var(--line); }
 #stage { position: relative; min-height: 0; }
 canvas#v { width: 100%; height: 100%; display: block; outline: none; }
 
-/* ── UI Controls & Modern Official Inputs ── */
+/* ── UI Controls & Buttons ── */
+button, select, input, textarea {
+  font: inherit;
+  color: inherit;
+}
 button {
   border: 1px solid var(--line);
   background: var(--card);
-  color: var(--ink);
-  padding: 7px 13px;
-  border-radius: 10px;
+  padding: 6px 12px;
+  border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   font-size: 13px;
-  font-weight: 700;
-  transition: all 0.18s ease;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
 button:hover {
-  background: #283140;
+  background: #2b323e;
   border-color: var(--line-light);
   color: #fff;
-  transform: translateY(-1px);
 }
 button.pri {
-  background: linear-gradient(135deg, #00b4d8, #0096c7);
-  color: #0b0e12;
+  background: var(--acc);
+  color: #121519;
   border-color: transparent;
-  font-weight: 800;
-  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.22);
+  font-weight: 700;
 }
 button.pri:hover {
-  background: linear-gradient(135deg, #22d3ee, #00b4d8);
-  color: #0b0e12;
+  background: var(--acc-hover);
 }
 button.teal {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #0b0e12;
+  background: var(--teal);
+  color: #121519;
   border-color: transparent;
-  font-weight: 800;
-}
-button.slice-btn {
-  background: linear-gradient(135deg, #f59e0b, #ea580c);
-  color: #fff;
-  border: none;
-  font-weight: 900;
-  padding: 7px 16px;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
-}
-button.slice-btn:hover {
-  background: linear-gradient(135deg, #fbbf24, #f97316);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
-}
-button. slice-btn.active {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  font-weight: 700;
 }
 button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  transform: none;
 }
 
 :focus-visible {
   outline: 2px solid var(--acc);
   outline-offset: 1px;
 }
-
-input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
-select,
-textarea {
-  background: #1e2633 !important;
-  border: 1.5px solid #334155 !important;
-  border-radius: 10px !important;
-  padding: 7px 12px !important;
-  min-height: 38px;
-  color: #ffffff !important;
-  font-size: 13.5px !important;
-  font-weight: 700 !important;
-  transition: all 0.18s ease !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+input, select, textarea {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 8px;
+  color: #fff;
+  font-size: 13px;
 }
-textarea {
-  min-height: 76px;
-  line-height: 1.6;
-  resize: vertical;
-}
-input:not([type="checkbox"]):not([type="radio"]):hover,
-select:hover,
-textarea:hover {
-  border-color: #475569 !important;
-  background: #232c3b !important;
-}
-input:not([type="checkbox"]):not([type="radio"]):focus,
-select:focus,
-textarea:focus {
-  border-color: var(--acc) !important;
-  background: #18202c !important;
-  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.2) !important;
-  outline: none !important;
+input:focus, select:focus, textarea:focus {
+  border-color: var(--acc);
 }
 input[type=number] {
-  direction: ltr !important;
-  text-align: center !important;
-  font-variant-numeric: tabular-nums !important;
-  min-width: 88px;
-  padding: 6px 8px !important;
+  direction: ltr;
+  text-align: center;
 }
-input[type=color] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 48px;
-  height: 34px;
-  border: 2px solid #334155;
-  border-radius: 9px;
-  background: #1e2633;
-  padding: 2px;
-  cursor: pointer;
-}
-input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
-input[type=color]::-webkit-color-swatch { border: none; border-radius: 6px; }
-input[type=checkbox], input[type=radio] {
-  accent-color: var(--acc);
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-input[type=range] {
-  accent-color: var(--acc);
-  cursor: pointer;
-}
-
 .menu button {
   display: flex;
   width: 100%;
   text-align: start;
-  justify-content: flex-start;
-  margin-bottom: 7px;
-  padding: 9px 12px;
-  font-size: 13px;
-  border-radius: 10px;
-}
-.menu button i {
-  width: 18px;
-  text-align: center;
-  color: var(--acc);
-}
-.menu button.pri i {
-  color: #0b0e12;
+  margin-bottom: 6px;
+  padding: 8px 10px;
 }
 h4 {
-  margin: 16px 0 8px;
-  color: var(--acc);
-  font-weight: 800;
-  font-size: 12.5px;
-  letter-spacing: 0.2px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  margin: 14px 0 8px;
+  color: var(--mute);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .r {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  margin: 7px 0;
-  padding: 7px 11px;
-  background: rgba(30, 38, 51, 0.55);
-  border: 1px solid rgba(51, 65, 85, 0.65);
-  border-radius: 11px;
+  gap: 8px;
+  margin: 6px 0;
 }
-.r label {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #cbd5e1;
-  white-space: nowrap;
-}
-.rg {
-  margin: 9px 0;
-  padding: 9px 11px;
-  background: rgba(30, 38, 51, 0.55);
-  border: 1px solid rgba(51, 65, 85, 0.65);
-  border-radius: 11px;
-}
-.rg > label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #cbd5e1;
-}
+.rg { margin: 8px 0; }
+.rg > label { display: block; margin-bottom: 4px; font-size: 12px; color: var(--mute); }
 .g3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
-.g3 input {
-  width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box;
-}
+.g3 input { width: 100%; box-sizing: border-box; }
 .o {
   display: flex;
-  gap: 5px;
-  margin-bottom: 6px;
+  gap: 4px;
+  margin-bottom: 5px;
 }
 .o button:first-child {
   flex: 1;
   text-align: start;
   justify-content: flex-start;
-  padding: 8px 10px;
+  padding: 6px 10px;
 }
 .o.on button:first-child {
   border-color: var(--acc);
-  background: rgba(0, 180, 216, 0.16);
+  background: rgba(0, 180, 216, 0.12);
   color: #fff;
 }
 
 /* ── Creality Slicer Floating Canvas Toolbar ── */
 #tb {
   position: absolute;
-  top: 12px;
-  inset-inline-start: 12px;
+  top: 10px;
+  inset-inline-start: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  background: rgba(22, 27, 34, 0.92);
-  backdrop-filter: blur(10px);
-  padding: 7px;
-  border-radius: 12px;
+  background: rgba(26, 30, 36, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 6px;
+  border-radius: 10px;
   border: 1px solid var(--line);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-  z-index: 12;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 #tb button {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border-radius: 9px;
+  border-radius: 7px;
   background: var(--card);
 }
 #tb button.on {
   background: var(--acc);
   color: var(--onacc);
   border-color: transparent;
-  box-shadow: 0 0 12px rgba(0, 180, 216, 0.4);
 }
 
-/* Floating transform & tool widget */
+/* Floating transform widget */
 #tw {
   position: absolute;
-  top: 12px;
-  inset-inline-start: 68px;
-  background: rgba(22, 27, 34, 0.96);
+  top: 10px;
+  inset-inline-start: 62px;
+  background: rgba(26, 30, 36, 0.95);
   backdrop-filter: blur(12px);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  width: 325px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  border-radius: 10px;
+  width: 290px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   direction: ltr;
   text-align: start;
   overflow: hidden;
-  z-index: 12;
 }
 #tw[hidden] { display: none; }
 #tw h5 {
   margin: 0;
-  padding: 9px 14px;
-  background: #11151c;
-  font-size: 13px;
-  font-weight: 800;
+  padding: 8px 12px;
+  background: #14171c;
+  font-size: 12px;
+  font-weight: 700;
   border-bottom: 1px solid var(--line);
   color: var(--acc);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 #tw .b {
   padding: 10px 12px;
   display: grid;
-  grid-template-columns: auto repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: auto repeat(3, 1fr) auto;
   gap: 6px;
   align-items: center;
 }
-#tw .b input {
-  width: 100% !important;
-  min-width: 0 !important;
-  padding: 5px 4px !important;
-  min-height: 32px !important;
-  font-size: 12.5px !important;
-}
-.ax0 { color: #ef4444; font-weight: 900; }
-.ax1 { color: #10b981; font-weight: 900; }
-.ax2 { color: #3b82f6; font-weight: 900; }
-
-/* Slicer Print Preview HUD */
-#slice-hud {
-  position: absolute;
-  bottom: 14px;
-  inset-inline: 16px;
-  background: rgba(17, 21, 28, 0.95);
-  backdrop-filter: blur(14px);
-  border: 1.5px solid #f59e0b;
-  border-radius: 14px;
-  padding: 12px 18px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65);
-  z-index: 15;
-  direction: rtl;
-}
-#slice-hud[hidden] { display: none; }
-
-/* Drag & Drop File Overlay */
-#drop-zone-overlay {
-  position: absolute;
-  inset: 12px;
-  border: 2.5px dashed var(--acc);
-  border-radius: 16px;
-  background: rgba(0, 180, 216, 0.12);
-  backdrop-filter: blur(4px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 25;
-  pointer-events: none;
-}
-#drop-zone-overlay.active {
-  display: flex;
-}
-
-/* Color Swatches Bar */
-.swatch-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
-}
-.swatch-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  border: 2px solid rgba(255,255,255,0.2);
-  padding: 0;
-  cursor: pointer;
-  transition: transform 0.12s ease;
-}
-.swatch-btn:hover {
-  transform: scale(1.15);
-  border-color: #fff;
-}
+.ax0 { color: #ef4444; font-weight: bold; }
+.ax1 { color: #10b981; font-weight: bold; }
+.ax2 { color: #3b82f6; font-weight: bold; }
 
 /* Bed & Plate selector bar */
 #pl {
   position: absolute;
-  top: 12px;
-  inset-inline-end: 12px;
+  top: 10px;
+  inset-inline-end: 10px;
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
-  background: rgba(22, 27, 34, 0.92);
-  backdrop-filter: blur(10px);
-  padding: 6px 8px;
-  border-radius: 12px;
+  background: rgba(26, 30, 36, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 6px;
+  border-radius: 10px;
   border: 1px solid var(--line);
-  z-index: 12;
 }
 #pl[hidden] { display: none; }
 #pl button.on {
@@ -487,10 +302,9 @@ h4 {
 }
 .dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.5);
   margin-inline-end: 4px;
 }
 
@@ -498,23 +312,22 @@ h4 {
 #toast {
   position: fixed;
   inset-inline: 0;
-  bottom: 42px;
+  bottom: 38px;
   text-align: center;
   pointer-events: none;
   z-index: 100;
 }
 #toast span {
-  background: #18202c;
+  background: #1c2026;
   color: #fff;
-  padding: 9px 20px;
-  border-radius: 12px;
-  border: 1.5px solid var(--acc);
-  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--acc);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 13px;
 }
 
 /* Footer status bar */
@@ -522,8 +335,7 @@ footer {
   padding: 4px 14px;
   background: var(--panel);
   border-top: 1px solid var(--line);
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 11px;
   color: var(--mute);
   display: flex;
   align-items: center;
@@ -536,10 +348,10 @@ dialog {
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--ink);
-  border-radius: 18px;
-  width: min(650px, 95vw);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.7);
-  padding: 22px;
+  border-radius: 16px;
+  width: min(600px, 94vw);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  padding: 20px;
 }
 dialog::backdrop {
   background: rgba(0,0,0,0.75);
@@ -567,14 +379,11 @@ dialog::backdrop {
 }
 .chip {
   border: 1px solid var(--line);
-  background: var(--card);
-  border-radius: 8px;
-  padding: 6px 12px;
+  border-radius: 6px;
+  padding: 4px 8px;
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  font-weight: 700;
+  gap: 5px;
+  font-size: 12px;
   cursor: pointer;
 }
 .shg {
@@ -585,7 +394,7 @@ dialog::backdrop {
 }
 .kg {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 6px;
   max-height: 200px;
   overflow-y: auto;
@@ -597,7 +406,7 @@ dialog::backdrop {
   gap: 3px;
   padding: 4px;
 }
-.kc.on { outline: 2px solid var(--acc); border-radius: 8px; }
+.kc.on { outline: 2px solid var(--acc); border-radius: 6px; }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -654,8 +463,8 @@ dialog::backdrop {
       <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#00b4d8]/10 text-[#00b4d8] border border-[#00b4d8]/20">SLICER</span>
     </div>
 
-    <!-- Hidden file inputs (All 3D & Vector Formats) -->
-    <input type="file" id="file" accept=".stl,.3mf,.obj,.svg,.ply,.gltf,.glb" hidden>
+    <!-- Hidden file inputs -->
+    <input type="file" id="file" accept=".stl,.3mf" hidden>
     <input type="file" id="imf" accept="image/*,.svg" hidden>
     <input type="file" id="pjf" accept=".json" hidden>
 
@@ -664,12 +473,11 @@ dialog::backdrop {
     <button id="b-undo" title="تراجع عن آخر عملية (Ctrl + Z)"><i class="fa-solid fa-rotate-left"></i> <span>تراجع</span></button>
     <button id="b-redo" title="إعادة العملية (Ctrl + Y)"><i class="fa-solid fa-rotate-right"></i></button>
     <button id="b-calc" class="teal" title="حاسبة تكلفة المطبوعات"><i class="fa-solid fa-calculator"></i> <span>حاسبة 3D</span></button>
-    <button id="b-slice" class="slice-btn" title="تقطيع المجسم ومعاينة طبقات الطباعة النهائية"><i class="fa-solid fa-layer-group"></i> <span>Slice (معاينة الطباعة)</span></button>
 
     <div class="mr-auto flex items-center gap-2">
       <!-- User / Credits pill -->
-      <div id="user-badge" class="flex items-center gap-2 bg-[#1f2631] border border-[#2d3748] px-2.5 py-1 rounded-xl">
-        <span id="cr" class="text-xs text-amber-400 font-bold">🪙 0</span>
+      <div id="user-badge" class="flex items-center gap-2 bg-[#222730] border border-[#2c333f] px-2.5 py-1 rounded-lg">
+        <span id="cr" class="font-mono text-xs text-amber-400 font-bold">🪙 0</span>
         <button id="bu" class="pri !py-0.5 !px-2 !text-xs" title="شراء رصيد أو اشتراك">+</button>
       </div>
 
@@ -677,29 +485,28 @@ dialog::backdrop {
       <button id="bj" title="مشاريعي"><i class="fa-solid fa-folder"></i></button>
 
       <!-- Auth Button -->
-      <button id="bl" class="bg-[#1f2631] hover:bg-[#2c333f] text-white">
+      <button id="bl" class="bg-[#222730] hover:bg-[#2c333f] text-white">
         <i class="fa-solid fa-user text-xs"></i>
         <span id="user-label">دخول</span>
       </button>
 
       <!-- Admin Button -->
-      <a href="admin.html" id="ba" class="text-xs text-[#94a3b8] hover:text-[#00b4d8] border border-[#2d3748] px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors font-bold">
+      <a href="admin.html" id="ba" class="text-xs text-[#818f9e] hover:text-[#00b4d8] border border-[#2c333f] px-2 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
         <i class="fa-solid fa-lock text-[10px]"></i>
         <span>الإدارة</span>
       </a>
 
       <!-- Slicer Export button & format -->
-      <div class="flex items-center gap-1.5 mr-2 border-r border-[#2d3748] pr-2">
-        <select id="fmt" class="!py-1 !px-2.5 !min-h-[34px] !text-xs">
-          <option value="stl">STL</option>
-          <option value="3mf">3MF</option>
-          <option value="obj">OBJ</option>
-          <option value="svg">SVG</option>
+      <div class="flex items-center gap-1 mr-2 border-r border-[#2c333f] pr-2">
+        <select id="fmt" class="!py-1 !text-xs !bg-[#222730] !border-[#2c333f]">
+          <option>STL</option>
+          <option>3MF</option>
+          <option>SVG</option>
         </select>
         <button id="bd" class="pri"><i class="fa-solid fa-download"></i> <span>تنزيل</span></button>
       </div>
 
-      <button id="bg" title="تغيير اللغة" class="!px-2.5 !text-xs">EN</button>
+      <button id="bg" title="تغيير اللغة" class="!px-2 !text-xs">EN</button>
     </div>
   </header>
 
@@ -712,7 +519,7 @@ dialog::backdrop {
       <div class="menu" id="menu">
         <!-- Rendered via JS -->
       </div>
-      <h4 data-t="objs"><i class="fa-solid fa-cubes"></i> المجسمات في المشهد</h4>
+      <h4 data-t="objs">المجسمات في المشهد</h4>
       <div id="list"></div>
     </aside>
 
@@ -720,24 +527,13 @@ dialog::backdrop {
     <div id="stage">
       <canvas id="v"></canvas>
 
-      <!-- Drag & Drop Overlay -->
-      <div id="drop-zone-overlay">
-        <div class="text-center bg-[#161b22]/95 px-8 py-6 rounded-2xl border border-[#00b4d8] shadow-2xl">
-          <i class="fa-solid fa-cloud-arrow-up text-4xl text-[#00b4d8] mb-2"></i>
-          <div class="text-base font-black text-white">أفلت الملف هنا لاستيراده فوراً</div>
-          <div class="text-xs text-[#94a3b8] mt-1">يدعم STL · 3MF · OBJ · SVG · PLY · GLTF · GLB</div>
-        </div>
-      </div>
-
-      <!-- Floating Tool Palette (Transform & Sculpt modes) -->
+      <!-- Floating Tool Palette (Transform modes) -->
       <div id="tb">
-        <button id="tm" title="نقل بالأسهم في كل الاتجاهات [M]"></button>
+        <button id="tm" title="نقل [M]"></button>
         <button id="ts" title="تحجيم [S]"></button>
         <button id="tro" title="تدوير [R]"></button>
-        <button id="te" title="ممحاة يدوية لمسح أجزاء من المجسم [E]"><i class="fa-solid fa-eraser"></i></button>
         <button id="tg" title="إنزال على الطاولة [G]"></button>
-        <button id="tpv" title="معاينة الشكل النهائي بعد الحفر"></button>
-        <button id="tsl" title="Slice — معاينة طبقات الطباعة"><i class="fa-solid fa-layer-group text-amber-400"></i></button>
+        <button id="tpv" title="معاينة الحفر"></button>
         <button id="tck" title="فحص الطباعة"></button>
         <button id="tun" title="تراجع [Ctrl+Z]">↶</button>
         <button id="tre" title="إعادة [Ctrl+Y]">↷</button>
@@ -746,11 +542,8 @@ dialog::backdrop {
       <!-- Plates (Beds) Selector -->
       <div id="pl" hidden></div>
 
-      <!-- Numeric Transform & Eraser Popup Box -->
+      <!-- Numeric Transform Popup Box -->
       <div id="tw" hidden></div>
-
-      <!-- Slicer Layer-by-Layer Preview HUD -->
-      <div id="slice-hud" hidden></div>
     </div>
 
     <!-- Right Properties Panel -->
@@ -1250,9 +1043,6 @@ dialog::backdrop {
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PLYLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
@@ -1268,16 +1058,6 @@ const $ = s => document.querySelector(s);
 const ld = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch(e) { return d; } };
 const sv = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
 
-// Normalize Arabic-Indic digits to standard Western digits in any number/text input
-document.addEventListener('input', e => {
-  const el = e.target;
-  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && /[٠-٩۰-۹]/.test(el.value)) {
-    el.value = el.value
-      .replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632)
-      .replace(/[۰-۹]/g, d => d.charCodeAt(0) - 1776);
-  }
-}, true);
-
 let L = ld('lang', 0); // 0 = ar, 1 = en
 let UL = ld('users', {});
 let U = UL[ld('cur', null)] || null;
@@ -1286,19 +1066,19 @@ let PY = ld('pays', []);
 
 // Translation strings
 const D = {};
-`load|رفع ملف 3D / SVG|Load 3D / SVG
+`load|رفع ملف|Load
 cube|مكعب|Cube
 sphere|كرة|Sphere
 cylinder|اسطوانة|Cylinder
 cone|مخروط|Cone
-torus|حلقة (Torus)|Torus
+torus|Torus|Torus
 disc|قرص|Disc
 triangle|مثلث|Triangle
 rect|مستطيل|Rectangle
 text|نص ثلاثي الأبعاد|3D Text
 svg|شعار SVG / نقش|SVG / Lithophane
-objs|المجسمات في المشهد|Objects
-pos|الموضع X / Y / Z (مم)|Position X / Y / Z
+objs|المجسمات|Objects
+pos|الموضع X / Y / Z|Position X / Y / Z
 size|الحجم %|Size %
 del|حذف|Delete
 txt|النص (عربي وإنجليزي)|Text
@@ -1321,7 +1101,7 @@ face|توجيه نحو الكاميرا|Face camera
 op|نوع العملية|Operation
 join|إضافة (Add)|Add
 cut|حفر (Carve)|Carve
-none|اختر مجسماً أو أضف نصاً للتحكم به|Select an object or add text
+none|اختر مجسماً أو أضف نصاً|Select an object or add text
 fonts|خط متاح|fonts available
 dl|تصدير وتنزيل|Download
 login|تسجيل الدخول|Sign in
@@ -1343,27 +1123,22 @@ kc|صانع الميداليات|Keychain Maker
 plate|لوحة|Plate
 all|الكل|All
 sep|فصل الألوان|Separate Colors
-unsep|دمج الألوان للوحة واحدة|Merge Colors
 addbed|إضافة لوحة طباعة|Add Plate
 arr|ترتيب تلقائي|Auto Arrange
 bsz|حجم اللوحة (مم)|Plate Size
 und|تراجع|Undo
 red|إعادة|Redo
-pvw|معاينة الحفر النهائي|Carve Preview
+pvw|معاينة الحفر|Carve Preview
 chk|فحص الجاهزية|Print Check
 qr|رمز QR ثلاثي الأبعاد|3D QR Code
-erase|ممحاة يدوية للمجسم|3D Eraser
-slice|Slice — معاينة الطباعة|Slice Preview
-mv|تحريك بالأسهم (كل الاتجاهات)|Move Object
-sclt|تحجيم المجسم|Scale Object
 pj|مشاريعي|My Projects
 pjn|اسم المشروع|Project Name
 pjsave|حفظ المشروع|Save
 open|فتح|Open
 nopj|لا توجد مشاريع محفوظة|No projects
 addshape|إضافة مجسم|Add Shape
-opadd|إضافة بروز (Solid)|Add
-opcut|حفر ونحت (Carve)|Carve
+opadd|إضافة بروز|Add
+opcut|حفر ونحت|Carve
 thr|العتبة|Threshold
 inv|عكس النقش|Invert
 wmm|العرض (مم)|Width (mm)
@@ -1376,7 +1151,7 @@ vtmax|أعلى سماكة (مم)|Max thickness
 magok|تم إنزال المجسم على لوحة الطباعة|Model dropped to bed
 newc|مسح المشهد بالكامل؟|Clear all?
 new|جديد|New
-colr|اللون الحقيقي|Color
+colr|اللون|Color
 dup|تكرار|Duplicate
 rep|مصفوفة نسخ|Array...
 ali|محاذاة|Align
@@ -1402,8 +1177,7 @@ kc1|لون القاعدة|Base color
 kc2|لون الحروف|Text color
 ktier|إطار طبقتين|Double border
 kmk|إنشاء الميدالية|Create Keychain
-khint|اختر النمط المناسب واضغط إنشاء|Select style and create
-tpl|قوالب جاهزة|Templates`.split('\n').forEach(l => {
+khint|اختر النمط المناسب واضغط إنشاء|Select style and create`.split('\n').forEach(l => {
   const [a, b, c] = l.split('|');
   if (a && b) D[a] = [b, c || b];
 });
@@ -1435,11 +1209,8 @@ const tr = () => {
     <button data-k="text"><i class="fa-solid fa-font"></i> ${t('text')}</button>
     <button data-k="svg"><i class="fa-solid fa-image"></i> ${t('svg')}</button>
     <button data-k="kc"><i class="fa-solid fa-key"></i> ${t('kc')}</button>
-    <button data-k="erase"><i class="fa-solid fa-eraser"></i> ${t('erase')}</button>
-    <button data-k="pvw"><i class="fa-solid fa-eye"></i> ${t('pvw')}</button>
     <button data-k="sep"><i class="fa-solid fa-palette"></i> ${t('sep')}</button>
-    <button data-k="slice" class="!border-amber-500/40 !bg-amber-500/10 !text-amber-300"><i class="fa-solid fa-layer-group !text-amber-400"></i> ${t('slice')}</button>
-    <button data-k="bed"><i class="fa-solid fa-plus-square"></i> ${t('addbed')}</button>
+    <button data-k="bed"><i class="fa-solid fa-layer-group"></i> ${t('addbed')}</button>
     <button data-k="arr"><i class="fa-solid fa-arrows-to-dot"></i> ${t('arr')}</button>
     <button data-k="qr"><i class="fa-solid fa-qrcode"></i> ${t('qr')}</button>
   `;
@@ -1451,12 +1222,12 @@ const toast = m => {
   const e = $('#toast');
   e.innerHTML = `<span><i class="fa-solid fa-circle-check text-[#00b4d8]"></i> ${m}</span>`;
   clearTimeout(toast.h);
-  toast.h = setTimeout(() => e.innerHTML = '', 3000);
+  toast.h = setTimeout(() => e.innerHTML = '', 2800);
 };
 
 const M = h => {
   const m = $('#md');
-  m.innerHTML = h + `<form method="dialog" class="mt-4 text-center"><button class="bg-[#242932] px-6 py-2 rounded-xl text-xs font-bold hover:text-white">إغلاق</button></form>`;
+  m.innerHTML = h + `<form method="dialog" class="mt-4 text-center"><button class="bg-[#242932] px-5 py-1.5 rounded-lg text-xs hover:text-white">إغلاق</button></form>`;
   if (!m.open) m.showModal();
 };
 
@@ -1470,7 +1241,7 @@ const save = () => {
 };
 
 /* ──────────────────────────────────────────────
-   THREE.JS 3D VIEWPORT ENGINE (True-to-Life Colors)
+   THREE.JS 3D VIEWPORT ENGINE
    ────────────────────────────────────────────── */
 const FONTS = ['Cairo','Tajawal','Amiri','Almarai','Changa','El Messiri','Harmattan','Lateef','Lalezar','Mada','Markazi Text','Mirza','Rakkas','Reem Kufi','Scheherazade New','Katibeh','Jomhuria','Aref Ruqaa','Noto Kufi Arabic','Noto Naskh Arabic','IBM Plex Sans Arabic','Readex Pro','Vazirmatn','Baloo Bhaijaan 2','Lemonada','Marhey','Kufam','Alexandria','Zain','Gulzar'];
 FONTS.forEach(f => {
@@ -1487,21 +1258,16 @@ cam.position.set(130, -190, 160);
 
 const R = new THREE.WebGLRenderer({ canvas: $('#v'), antialias: true, alpha: false });
 R.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-R.setClearColor(0x0b0e12);
-R.localClippingEnabled = true;
+R.setClearColor(0x0f1216);
 
-// Neutral white studio lighting so all filament colors (including pure black #000000) appear 100% true-to-life
-sc.add(new THREE.AmbientLight(0xffffff, 0.68));
-const dl = new THREE.DirectionalLight(0xffffff, 0.72);
-dl.position.set(130, -170, 240);
+sc.add(new THREE.HemisphereLight(0xffffff, 0x444955, 0.7));
+const dl = new THREE.DirectionalLight(0xffffff, 0.6);
+dl.position.set(100, -120, 220);
 sc.add(dl);
-const dlBack = new THREE.DirectionalLight(0xffffff, 0.38);
-dlBack.position.set(-140, 180, 140);
-sc.add(dlBack);
 
 const oc = new THREE.OrbitControls(cam, R.domElement);
 oc.enableDamping = true;
-oc.dampingFactor = 0.06;
+oc.dampingFactor = 0.05;
 
 const rs = () => {
   const s = $('#stage');
@@ -1511,64 +1277,35 @@ const rs = () => {
 };
 new ResizeObserver(rs).observe($('#stage'));
 
-const objs = [];
-let sel = null;
-
-// Crisp Selection Wireframe Box (never tints material emissive color so Black stays pure Black!)
-const selBox = new THREE.BoxHelper(new THREE.Mesh(), 0x00b4d8);
-selBox.material.depthTest = false;
-selBox.material.transparent = true;
-selBox.material.opacity = 0.85;
-selBox.visible = false;
-sc.add(selBox);
-
-function updateSelBox() {
-  if (sel && objs.includes(sel) && !pvOn && !sliceOn) {
-    selBox.setFromObject(root(sel));
-    selBox.visible = true;
-  } else {
-    selBox.visible = false;
-  }
-}
-
 (function animate() {
   requestAnimationFrame(animate);
   oc.update();
-  if (selBox.visible && sel) selBox.update();
-  if (typeof updateMoveGizmoScale === 'function') updateMoveGizmoScale();
   R.render(sc, cam);
 })();
 
-// Fix: c == null ? 0x00b4d8 : c so 0x000000 (Black) is never replaced by cyan!
+const objs = [];
+let sel = null;
+
 const mat = c => new THREE.MeshStandardMaterial({
-  color: c == null ? 0x00b4d8 : c,
-  roughness: 0.42,
-  metalness: 0.05
+  color: c || 0x00b4d8,
+  roughness: 0.6,
+  metalness: 0.1
 });
 
-const hl = (o, on) => {
-  // Never tint material.emissive to green! Keep emissive 0x000000 for 100% accurate colors.
-  if (o) o.traverse(m => {
-    if (m.material && m.material.emissive) m.material.emissive.setHex(0x000000);
-  });
-  updateSelBox();
-};
+const hl = (o, on) => o.traverse(m => {
+  if (m.material && m.material.emissive) m.material.emissive.setHex(on ? 0x093b48 : 0);
+});
 
 function pick(o) {
   if (sel) hl(sel, 0);
   sel = o;
-  if (o) {
-    hl(o, 1);
-    if (!tool) tool = 'm'; // Auto-enable directional move arrows when selecting an object
-  }
-  updateSelBox();
+  if (o) hl(o, 1);
   ol();
   pp();
 }
 
 function add(o, name, kind, d) {
-  o.userData = { ...o.userData, name, kind, o: d };
-  if (o.material && o.userData.bc == null) o.userData.bc = o.material.color.getHex();
+  o.userData = { name, kind, o: d };
   sc.add(o);
   objs.push(o);
   pick(o);
@@ -1600,13 +1337,10 @@ function updateFooterStats() {
   $('#footer-stats').textContent = `المجسمات: ${count} · اللوحة: ${BW}×${BW} mm`;
 }
 
-/* ── 3D Text Generation (Default Gold/White so it contrasts with shapes for Multi-Color) ── */
+/* ── 3D Text Generation ── */
 function newText() {
-  const defaultCol = objs.length ? '#f59e0b' : '#00b4d8';
-  const hexNum = parseInt(defaultCol.slice(1), 16);
-  const d = { t: 'مُجسَّم 3D', font: 'Cairo', h: 9, dp: 2.0, b: 1, i: 0, al: 1, cg: 0, bo: 0, sk: 0, lg: 0, col: defaultCol };
-  const m = new THREE.Mesh(new THREE.BufferGeometry(), mat(hexNum));
-  m.userData.bc = hexNum;
+  const d = { t: 'مُجسَّم 3D', font: 'Cairo', h: 9, dp: 1.5, b: 0, i: 0, al: 1, cg: 0, bo: 0, sk: 0, lg: 0 };
+  const m = new THREE.Mesh(new THREE.BufferGeometry(), mat(0x00b4d8));
   m.position.z = topZ();
   add(m, t('text'), 'text', d);
   bt(m);
@@ -2030,212 +1764,9 @@ function bend(m) {
   g.computeBoundingSphere();
 }
 
-/* ── 6-Direction 3D Move Arrows Gizmo & Manual 3D Eraser ── */
-let tool = 'm', pv = null, uni = 1;
-let pvOn = 0, pvM = null;
-let sliceOn = 0, sliceG = null, sliceTimer = null, sliceLayer = 1, sliceMaxLayer = 1, sliceLH = 0.2;
-let eraseRadius = 5, eraseMode = 'carve', erasing = false;
-
-const tgt = () => (sel ? root(sel) : null);
-
-// 3D Brush Sphere Cursor for Manual Eraser
-const eraseCursor = new THREE.Mesh(
-  new THREE.SphereGeometry(1, 20, 16),
-  new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.48, depthTest: false })
-);
-eraseCursor.renderOrder = 998;
-eraseCursor.visible = false;
-sc.add(eraseCursor);
-
-// Build 6-Direction 3D Move Gizmo (Up, Down, Right, Left, Forward, Back)
-const moveGizmo = new THREE.Group();
-moveGizmo.visible = false;
-sc.add(moveGizmo);
-const gizmoHitMeshes = [];
-
-const GIZMO_DIRS = [
-  { name: 'up',    dir: new THREE.Vector3(0, 0, 1),  col: 0x3b82f6, label: 'فوق (+Z)' },
-  { name: 'down',  dir: new THREE.Vector3(0, 0, -1), col: 0x60a5fa, label: 'تحت (-Z)' },
-  { name: 'right', dir: new THREE.Vector3(1, 0, 0),  col: 0xef4444, label: 'يمين (+X)' },
-  { name: 'left',  dir: new THREE.Vector3(-1, 0, 0), col: 0xf87171, label: 'يسار (-X)' },
-  { name: 'fwd',   dir: new THREE.Vector3(0, 1, 0),  col: 0x10b981, label: 'أمام (+Y)' },
-  { name: 'back',  dir: new THREE.Vector3(0, -1, 0), col: 0x34d399, label: 'خلف (-Y)' }
-];
-
-GIZMO_DIRS.forEach(d => {
-  const grp = new THREE.Group();
-  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.dir);
-  grp.quaternion.copy(q);
-
-  const mMat = new THREE.MeshBasicMaterial({ color: d.col, depthTest: false, transparent: true, opacity: 0.95 });
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 16, 12).translate(0, 11, 0), mMat);
-  const head = new THREE.Mesh(new THREE.ConeGeometry(2.2, 5.5, 16).translate(0, 21, 0), mMat);
-  shaft.renderOrder = head.renderOrder = 999;
-
-  const hit = new THREE.Mesh(
-    new THREE.CylinderGeometry(3.2, 3.2, 22, 8).translate(0, 13, 0),
-    new THREE.MeshBasicMaterial({ visible: false, depthTest: false })
-  );
-  hit.userData = { gizmoDir: d.dir.clone(), gizmoLabel: d.label, visualMeshes: [shaft, head], baseCol: d.col };
-  gizmoHitMeshes.push(hit);
-
-  grp.add(shaft, head, hit);
-  moveGizmo.add(grp);
-});
-
-function updateMoveGizmoScale() {
-  const o = tgt();
-  if (!o || tool !== 'm' || pvOn || sliceOn) {
-    moveGizmo.visible = false;
-    return;
-  }
-  const bb = new THREE.Box3().setFromObject(o);
-  const center = bb.getCenter(new THREE.Vector3());
-  moveGizmo.position.copy(center);
-  const dist = cam.position.distanceTo(center);
-  const s = Math.max(0.45, Math.min(3.2, dist / 145));
-  moveGizmo.scale.setScalar(s);
-  moveGizmo.visible = true;
-}
-
-// Perform Manual 3D Erase at Raycast Hit Point
-function eraseAtHit(h) {
-  if (!h || !h.object || !h.object.isMesh) return;
-  const m = h.object;
-  if (m === pvM || m === eraseCursor) return;
-  const g = m.geometry;
-  if (!g || !g.attributes || !g.attributes.position) return;
-
-  sc.updateMatrixWorld(true);
-  const pAttr = g.attributes.position;
-  const ix = g.index;
-  const count = ix ? ix.count : pAttr.count;
-  const hitWorld = h.point.clone();
-  const R2 = eraseRadius * eraseRadius;
-
-  // Convert mesh triangles to world space
-  const worldTris = [];
-  const v0 = new THREE.Vector3(), v1 = new THREE.Vector3(), v2 = new THREE.Vector3();
-  const invMat = new THREE.Matrix4().copy(m.matrixWorld).invert();
-  const fl = m.matrixWorld.determinant() < 0;
-
-  let nearCount = 0;
-  for (let i = 0; i + 2 < count; i += 3) {
-    const aIdx = ix ? ix.getX(i) : i;
-    const bIdx = ix ? ix.getX(i + 1) : i + 1;
-    const cIdx = ix ? ix.getX(i + 2) : i + 2;
-    v0.fromBufferAttribute(pAttr, aIdx).applyMatrix4(m.matrixWorld);
-    v1.fromBufferAttribute(pAttr, bIdx).applyMatrix4(m.matrixWorld);
-    v2.fromBufferAttribute(pAttr, cIdx).applyMatrix4(m.matrixWorld);
-    if (fl) { const tmp = v1.clone(); v1.copy(v2); v2.copy(tmp); }
-
-    const cx = (v0.x + v1.x + v2.x) / 3 - hitWorld.x;
-    const cy = (v0.y + v1.y + v2.y) / 3 - hitWorld.y;
-    const cz = (v0.z + v1.z + v2.z) / 3 - hitWorld.z;
-    if (cx * cx + cy * cy + cz * cz <= R2 * 2.2) nearCount++;
-
-    worldTris.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
-  }
-
-  let outWorld = [];
-  if (eraseMode === 'carve' && nearCount < 350 && count / 3 < 8000) {
-    // Smooth 3D spherical boolean carve using BSP
-    const brushGeo = new THREE.SphereGeometry(eraseRadius, 8, 6).translate(hitWorld.x, hitWorld.y, hitWorld.z);
-    const bp = brushGeo.attributes.position, bix = brushGeo.index;
-    const bArr = [];
-    for (let i = 0; i < bix.count; i += 3) {
-      [0, 1, 2].forEach(k => {
-        const idx = bix.getX(i + k);
-        bArr.push(bp.getX(idx), bp.getY(idx), bp.getZ(idx));
-      });
-    }
-    const carved = pf(carve(tp(worldTris), tp(bArr)));
-    outWorld = carved;
-  } else {
-    // Fast triangle/subdivision surface eraser for dense meshes
-    for (let i = 0; i < worldTris.length; i += 9) {
-      const ax = worldTris[i], ay = worldTris[i+1], az = worldTris[i+2];
-      const bx = worldTris[i+3], by = worldTris[i+4], bz = worldTris[i+5];
-      const cx = worldTris[i+6], cy = worldTris[i+7], cz = worldTris[i+8];
-      const mx = (ax + bx + cx) / 3, my = (ay + by + cy) / 3, mz = (az + bz + cz) / 3;
-      const dMid = (mx - hitWorld.x) ** 2 + (my - hitWorld.y) ** 2 + (mz - hitWorld.z) ** 2;
-      const dA = (ax - hitWorld.x) ** 2 + (ay - hitWorld.y) ** 2 + (az - hitWorld.z) ** 2;
-      const dB = (bx - hitWorld.x) ** 2 + (by - hitWorld.y) ** 2 + (bz - hitWorld.z) ** 2;
-      const dC = (cx - hitWorld.x) ** 2 + (cy - hitWorld.y) ** 2 + (cz - hitWorld.z) ** 2;
-      if (dMid <= R2 || (dA <= R2 && dB <= R2 && dC <= R2)) continue;
-      outWorld.push(ax, ay, az, bx, by, bz, cx, cy, cz);
-    }
-  }
-
-  // Transform back to local coordinates of mesh m
-  const localPos = new Float32Array(outWorld.length);
-  const tv3 = new THREE.Vector3();
-  for (let i = 0; i < outWorld.length; i += 3) {
-    tv3.set(outWorld[i], outWorld[i+1], outWorld[i+2]).applyMatrix4(invMat);
-    localPos[i] = tv3.x;
-    localPos[i+1] = tv3.y;
-    localPos[i+2] = tv3.z;
-  }
-
-  const newGeo = new THREE.BufferGeometry();
-  newGeo.setAttribute('position', new THREE.BufferAttribute(localPos, 3));
-  newGeo.computeVertexNormals();
-  newGeo.computeBoundingBox();
-  newGeo.computeBoundingSphere();
-  m.geometry.dispose();
-  m.geometry = newGeo;
-  updateSelBox();
-}
-
 cv.addEventListener('pointerdown', e => {
-  if (sliceOn) return;
   if (tc.axis || tc.dragging) return;
   ray(e);
-
-  // 1. Check 6-Direction Move Gizmo Arrows first when in Move mode
-  if (tool === 'm' && moveGizmo.visible && tgt()) {
-    const gh = rc.intersectObjects(gizmoHitMeshes, false)[0];
-    if (gh) {
-      e.stopImmediatePropagation();
-      oc.enabled = false;
-      cv.setPointerCapture(e.pointerId);
-      const targetObj = tgt();
-      const dir = gh.object.userData.gizmoDir.clone();
-      const centerWorld = moveGizmo.position.clone();
-      const rect = cv.getBoundingClientRect();
-      const toScreen = v => {
-        const p = v.clone().project(cam);
-        return new THREE.Vector2((p.x + 1) * 0.5 * rect.width, (1 - p.y) * 0.5 * rect.height);
-      };
-      const s0 = toScreen(centerWorld);
-      const s1 = toScreen(centerWorld.clone().add(dir));
-      const screenDir = s1.sub(s0); // pixels per 1mm along arrow
-      drag = {
-        gizmo: 1,
-        r: targetObj,
-        dir,
-        screenDir,
-        lastX: e.clientX,
-        lastY: e.clientY
-      };
-      return;
-    }
-  }
-
-  // 2. Check Manual 3D Eraser Mode
-  if (tool === 'e') {
-    const h = rc.intersectObjects(objs, true).find(x => x.object.isMesh && x.object.material && x.object.material.visible !== false && !x.object.userData.cut);
-    if (h) {
-      e.stopImmediatePropagation();
-      oc.enabled = false;
-      cv.setPointerCapture(e.pointerId);
-      erasing = true;
-      eraseAtHit(h);
-      return;
-    }
-  }
-
-  // 3. Object Selection & Direct Dragging
   const h = rc.intersectObjects(objs, true).find(x => x.object.material && x.object.material.visible !== false);
   if (!h) return;
   const o = own(h.object);
@@ -2245,8 +1776,8 @@ cv.addEventListener('pointerdown', e => {
     place(sel, o, h);
     return;
   }
-  if (sel !== o) pick(o);
-  if (tool === 's' || tool === 'r') return;
+  pick(o);
+  if (tool) return;
   oc.enabled = false;
   cv.setPointerCapture(e.pointerId);
   drag = o.userData.stuck && o.parent !== sc
@@ -2255,60 +1786,8 @@ cv.addEventListener('pointerdown', e => {
 }, true);
 
 cv.addEventListener('pointermove', e => {
-  ray(e);
-
-  // Update 3D Eraser Cursor & Hover
-  if (tool === 'e' && !sliceOn) {
-    const h = rc.intersectObjects(objs, true).find(x => x.object.isMesh && x.object.material && x.object.material.visible !== false && !x.object.userData.cut);
-    if (h) {
-      eraseCursor.position.copy(h.point);
-      eraseCursor.scale.setScalar(eraseRadius);
-      eraseCursor.visible = true;
-      if (erasing) eraseAtHit(h);
-    } else {
-      eraseCursor.visible = false;
-    }
-    if (erasing) return;
-  } else {
-    eraseCursor.visible = false;
-  }
-
-  // Highlight hovered 6-way Move Gizmo Arrow
-  if (!drag && tool === 'm' && moveGizmo.visible) {
-    const gh = rc.intersectObjects(gizmoHitMeshes, false)[0];
-    gizmoHitMeshes.forEach(hm => {
-      const on = gh && gh.object === hm;
-      hm.userData.visualMeshes.forEach(vm => vm.material.color.setHex(on ? 0xfacc15 : hm.userData.baseCol));
-    });
-    cv.style.cursor = gh ? 'grab' : '';
-  }
-
   if (!drag) return;
-
-  // Handle 6-Direction Gizmo Arrow Drag (Screen-Space Axis Projection)
-  if (drag.gizmo) {
-    const dx = e.clientX - drag.lastX;
-    const dy = e.clientY - drag.lastY;
-    drag.lastX = e.clientX;
-    drag.lastY = e.clientY;
-    const sd = drag.screenDir;
-    const lenSq = sd.lengthSq();
-    if (lenSq > 1e-4) {
-      const deltaMm = (dx * sd.x + dy * sd.y) / lenSq;
-      drag.r.position.addScaledVector(drag.dir, deltaMm);
-      if (drag.r.position.z < -50) drag.r.position.z = -50;
-      drag.m = 1;
-      updateMoveGizmoScale();
-      updateSelBox();
-      tv();
-      const px = $('#px'), py = $('#py'), pz = $('#pz');
-      if (px) px.value = drag.r.position.x.toFixed(1);
-      if (py) py.value = drag.r.position.y.toFixed(1);
-      if (pz) pz.value = drag.r.position.z.toFixed(2);
-    }
-    return;
-  }
-
+  ray(e);
   if (drag.t) {
     const h = rc.intersectObjects(mshs(drag.par), false)[0];
     if (h) { place(drag.s, drag.par, h, 1); drag.m = 1; }
@@ -2319,28 +1798,14 @@ cv.addEventListener('pointermove', e => {
     drag.r.position.add(p.clone().sub(drag.p));
     drag.p.copy(p);
     drag.m = 1;
-    updateMoveGizmoScale();
-    updateSelBox();
-    tv();
   }
 });
 
 const dupPointer = () => {
-  if (erasing) {
-    erasing = false;
-    oc.enabled = true;
-    commit();
-    toast('تم مسح الجزء المحدد بالممحاة اليدوية (يمكنك التراجع بـ Ctrl+Z)');
-  }
   if (drag) {
     oc.enabled = true;
-    cv.style.cursor = '';
     if (drag.t && drag.m) bend(drag.s);
-    if (drag.m) {
-      updateMoveGizmoScale();
-      updateSelBox();
-      pp();
-    }
+    if (drag.m) pp();
     drag = null;
   }
 };
@@ -2351,15 +1816,10 @@ cv.addEventListener('pointercancel', dupPointer);
 const tc = new THREE.TransformControls(cam, R.domElement);
 sc.add(tc);
 tc.size = 0.85;
-tc.addEventListener('dragging-changed', e => {
-  oc.enabled = !e.value;
-  if (!e.value) {
-    updateSelBox();
-    pp();
-    commit();
-  }
-});
+tc.addEventListener('dragging-changed', e => { oc.enabled = !e.value; });
 
+let tool = '', pv = null, uni = 1;
+const tgt = () => (sel ? root(sel) : null);
 const ic = p => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 
 $('#tm').innerHTML = ic('<path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>');
@@ -2380,25 +1840,16 @@ tc.addEventListener('objectChange', () => {
     o.scale.set(pv.x * k, pv.y * k, pv.z * k);
   }
   pv = o.scale.clone();
-  updateSelBox();
   tv();
+  commit();
 });
 
-const setTool = k => {
-  if (pvOn && k !== 'pvw') pvOff();
-  if (sliceOn && k !== 'slice') sliceOff();
-  tool = tool === k ? '' : k;
-  eraseCursor.visible = false;
-  pp();
-};
+const setTool = k => { tool = tool === k ? '' : k; pp(); };
 $('#tm').onclick = () => setTool('m');
 $('#ts').onclick = () => setTool('s');
 $('#tro').onclick = () => setTool('r');
-$('#te').onclick = () => setTool('e');
 $('#tg').onclick = () => drop();
 $('#tpv').onclick = () => pvTog();
-$('#tsl').onclick = () => sliceTog();
-if ($('#b-slice')) $('#b-slice').onclick = () => sliceTog();
 $('#tck').onclick = () => { const w = pchk(); chkM(w, 0); };
 $('#tun').onclick = () => hgo(-1);
 $('#tre').onclick = () => hgo(1);
@@ -2408,7 +1859,6 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyM') setTool('m');
   else if (e.code === 'KeyS') setTool('s');
   else if (e.code === 'KeyR') setTool('r');
-  else if (e.code === 'KeyE') setTool('e');
   else if (e.code === 'KeyG') drop();
 });
 
@@ -2436,8 +1886,6 @@ function drop() {
   if (g < 1e8) {
     o.position.z -= g;
     pv = o.scale.clone();
-    updateMoveGizmoScale();
-    updateSelBox();
     tv();
     pp();
     toast(t('magok'));
@@ -2448,88 +1896,30 @@ function syncTool() {
   $('#tm').classList.toggle('on', tool === 'm');
   $('#tro').classList.toggle('on', tool === 'r');
   $('#ts').classList.toggle('on', tool === 's');
-  if ($('#te')) $('#te').classList.toggle('on', tool === 'e');
   const o = tgt(), w = $('#tw');
-
-  // Eraser Tool Widget
-  if (tool === 'e') {
-    tc.detach();
-    moveGizmo.visible = false;
-    w.hidden = false;
-    const k = 'erase_' + L;
-    if (w.dataset.k !== k) {
-      w.dataset.k = k;
-      w.innerHTML = `
-        <h5 dir="rtl"><span><i class="fa-solid fa-eraser"></i> ممحاة يدوية للمجسم</span></h5>
-        <div class="p-3 space-y-2.5 text-xs" dir="rtl">
-          <div class="flex items-center justify-between gap-2">
-            <label class="text-[#cbd5e1] font-bold">قطر الممحاة (مم):</label>
-            <input type="range" id="er-rng" min="1" max="30" step="0.5" value="${eraseRadius}" class="flex-1">
-            <span id="er-val" class="font-bold text-[#00b4d8] w-12 text-left">${eraseRadius} mm</span>
-          </div>
-          <div class="flex items-center justify-between gap-2">
-            <label class="text-[#cbd5e1] font-bold">نمط المسح:</label>
-            <select id="er-mode" class="!py-1 !text-xs flex-1">
-              <option value="carve" ${eraseMode === 'carve' ? 'selected' : ''}>نحت وحفر كروي ناعم</option>
-              <option value="faces" ${eraseMode === 'faces' ? 'selected' : ''}>مسح سطحي سريع</option>
-            </select>
-          </div>
-          <p class="text-[11px] text-[#94a3b8] leading-relaxed">💡 اضغط واسحب مباشرة فوق أي جزء من المجسم لمسحه يدوياً. للتراجع اضغط <b>Ctrl+Z</b>.</p>
-        </div>
-      `;
-    }
-    return;
-  }
-
-  if (!tool || !o || pvOn || sliceOn) {
-    tc.detach();
-    moveGizmo.visible = false;
-    w.hidden = true;
-    return;
-  }
-
-  // In Move mode ('m'), use our 6-Direction Arrows Gizmo so every direction has its own dedicated arrow!
-  if (tool === 'm') {
-    tc.detach();
-    updateMoveGizmoScale();
-  } else {
-    moveGizmo.visible = false;
-    if (tc.object !== o) { tc.attach(o); pv = o.scale.clone(); }
-    tc.setMode(tool === 's' ? 'scale' : 'rotate');
-    tc.setSpace(tool === 's' ? 'local' : 'world');
-  }
-
+  if (!tool || !o) { tc.detach(); w.hidden = true; return; }
+  if (tc.object !== o) { tc.attach(o); pv = o.scale.clone(); }
+  tc.setMode(tool === 'm' ? 'translate' : tool === 's' ? 'scale' : 'rotate');
+  tc.setSpace(tool === 's' ? 'local' : 'world');
   const k = tool + L + o.id;
   w.hidden = false;
   if (w.dataset.k !== k) {
     w.dataset.k = k;
-    const ax = h => `<span class="text-[#94a3b8] text-xs font-bold">${h}</span>${[0,1,2].map(i => `<b class="ax${i} text-center">${'XYZ'[i]}</b>`).join('')}<span></span>`;
-    const row = (l, p, u, s) => `<span class="text-xs text-[#94a3b8] font-bold">${t(l)}</span>${[0,1,2].map(i => `<input type="number" lang="en" id="${p}${i}" step="${s}">`).join('')}<span class="text-[11px] text-[#94a3b8]">${u}</span>`;
-    w.innerHTML = `<h5 dir="rtl"><span>${t(tool === 'm' ? 'mv' : tool === 'r' ? 'rot' : 'sclt')}</span></h5><div class="b">` +
+    const ax = h => `<span class="text-[#818f9e] text-xs">${h}</span>${[0,1,2].map(i => `<b class="ax${i} text-center">${'XYZ'[i]}</b>`).join('')}<span></span>`;
+    const row = (l, p, u, s) => `<span class="text-xs text-[#818f9e]">${t(l)}</span>${[0,1,2].map(i => `<input type="number" lang="en" id="${p}${i}" step="${s}">`).join('')}<span class="text-[11px] text-[#818f9e]">${u}</span>`;
+    w.innerHTML = `<h5>${t(tool === 'm' ? 'mv' : tool === 'r' ? 'rot' : 'sclt')}</h5><div class="b">` +
       (tool === 'r'
         ? ax('') + row('rot', 'r', '°', 1) + `</div>`
         : tool === 'm'
-        ? ax('') + row('pos', 'm', 'mm', 0.5) + `</div>
-          <div class="px-3 pb-2.5 pt-1 border-t border-[#2d3748]" dir="rtl">
-            <div class="text-[11px] text-[#94a3b8] mb-1.5 text-center font-bold">تحريك سريع بالأسهم في كل الاتجاهات:</div>
-            <div class="grid grid-cols-3 gap-1.5 mb-2">
-              <button type="button" data-nudge="0,0,2" class="!py-1 !text-xs !bg-blue-500/15 !border-blue-500/40 text-blue-300">⬆ فوق (+Z)</button>
-              <button type="button" data-nudge="0,2,0" class="!py-1 !text-xs !bg-emerald-500/15 !border-emerald-500/40 text-emerald-300">↗ أمام (+Y)</button>
-              <button type="button" data-nudge="0,0,-2" class="!py-1 !text-xs !bg-blue-500/15 !border-blue-500/40 text-blue-300">⬇ تحت (-Z)</button>
-              <button type="button" data-nudge="2,0,0" class="!py-1 !text-xs !bg-rose-500/15 !border-rose-500/40 text-rose-300">➡ يمين (+X)</button>
-              <button type="button" id="mc" class="!py-1 !text-xs">توسيط</button>
-              <button type="button" data-nudge="-2,0,0" class="!py-1 !text-xs !bg-rose-500/15 !border-rose-500/40 text-rose-300">⬅ يسار (-X)</button>
-            </div>
-            <button type="button" data-nudge="0,-2,0" class="w-full !py-1 !text-xs !bg-emerald-500/15 !border-emerald-500/40 text-emerald-300">↙ خلف (-Y)</button>
-          </div>`
-        : ax('') + row('size', 's', '%', 1) + row('size', 'z', 'mm', 1) + `</div><label class="flex items-center gap-2 p-2.5 text-xs border-t border-[#2d3748]" dir="rtl"><input type="checkbox" id="un" ${uni ? 'checked' : ''}> <span>تحجيم موحد لكافة المحاور</span></label>`);
+        ? ax('') + row('pos', 'm', 'mm', 0.5) + `</div><p class="text-center py-1 border-t border-[#2c333f]"><button id="mc" class="!py-1 !text-xs">توسيط في اللوحة</button></p>`
+        : ax('') + row('size', 's', '%', 1) + row('size', 'z', 'mm', 1) + `</div><label class="block p-2 text-xs border-t border-[#2c333f]"><input type="checkbox" id="un" ${uni ? 'checked' : ''}> تحجيم موحد لكافة المحاور</label>`);
   }
   tv();
 }
 
 function tv() {
   const o = tgt(), w = $('#tw');
-  if (!o || w.hidden || tool === 'e') return;
+  if (!o || w.hidden) return;
   const b = new THREE.Box3().setFromObject(o), c = b.getCenter(new THREE.Vector3()), z = b.getSize(new THREE.Vector3());
   const set = (id, v) => { const e = $('#' + id); if (e && e !== document.activeElement) e.value = (+v).toFixed(2); };
   [0, 1, 2].forEach(i => {
@@ -2542,15 +1932,6 @@ function tv() {
 }
 
 $('#tw').addEventListener('input', e => {
-  if (e.target.id === 'er-rng') {
-    eraseRadius = parseFloat(e.target.value) || 5;
-    if ($('#er-val')) $('#er-val').textContent = eraseRadius + ' mm';
-    return;
-  }
-  if (e.target.id === 'er-mode') {
-    eraseMode = e.target.value;
-    return;
-  }
   const o = tgt(), i = e.target.id, n = parseFloat(e.target.value);
   if (!o || isNaN(n) || !i || !'mszr'.includes(i[0]) || i.length !== 2) return;
   const k = 'xyz'[+i[1]], b = new THREE.Box3().setFromObject(o);
@@ -2562,53 +1943,30 @@ $('#tw').addEventListener('input', e => {
     else o.scale[k] *= f;
   }
   pv = o.scale.clone();
-  updateMoveGizmoScale();
-  updateSelBox();
   tv();
   pp();
 });
 
 $('#tw').addEventListener('change', e => { if (e.target.id === 'un') uni = e.target.checked ? 1 : 0; });
 $('#tw').addEventListener('click', e => {
-  const nb = e.target.closest('[data-nudge]');
-  if (nb) {
-    const o = tgt();
-    if (!o) return;
-    const [dx, dy, dz] = nb.dataset.nudge.split(',').map(Number);
-    o.position.x += dx;
-    o.position.y += dy;
-    o.position.z += dz;
-    updateMoveGizmoScale();
-    updateSelBox();
-    tv();
-    pp();
-    return;
-  }
   if (e.target.id !== 'mc') return;
   const o = tgt();
   if (!o) return;
   const c = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
   o.position.x -= c.x;
   o.position.y -= c.y;
-  updateMoveGizmoScale();
-  updateSelBox();
   tv();
   pp();
 });
 
-/* ── Panel Rendering & Realistic Filament Color Swatches ── */
-const REAL_SWATCHES = ['#111111', '#ffffff', '#00b4d8', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#94a3b8'];
-
+/* ── Panel Rendering ── */
 function ol() {
-  $('#list').innerHTML = objs.map((o, i) => {
-    const hex = '#' + (o.userData.bc != null ? o.userData.bc : (o.material ? o.material.color.getHex() : 0x00b4d8)).toString(16).padStart(6, '0');
-    return `
-      <div class="o ${o === sel ? 'on' : ''}">
-        <button data-s="${i}"><span class="dot" style="background:${o.userData.cut ? '#ef4444' : hex}"></span> <span class="truncate">${o.userData.name}</span></button>
-        <button data-x="${i}" class="text-rose-400 hover:text-white" title="${t('del')}">✕</button>
-      </div>
-    `;
-  }).join('');
+  $('#list').innerHTML = objs.map((o, i) => `
+    <div class="o ${o === sel ? 'on' : ''}">
+      <button data-s="${i}"><i class="fa-solid fa-cube text-[10px] text-[#00b4d8]"></i> ${o.userData.name}</button>
+      <button data-x="${i}" class="text-rose-400 hover:text-white" title="${t('del')}">✕</button>
+    </div>
+  `).join('');
 }
 
 const nf = (id, v, st) => `<input type="number" lang="en" id="${id}" value="${v}" step="${st || 1}">`;
@@ -2619,60 +1977,32 @@ function pp() {
   commit();
   const p = $('#props');
   if (!sel) {
-    p.innerHTML = `
-      <div class="text-center py-8 px-3 space-y-3">
-        <div class="w-12 h-12 rounded-2xl bg-[#1f2631] border border-[#2d3748] flex items-center justify-center mx-auto text-[#00b4d8] text-xl">
-          <i class="fa-solid fa-cube"></i>
-        </div>
-        <p class="text-xs text-[#94a3b8] font-bold">${t('none')}</p>
-        <div class="pt-2 space-y-2">
-          <button onclick="$('#file').click()" class="pri w-full !text-xs"><i class="fa-solid fa-upload"></i> استيراد ملف (STL, OBJ, 3MF, SVG)</button>
-          <button onclick="sliceTog()" class="slice-btn w-full !text-xs"><i class="fa-solid fa-layer-group"></i> Slice (معاينة الطباعة النهائية)</button>
-        </div>
-      </div>`;
+    p.innerHTML = `<p class="text-xs text-[#818f9e] text-center pt-8">${t('none')}</p>`;
     return;
   }
   const s = sel, e = s.userData;
-  const r = (l, h) => `<div class="r"><label>${t(l)}</label>${h}</div>`;
-  const rg = (l, h) => `<div class="rg"><label>${t(l)}</label><div class="g3">${h}</div></div>`;
-  const curHex = '#' + (e.bc != null ? e.bc : (s.material ? s.material.color.getHex() : 0x00b4d8)).toString(16).padStart(6, '0');
-  const swatchHtml = `<div class="swatch-bar">${REAL_SWATCHES.map(c => `<button type="button" class="swatch-btn" data-sw="${c}" style="background:${c}" title="${c}"></button>`).join('')}</div>`;
-  const hasCutters = objs.some(x => x.userData.cut);
-
-  let h = `<h4 class="!mt-0 text-white truncate font-black text-sm"><i class="fa-solid fa-Sliders text-[#00b4d8]"></i> ${e.name}</h4>` +
+  const r = (l, h) => `<div class="r"><label class="text-xs text-[#818f9e]">${t(l)}</label>${h}</div>`;
+  const rg = (l, h) => `<div class="rg"><label class="text-xs text-[#818f9e]">${t(l)}</label><div class="g3">${h}</div></div>`;
+  let h = `<h4 class="!mt-0 text-white truncate font-bold">${e.name}</h4>` +
     rg('pos', nf('px', s.position.x.toFixed(1), 0.5) + nf('py', s.position.y.toFixed(1), 0.5) + nf('pz', s.position.z.toFixed(2), 0.1)) +
     r('size', nf('sz', Math.round(s.scale.x * 100), 5)) +
     r('rot', nf('rz', Math.round(s.rotation.z * 180 / Math.PI), 5)) +
-    (e.kind !== 'kc' ? r('op', `<select id="po"><option value="0" ${e.cut ? '' : 'selected'}>${t('opadd')}</option><option value="1" ${e.cut ? 'selected' : ''}>${t('opcut')}</option></select>`) : '') +
-    (e.kind !== 'text' ? `<div class="rg"><div class="flex items-center justify-between"><label class="text-xs font-bold text-[#cbd5e1]">${t('colr')}</label><input type="color" id="oc" value="${curHex}"></div>${swatchHtml}</div>` : '');
-
-  if (e.cut || hasCutters) {
-    h += `
-      <div class="my-2.5 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-2">
-        <div class="text-[11px] font-bold text-rose-300 flex items-center gap-1.5">
-          <i class="fa-solid fa-wand-magic-sparkles"></i>
-          <span>أدوات الحفر والنحت (Boolean Carve):</span>
-        </div>
-        <div class="grid grid-cols-2 gap-1.5">
-          <button type="button" id="b-pvw-carve" class="${pvOn ? 'pri' : ''} !text-xs"><i class="fa-solid fa-eye"></i> ${pvOn ? 'إيقاف المعاينة' : 'معاينة بعد الحفر'}</button>
-          <button type="button" id="b-apply-carve" class="teal !text-xs"><i class="fa-solid fa-check-double"></i> تطبيق الحفر نهائياً</button>
-        </div>
-      </div>
-    `;
-  }
+    (SH[e.kind] ? r('op', `<select id="po"><option value="0" ${e.cut ? '' : 'selected'}>${t('opadd')}<option value="1" ${e.cut ? 'selected' : ''}>${t('opcut')}</select>`) : '') +
+    (e.kind !== 'text' ? r('colr', `<input type="color" id="oc" value="#${(e.bc != null ? e.bc : s.material.color.getHex()).toString(16).padStart(6, '0')}">`) : '');
 
   if (e.kind === 'text') {
     const o = e.o;
-    h += `<h4><i class="fa-solid fa-font"></i> ${t('txt')}</h4><textarea id="tt" dir="rtl" class="w-full text-base mb-1">${o.t}</textarea>` +
-      r('font', `<select id="tf" class="max-w-[165px]">${FONTS.map(f => `<option ${f === o.font ? 'selected' : ''}>${f}</option>`).join('')}</select>`) +
+    h += `<h4>${t('txt')}</h4><textarea id="tt" dir="rtl" class="w-full text-base">${o.t}</textarea>` +
+      r('font', `<select id="tf" class="max-w-[140px]">${FONTS.map(f => `<option ${f === o.font ? 'selected' : ''}>${f}</option>`).join('')}</select>`) +
       r('bold', `<input type="checkbox" id="tb" ${o.b ? 'checked' : ''}>`) +
-      `<div class="rg"><div class="flex items-center justify-between"><label class="text-xs font-bold text-[#cbd5e1]">${t('colr')}</label><input type="color" id="tcl" value="${o.col || curHex}"></div>${swatchHtml}</div>` +
+      r('colr', `<input type="color" id="tcl" value="${o.col || '#00b4d8'}">`) +
       r('h', nf('th', o.h, 0.5)) +
       r('d', nf('td', o.dp, 0.1)) +
-      `<h4><i class="fa-solid fa-sliders"></i> ${t('adv')}</h4>` +
+      `<h4>${t('adv')}</h4>` +
       r('cg', nf('tc', o.cg, 0.5)) +
       r('bo', nf('tw', o.bo, 0.5)) +
-      `<div class="flex gap-2 my-2"><button id="sf" class="pri flex-1 !text-xs">${t('surf')}</button><button id="fc" class="flex-1 !text-xs">${t('face')}</button></div>`;
+      `<div class="flex gap-2 my-2"><button id="sf" class="pri flex-1 !text-xs">${t('surf')}</button><button id="fc" class="flex-1 !text-xs">${t('face')}</button></div>` +
+      r('op', `<select id="po"><option value="0" ${e.cut ? '' : 'selected'}>${t('opadd')}<option value="1" ${e.cut ? 'selected' : ''}>${t('opcut')}</select>`);
   }
 
   if (e.kind === 'svg') {
@@ -2681,13 +2011,12 @@ function pp() {
       r('inv', `<input type="checkbox" id="vi" ${o.inv ? 'checked' : ''}>`) +
       r('wmm', nf('vw', o.size, 1)) +
       r('d', nf('vd', o.dp, 0.5)) +
-      r('vmode', `<select id="vm"><option value="sil" ${o.mode !== 'lith' ? 'selected' : ''}>${t('vsil')}</option><option value="lith" ${o.mode === 'lith' ? 'selected' : ''}>${t('vlith')}</option></select>`) +
+      r('vmode', `<select id="vm"><option value="sil" ${o.mode !== 'lith' ? 'selected' : ''}>${t('vsil')}<option value="lith" ${o.mode === 'lith' ? 'selected' : ''}>${t('vlith')}</select>`) +
       `<p class="mt-2"><button class="pri w-full !text-xs" id="vs">${t('svgdl')}</button></p>`;
   }
 
   h += `
-    <div class="grid grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-[#2d3748]">
-      <button id="b-erase-quick" class="${tool === 'e' ? 'pri' : ''} col-span-2 !text-xs"><i class="fa-solid fa-eraser"></i> ممحاة يدوية (مسح أجزاء من المجسم)</button>
+    <div class="grid grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-[#2c333f]">
       <button id="bdup"><i class="fa-solid fa-copy"></i> ${t('dup')}</button>
       <button id="barr"><i class="fa-solid fa-table-cells"></i> ${t('rep')}</button>
       <button id="bali"><i class="fa-solid fa-align-center"></i> ${t('ali')}</button>
@@ -2700,40 +2029,23 @@ function pp() {
 let tm;
 const rb = () => { clearTimeout(tm); tm = setTimeout(() => bt(sel), 250); };
 
-function setObjColorHex(s, hexStr) {
-  const hx = parseInt(hexStr.slice(1), 16);
-  s.userData.bc = hx;
-  if (s.userData.o && s.userData.kind === 'text') s.userData.o.col = hexStr;
-  if (!s.userData.cut && s.material) {
-    s.material.color.setHex(hx);
-    if (s.material.emissive) s.material.emissive.setHex(0x000000);
-    s.material.needsUpdate = true;
-  }
-  if ($('#oc')) $('#oc').value = hexStr;
-  if ($('#tcl')) $('#tcl').value = hexStr;
-  ol();
-  plr();
-  commit();
-}
-
 $('#props').addEventListener('input', ev => {
   if (!sel) return;
   const i = ev.target.id, v = ev.target.value, n = parseFloat(v), o = sel.userData.o, s = sel;
   commit();
-  if (i === 'px' && !isNaN(n)) { s.position.x = n; updateMoveGizmoScale(); updateSelBox(); }
-  if (i === 'py' && !isNaN(n)) { s.position.y = n; updateMoveGizmoScale(); updateSelBox(); }
-  if (i === 'pz' && !isNaN(n)) { s.position.z = n; updateMoveGizmoScale(); updateSelBox(); }
-  if (i === 'sz' && n > 0) { s.scale.setScalar(n / 100); updateMoveGizmoScale(); updateSelBox(); }
-  if (i === 'rz' && !isNaN(n)) { s.rotation.z = n * Math.PI / 180; updateMoveGizmoScale(); updateSelBox(); }
-  if (i === 'oc' || i === 'tcl') {
-    setObjColorHex(s, v);
+  if (i === 'px' && !isNaN(n)) s.position.x = n;
+  if (i === 'py' && !isNaN(n)) s.position.y = n;
+  if (i === 'pz' && !isNaN(n)) s.position.z = n;
+  if (i === 'sz' && n > 0) s.scale.setScalar(n / 100);
+  if (i === 'rz' && !isNaN(n)) s.rotation.z = n * Math.PI / 180;
+  if (i === 'oc') {
+    const hx = parseInt(v.slice(1), 16);
+    s.userData.bc = hx;
+    if (!s.userData.cut) s.material.color.setHex(hx);
+    plr();
     return;
   }
-  if (i === 'po') {
-    setCut(s, +v);
-    pp();
-    return;
-  }
+  if (i === 'po') { setCut(s, +v); return; }
   if (s.userData.kind === 'svg') {
     if (i === 'vt') o.thr = n;
     if (i === 'vi') o.inv = ev.target.checked ? 1 : 0;
@@ -2744,6 +2056,12 @@ $('#props').addEventListener('input', ev => {
     return;
   }
   if (s.userData.kind !== 'text') return;
+  if (i === 'tcl') {
+    o.col = v;
+    s.userData.bc = parseInt(v.slice(1), 16);
+    if (!s.userData.cut) s.material.color.setHex(s.userData.bc);
+    return;
+  }
   if (i === 'tt') o.t = v;
   if (i === 'tf') o.font = v;
   if (i === 'tb') o.b = ev.target.checked ? 1 : 0;
@@ -2753,23 +2071,12 @@ $('#props').addEventListener('input', ev => {
 });
 
 $('#props').addEventListener('click', e => {
-  const sw = e.target.closest('[data-sw]');
-  if (sw && sel) {
-    setObjColorHex(sel, sw.dataset.sw);
-    return;
-  }
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  if (btn.id === 'fc' && sel) sel.quaternion.copy(cam.quaternion);
-  if (btn.id === 'sf') { surf = 1; toast(t('surfhint')); }
-  if (btn.id === 'b-pvw-carve') pvTog();
-  if (btn.id === 'b-apply-carve') applyCarvePermanently();
-  if (btn.id === 'b-erase-quick') setTool('e');
-  if (btn.id === 'vs') downloadFormat('svg');
-  if (btn.id === 'bdup') dupSel();
-  if (btn.id === 'barr') arrM();
-  if (btn.id === 'bali') aliM();
-  if (btn.id === 'bdel' && sel) delObj(sel);
+  if (e.target.id === 'fc' && sel) sel.quaternion.copy(cam.quaternion);
+  if (e.target.id === 'sf') { surf = 1; toast(t('surfhint')); }
+  if (e.target.id === 'bdup') dupSel();
+  if (e.target.id === 'barr') arrM();
+  if (e.target.id === 'bali') aliM();
+  if (e.target.id === 'bdel' && sel) delObj(sel);
 });
 
 $('#menu').addEventListener('click', e => {
@@ -2780,10 +2087,7 @@ $('#menu').addEventListener('click', e => {
   else if (b.dataset.k === 'shapes') shapesM();
   else if (b.dataset.k === 'svg') $('#imf').click();
   else if (b.dataset.k === 'kc') kcM();
-  else if (b.dataset.k === 'erase') setTool('e');
-  else if (b.dataset.k === 'pvw') pvTog();
   else if (b.dataset.k === 'sep') sepColors();
-  else if (b.dataset.k === 'slice') sliceTog();
   else if (b.dataset.k === 'bed') addBed();
   else if (b.dataset.k === 'arr') arrange();
   else if (b.dataset.k === 'qr') qrM();
@@ -2796,7 +2100,7 @@ $('#list').addEventListener('click', e => {
   if (b.dataset.x) delObj(objs[b.dataset.x]);
 });
 
-/* ── Universal 3D & Vector File Loader (STL, 3MF, OBJ, SVG, PLY, GLTF, GLB) ── */
+/* ── File Loaders (STL & 3MF) ── */
 const geoOf = P => {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
@@ -2804,191 +2108,33 @@ const geoOf = P => {
   return g;
 };
 
-// 3MF Multi-Part & Multi-Color Parser
-async function parse3MF(buf) {
-  const z = await JSZip.loadAsync(buf), out = [];
-  const files = Object.keys(z.files).filter(k => /\.model$/i.test(k));
-  for (const f of files) {
-    const d = new DOMParser().parseFromString(await z.files[f].async('string'), 'application/xml');
-    const cm = {};
-    for (const g of d.getElementsByTagName('*')) {
-      if (g.localName === 'colorgroup') {
-        const l = [];
-        for (const c of g.children) {
-          if (c.localName === 'color') l.push(parseInt((c.getAttribute('color') || '#00b4d8').slice(1, 7), 16));
-        }
-        cm[g.getAttribute('id')] = l;
-      }
-    }
-    for (const o of d.getElementsByTagName('*')) {
-      if (o.localName !== 'object') continue;
-      const vs = [], by = {}, dp = o.getAttribute('pid'), di = o.getAttribute('pindex');
-      for (const n of o.getElementsByTagName('*')) {
-        if (n.localName === 'vertex') vs.push([+n.getAttribute('x'), +n.getAttribute('y'), +n.getAttribute('z')]);
-        else if (n.localName === 'triangle') {
-          const p = n.getAttribute('pid') || dp, k = n.getAttribute('p1') ?? di;
-          const c = (cm[p] && cm[p][+k]) ?? 0x00b4d8;
-          (by[c] = by[c] || []).push(...vs[+n.getAttribute('v1')], ...vs[+n.getAttribute('v2')], ...vs[+n.getAttribute('v3')]);
-        }
-      }
-      Object.entries(by).forEach(([c, P]) => out.push({ g: geoOf(P), c: +c }));
-    }
-  }
-  return out;
-}
-
-function importImageOrSVGFile(f) {
-  const u = URL.createObjectURL(f), im = new Image();
-  im.onload = () => {
-    const w0 = im.naturalWidth || 400, h0 = im.naturalHeight || 400;
-    const s = Math.min(600 / w0, 600 / h0);
-    const w = Math.max(1, Math.round(w0 * s)), h = Math.max(1, Math.round(h0 * s));
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    const x = c.getContext('2d');
-    x.drawImage(im, 0, 0, w, h);
-    const d = x.getImageData(0, 0, w, h).data, lum = new Uint8Array(w * h);
-    for (let i = 0; i < w * h; i++) lum[i] = d[i * 4 + 3] < 128 ? 255 : Math.round(0.3 * d[i*4] + 0.59 * d[i*4+1] + 0.11 * d[i*4+2]);
-    URL.revokeObjectURL(u);
-    const m = new THREE.Mesh(new THREE.BufferGeometry(), mat(0xe0a030));
-    m.userData.bc = 0xe0a030;
-    m.position.z = topZ();
-    add(m, 'SVG ' + f.name, 'svg', { lum, w, h, thr: 128, inv: 0, size: 50, dp: 3, mode: 'sil', tmin: 0.6, tmax: 3.2 });
-    bs(m);
-    toast('تم تحويل واستيراد ملف SVG إلى مجسم ثلاثي الأبعاد!');
-  };
-  im.onerror = () => toast(t('err'));
-  im.src = u;
-}
-
-function centerAndAddLoadedMesh(g, name, colorHex) {
-  g.computeVertexNormals();
-  g.computeBoundingBox();
-  const bb = g.boundingBox, cc = bb.getCenter(new THREE.Vector3());
-  g.translate(-cc.x, -cc.y, -cc.z);
-  const o = new THREE.Mesh(g, mat(colorHex));
-  o.userData.bc = colorHex == null ? 0x00b4d8 : colorHex;
-  o.position.set(0, 0, (bb.max.z - bb.min.z) / 2);
-  add(o, name, 'file');
-  cam.position.set(130, -190, 160);
-  oc.target.set(0, 0, 0);
-  return o;
-}
-
-async function loadAny3DFile(f) {
+$('#file').onchange = async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
   if (!f) return;
-  const name = f.name || 'model';
-  const ext = (name.split('.').pop() || '').toLowerCase();
-
-  if (ext === 'svg' || /^image\//i.test(f.type)) {
-    return importImageOrSVGFile(f);
-  }
-
-  toast(`جاري قراءة واستيراد ملف ${ext.toUpperCase()}...`);
+  toast('جاري قراءة الملف وتجهيز السلايسر...');
   try {
     const b = await f.arrayBuffer();
-
-    if (ext === 'stl') {
+    if (/\.stl$/i.test(f.name)) {
       const g = new THREE.STLLoader().parse(b);
-      centerAndAddLoadedMesh(g, name, 0x00b4d8);
+      g.computeBoundingBox();
+      const bb = g.boundingBox, cc = bb.getCenter(new THREE.Vector3());
+      g.translate(-cc.x, -cc.y, -cc.z);
+      const o = new THREE.Mesh(g, mat());
+      o.position.set(0, 0, (bb.max.z - bb.min.z) / 2);
+      add(o, f.name, 'file');
+      cam.position.set(130, -190, 160);
+      oc.target.set(0, 0, 0);
       toast('تم استيراد ملف STL بنجاح!');
-    } else if (ext === '3mf') {
-      const parts = await parse3MF(b);
-      if (!parts.length) throw new Error('لم يتم العثور على مجسمات داخل ملف 3MF');
-      const bb = new THREE.Box3();
-      parts.forEach(p => { p.g.computeBoundingBox(); bb.union(p.g.boundingBox); });
-      const cc = bb.getCenter(new THREE.Vector3());
-      const ms = parts.map((p, i) => {
-        p.g.translate(-cc.x, -cc.y, -bb.min.z);
-        const m = new THREE.Mesh(p.g, mat(p.c));
-        m.userData = { name: i ? `${name} · لون ${i + 1}` : name, kind: 'file', bc: p.c };
-        return m;
-      });
-      sc.add(ms[0]);
-      ms.slice(1).forEach(m => ms[0].add(m));
-      ms.forEach(m => objs.push(m));
-      pick(ms[0]);
-      updateFooterStats();
-      commit();
-      toast(`تم استيراد ملف 3MF (${ms.length} جزء/لون) بنجاح!`);
-    } else if (ext === 'obj') {
-      const txt = new TextDecoder().decode(b);
-      const grp = new THREE.OBJLoader().parse(txt);
-      const P = [];
-      const v = new THREE.Vector3();
-      grp.traverse(ch => {
-        if (ch.isMesh && ch.geometry && ch.geometry.attributes.position) {
-          const pos = ch.geometry.attributes.position, ix = ch.geometry.index;
-          const cnt = ix ? ix.count : pos.count;
-          for (let i = 0; i + 2 < cnt; i += 3) {
-            [0, 1, 2].forEach(k => {
-              v.fromBufferAttribute(pos, ix ? ix.getX(i + k) : i + k).applyMatrix4(ch.matrixWorld);
-              P.push(v.x, v.y, v.z);
-            });
-          }
-        }
-      });
-      if (!P.length) throw new Error('ملف OBJ فارغ');
-      centerAndAddLoadedMesh(geoOf(P), name, 0x00b4d8);
-      toast('تم استيراد ملف OBJ بنجاح!');
-    } else if (ext === 'ply') {
-      const g = new THREE.PLYLoader().parse(b);
-      centerAndAddLoadedMesh(g, name, 0x00b4d8);
-      toast('تم استيراد ملف PLY بنجاح!');
-    } else if (ext === 'gltf' || ext === 'glb') {
-      new THREE.GLTFLoader().parse(b, '', gltf => {
-        const P = [], v = new THREE.Vector3();
-        gltf.scene.updateMatrixWorld(true);
-        gltf.scene.traverse(ch => {
-          if (ch.isMesh && ch.geometry && ch.geometry.attributes.position) {
-            const pos = ch.geometry.attributes.position, ix = ch.geometry.index;
-            const cnt = ix ? ix.count : pos.count;
-            for (let i = 0; i + 2 < cnt; i += 3) {
-              [0, 1, 2].forEach(k => {
-                v.fromBufferAttribute(pos, ix ? ix.getX(i + k) : i + k).applyMatrix4(ch.matrixWorld);
-                P.push(v.x, v.y, v.z);
-              });
-            }
-          }
-        });
-        if (!P.length) return toast('لم يتم العثور على أشكال ثلاثية الأبعاد في الملف');
-        centerAndAddLoadedMesh(geoOf(P), name, 0x00b4d8);
-        toast(`تم استيراد ملف ${ext.toUpperCase()} بنجاح!`);
-      }, err => toast('تعذر قراءة ملف GLTF: ' + (err.message || err)));
     } else {
-      // Fallback: attempt STL parse
-      const g = new THREE.STLLoader().parse(b);
-      centerAndAddLoadedMesh(g, name, 0x00b4d8);
-      toast('تم استيراد المجسم بنجاح!');
+      toast('يرجى اختيار ملف STL صالح');
     }
   } catch (err) {
     toast('تعذر قراءة الملف: ' + err.message);
   }
-}
-
-$('#file').onchange = e => {
-  const f = e.target.files[0];
-  e.target.value = '';
-  if (f) loadAny3DFile(f);
 };
 
-// Drag & Drop support on #stage for all 3D & SVG files
-const stageEl = $('#stage'), dropOverlay = $('#drop-zone-overlay');
-stageEl.addEventListener('dragover', e => {
-  e.preventDefault();
-  if (dropOverlay) dropOverlay.classList.add('active');
-});
-stageEl.addEventListener('dragleave', e => {
-  if (!stageEl.contains(e.relatedTarget) && dropOverlay) dropOverlay.classList.remove('active');
-});
-stageEl.addEventListener('drop', e => {
-  e.preventDefault();
-  if (dropOverlay) dropOverlay.classList.remove('active');
-  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-  if (f) loadAny3DFile(f);
-});
-
-/* ── Beds, Build Plates, Arranging & Multi-Color Separation ── */
+/* ── Beds, Build Plates & Arranging ── */
 let BW = 220, NB = 1, bedG = null, bedK = '', cur = 0;
 const GAP = 40, BP = () => BW + GAP;
 
@@ -3021,25 +2167,16 @@ function drawBeds() {
 function plr() {
   drawBeds();
   const n = nPl(), b = $('#pl');
-  objs.forEach(o => {
-    if (o.material) o.material.visible = !pvOn && !sliceOn && (!cur || plOf(o) === cur);
-  });
   if (!objs.length && n < 2) { b.hidden = true; b.innerHTML = ''; cur = 0; return; }
   b.hidden = false;
-  const hasSep = objs.some(o => o.userData._sepX != null);
   b.innerHTML = (n > 1
     ? `<button data-pl="0" class="${cur ? '' : 'on'}">${t('all')}</button>` +
-      Array.from({ length: n }, (_, i) => {
-        const plateObj = objs.find(o => !o.userData.cut && plOf(o) === i + 1 && o.material);
-        const dotHex = plateObj ? '#' + (plateObj.userData.bc != null ? plateObj.userData.bc : plateObj.material.color.getHex()).toString(16).padStart(6, '0') : '#00b4d8';
-        return `<button data-pl="${i+1}" class="${cur === i+1 ? 'on' : ''}"><span class="dot" style="background:${dotHex}"></span> ${t('plate')} ${i+1}</button>`;
-      }).join('')
+      Array.from({ length: n }, (_, i) => `<button data-pl="${i+1}" class="${cur === i+1 ? 'on' : ''}"><span class="dot" style="background:#00b4d8"></span> ${t('plate')} ${i+1}</button>`).join('')
     : '') +
-    (hasSep ? `<button data-pl="unsep" class="!bg-amber-500/20 !border-amber-500/40 text-amber-300"><i class="fa-solid fa-object-group"></i> ${t('unsep')}</button>` : `<button data-pl="sep" title="فصل الألوان على لوحات مستقلة"><i class="fa-solid fa-palette text-[#00b4d8]"></i> ${t('sep')}</button>`) +
     `<button data-pl="add" title="إضافة لوحة طباعة جديدة">+ ${t('addbed')}</button>` +
     (n > 1 ? `<button data-pl="del" class="text-rose-400 hover:text-white hover:bg-rose-500/20" title="إلغاء وحذف آخر لوحة طباعة"><i class="fa-solid fa-trash-can text-[10px]"></i> حذف لوحة</button>` : '') +
     `<button data-pl="arr">${t('arr')}</button>` +
-    `<select id="bsz" class="!py-0.5 !px-2 !min-h-[30px] !text-xs">${[180, 220, 256, 300, 350].map(v => `<option ${v === BW ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+    `<select id="bsz" class="!py-0.5 !text-xs !bg-[#1c2026]">${[180, 220, 256, 300, 350].map(v => `<option ${v === BW ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
 }
 
 function addBed() { NB = nPl() + 1; cur = 0; pp(); toast('تمت إضافة لوحة طباعة جديدة'); }
@@ -3080,171 +2217,21 @@ function arrange() {
   });
   NB = Math.max(1, pl + 1);
   cur = 0;
-  updateMoveGizmoScale();
-  updateSelBox();
   pp();
   toast('تم التوزيع التلقائي على اللوحات');
 }
 
-function getMeshHex(o) {
-  if (o.userData && o.userData.bc != null) return o.userData.bc;
-  if (o.userData && o.userData.pc) return parseInt(String(o.userData.pc).replace('#', ''), 16);
-  return o.material ? o.material.color.getHex() : 0x00b4d8;
-}
-
-function unsepColors() {
-  sc.updateMatrixWorld(true);
-  objs.forEach(o => {
-    if (o.userData._sepParent && objs.includes(o.userData._sepParent)) {
-      o.userData._sepParent.attach(o);
-    }
-    if (o.userData._sepPos) {
-      o.position.copy(o.userData._sepPos);
-    }
-    delete o.userData._sepX;
-    delete o.userData._sepParent;
-    delete o.userData._sepPos;
-  });
-  NB = 1;
-  cur = 0;
-  bedK = '';
-  updateMoveGizmoScale();
-  updateSelBox();
-  pp();
-  toast('تم دمج وإرجاع كافة الألوان إلى اللوحة الأولى');
-}
-
-function splitMeshByHeightAndSeparate(mesh, zSplitRatio, hex1, hex2) {
-  sc.updateMatrixWorld(true);
-  const wArr = wt([mesh]);
-  if (!wArr.length) return toast('المجسم فارغ');
-  const P = tp(wArr);
-  const bb = bbx(P);
-  const zCut = bb[2] + (bb[5] - bb[2]) * (zSplitRatio / 100);
-  const cutPlane = { n: [0, 0, 1], w: zCut };
-  const topPolys = [], botPolys = [];
-  P.forEach(q => spl(cutPlane, q, topPolys, botPolys, topPolys, botPolys));
-  const botTris = pf(botPolys), topTris = pf(topPolys);
-  if (!botTris.length || !topTris.length) return toast('اختر نسبة ارتفاع متوسطة لتقسيم المجسم');
-
-  const c1 = parseInt(hex1.slice(1), 16), c2 = parseInt(hex2.slice(1), 16);
-  const baseName = mesh.userData.name || 'مجسم';
-  delObj(mesh);
-
-  const g1 = geoOf(botTris);
-  const m1 = new THREE.Mesh(g1, mat(c1));
-  m1.userData = { name: baseName + ' · الجزء السفلي', kind: 'file', bc: c1 };
-  sc.add(m1); objs.push(m1);
-
-  const g2 = geoOf(topTris);
-  const m2 = new THREE.Mesh(g2, mat(c2));
-  m2.userData = { name: baseName + ' · الجزء العلوي', kind: 'file', bc: c2 };
-  sc.add(m2); objs.push(m2);
-
-  pick(m1);
-  sepColors();
-}
-
-function openColorSepModal(ms) {
-  M(`
-    <h3 class="text-sm font-black text-white mb-2 flex items-center gap-2">
-      <i class="fa-solid fa-palette text-[#00b4d8]"></i>
-      <span>مدير فصل وتخصيص الألوان للطباعة المتعددة</span>
-    </h3>
-    <p class="text-xs text-[#94a3b8] mb-3">حدد ألوان المجسمات في المشهد أو قسّم المجسم إلى لونين حسب الارتفاع ثم افصلها على لوحات الطباعة بضغطة واحدة:</p>
-    <div class="space-y-2 max-h-56 overflow-y-auto mb-4">
-      ${ms.map((o, idx) => {
-        const hx = '#' + getMeshHex(o).toString(16).padStart(6, '0');
-        return `
-          <div class="r">
-            <span class="text-xs font-bold text-white">${idx + 1}. ${o.userData.name || 'مجسم'}</span>
-            <input type="color" data-csep-idx="${idx}" value="${hx}">
-          </div>
-        `;
-      }).join('')}
-    </div>
-    ${ms.length === 1 ? `
-      <div class="p-3 rounded-xl bg-[#11151c] border border-[#2d3748] mb-4 space-y-2.5 text-xs">
-        <div class="font-bold text-[#00b4d8] flex items-center gap-1.5">
-          <i class="fa-solid fa-layer-group"></i>
-          <span>تقسيم المجسم الواحد إلى لونين وفصلهما تلقائياً:</span>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="r !m-0"><label>لون القاعدة:</label><input type="color" id="sp-c1" value="#111111"></div>
-          <div class="r !m-0"><label>لون القمة:</label><input type="color" id="sp-c2" value="#f59e0b"></div>
-        </div>
-        <div class="r !m-0">
-          <label>نسبة ارتفاع الفصل (%):</label>
-          <input type="number" id="sp-z" value="50" min="10" max="90" step="5" class="w-24">
-        </div>
-        <button type="button" id="btn-split-height" class="teal w-full !py-2">تقسيم المجسم إلى لونين وفصل اللوحات</button>
-      </div>
-    ` : `
-      <button type="button" id="btn-apply-csep" class="pri w-full !py-2.5">تطبيق الألوان وفصلها على اللوحات الآن</button>
-    `}
-  `);
-
-  $('#md').querySelectorAll('[data-csep-idx]').forEach(inp => {
-    inp.oninput = () => {
-      const target = ms[+inp.dataset.csepIdx];
-      if (target) setObjColorHex(target, inp.value);
-    };
-  });
-  if ($('#btn-apply-csep')) {
-    $('#btn-apply-csep').onclick = () => {
-      $('#md').close();
-      sepColors();
-    };
-  }
-  if ($('#btn-split-height')) {
-    $('#btn-split-height').onclick = () => {
-      const ratio = +($('#sp-z').value || 50);
-      const c1 = $('#sp-c1').value || '#111111';
-      const c2 = $('#sp-c2').value || '#f59e0b';
-      $('#md').close();
-      splitMeshByHeightAndSeparate(ms[0], ratio, c1, c2);
-    };
-  }
-}
-
 function sepColors() {
-  if (!objs.length) return toast(t('empty'));
-  // Ensure all child meshes of any object in scene are registered in objs
-  objs.slice().forEach(o => o.traverse(ch => {
-    if (ch.isMesh && !objs.includes(ch)) {
-      ch.userData = { name: ch.userData.name || '↳ جزء ملون', kind: o.userData.kind || 'file', bc: getMeshHex(ch) };
-      objs.push(ch);
-    }
-  }));
-
-  const ms = objs.filter(o => !o.userData.cut && o.isMesh && o.material);
-  const cs = [...new Set(ms.map(getMeshHex))];
-  if (cs.length < 2) {
-    return openColorSepModal(ms);
-  }
-
+  const hx = o => (o.userData.bc != null ? o.userData.bc : o.material.color.getHex());
+  const ms = objs.filter(o => !o.userData.cut && o.material);
+  const cs = [...new Set(ms.map(hx))];
+  if (cs.length < 2) return toast('لا توجد ألوان متعددة للفصل');
   sc.updateMatrixWorld(true);
-  ms.forEach(o => {
-    if (o.userData._sepX == null) {
-      o.userData._sepParent = o.parent;
-      o.userData._sepPos = o.position.clone();
-      o.userData._sepX = 1;
-    }
-    if (o.parent !== sc) sc.attach(o);
-    const plateIdx = cs.indexOf(getMeshHex(o));
-    const bb = new THREE.Box3().setFromObject(o);
-    const c = bb.getCenter(new THREE.Vector3());
-    // Place on target plate X and drop onto bed Z=0
-    o.position.x += (plateIdx * BP()) - c.x;
-    if (bb.min.z > 0.01 || bb.min.z < -0.01) o.position.z -= bb.min.z;
-  });
+  ms.forEach(o => { o.position.x += cs.indexOf(hx(o)) * BP(); });
   NB = Math.max(NB, cs.length);
   cur = 0;
-  bedK = '';
-  updateMoveGizmoScale();
-  updateSelBox();
   pp();
-  toast(`تم فصل ${cs.length} ألوان على ${cs.length} لوحات طباعة مستقلة!`);
+  toast('تم فصل الألوان على لوحات مستقلة');
 }
 
 $('#pl').addEventListener('click', e => {
@@ -3254,8 +2241,6 @@ $('#pl').addEventListener('click', e => {
   if (v === 'add') addBed();
   else if (v === 'del') delBed();
   else if (v === 'arr') arrange();
-  else if (v === 'sep') sepColors();
-  else if (v === 'unsep') unsepColors();
   else { cur = +v; pp(); }
 });
 
@@ -3456,22 +2441,22 @@ function kcM() {
     `).join('')
   ).join('');
 
-  const fr = (l, h) => `<div class="r"><label>${t(l)}</label>${h}</div>`;
-  const ni = (id, v, s) => `<input type="number" lang="en" id="${id}" value="${v}" step="${s}" class="w-28">`;
-  const se = (id, v, a) => `<select id="${id}" class="text-xs w-28">${a.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${t(l)}</option>`).join('')}</select>`;
+  const fr = (l, h) => `<div class="r"><label class="text-xs text-[#818f9e]">${t(l)}</label>${h}</div>`;
+  const ni = (id, v, s) => `<input type="number" lang="en" id="${id}" value="${v}" step="${s}" class="w-20">`;
+  const se = (id, v, a) => `<select id="${id}" class="text-xs">${a.map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${t(l)}</option>`).join('')}</select>`;
 
   M(`
-    <div class="flex items-center justify-between pb-2 mb-3 border-b border-[#2d3748]">
-      <h3 class="text-sm font-black text-white flex items-center gap-2">
+    <div class="flex items-center justify-between pb-2 mb-3 border-b border-[#2c333f]">
+      <h3 class="text-sm font-bold text-white flex items-center gap-2">
         <i class="fa-solid fa-key text-[#00b4d8]"></i>
         <span>${t('kc')} (أكثر من 50 ستايل ونمط مع المعاينة الحية)</span>
       </h3>
     </div>
 
-    <input id="kn" dir="auto" placeholder="${t('kcn')}" value="${K.name || 'علي'}" class="w-full !text-lg !py-2.5 !px-4 mb-2 font-black text-white">
+    <input id="kn" dir="auto" placeholder="${t('kcn')}" value="${K.name || 'علي'}" class="w-full text-lg py-2 px-3 mb-2 font-bold text-white bg-[#121519] border border-[#2c333f] rounded-xl focus:border-[#00b4d8]">
     
     <!-- Live Preview Canvas -->
-    <canvas id="kpv" width="640" height="230" class="w-full rounded-xl border border-[#2d3748] bg-[#0b0e12] mb-3 shadow-inner"></canvas>
+    <canvas id="kpv" width="640" height="230" class="w-full rounded-xl border border-[#2c333f] bg-[#121519] mb-3 shadow-inner"></canvas>
     
     <!-- Templates -->
     <h4 class="!mt-2 !mb-1 text-[#00b4d8] text-xs font-bold">${t('tpl')}</h4>
@@ -3487,17 +2472,17 @@ function kcM() {
     <!-- 56 Styles Grid -->
     <div class="flex justify-between items-center mb-1">
       <h4 class="!mt-0 !mb-0 text-[#00b4d8] text-xs font-bold">${t('kcs')} (${KS.length * KP.length} ستايل متاح)</h4>
-      <span class="text-[11px] text-[#94a3b8]">${t('khint')}</span>
+      <span class="text-[10px] text-[#818f9e]">${t('khint')}</span>
     </div>
-    <div class="kg mb-4 border border-[#2d3748] rounded-xl p-2 bg-[#0b0e12]">
+    <div class="kg mb-4 border border-[#2c333f] rounded-xl p-2 bg-[#121519]">
       ${cards}
     </div>
 
-    <!-- Options and Adjustments (Sleek Modern Cards) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 text-xs bg-[#11151c] p-3.5 rounded-2xl border border-[#2d3748] mb-3">
+    <!-- Options and Adjustments -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs bg-[#14171c] p-3 rounded-xl border border-[#2c333f] mb-3">
       <div class="r sm:col-span-2">
-        <label>${t('font')}:</label>
-        <input id="kf" list="fl" value="${K.font}" placeholder="اختر الخط أو اكتب اسمه (مثال: Cairo)" class="flex-1 text-xs">
+        <label class="text-[#818f9e]">${t('font')}:</label>
+        <input id="kf" list="fl" value="${K.font}" placeholder="اختر الخط أو اكتب اسمه" class="flex-1 text-xs">
         <datalist id="fl">${FONTS.concat(EF).map(f => `<option>${f}</option>`).join('')}</datalist>
       </div>
 
@@ -3513,7 +2498,7 @@ function kcM() {
       ${fr('kc2', `<input type="color" id="k2" value="${K.c2}">`)}
     </div>
 
-    <button class="pri w-full !py-3 text-sm font-black shadow-lg shadow-[#00b4d8]/20" id="kk">
+    <button class="pri w-full !py-3 text-sm font-bold shadow-lg shadow-[#00b4d8]/20" id="kk">
       <i class="fa-solid fa-cube"></i>
       <span>${t('kmk')}</span>
     </button>
@@ -3665,7 +2650,7 @@ async function kcMake() {
   });
 
   const nameK = 'ميدالية · ' + nm;
-  const tag = (m, p, c, n) => { m.userData = { ...m.userData, name: n, kind: 'kc', kc: 1, plate: p, pc: c, bc: col(c) }; };
+  const tag = (m, p, c, n) => { m.userData = { ...m.userData, name: n, kind: 'kc', kc: 1, plate: p, pc: c }; };
   const base = new THREE.Mesh(G(L1, o.bh), mat(col(o.c1)));
   add(base, nameK, 'kc');
   tag(base, 1, o.c1, nameK);
@@ -3727,11 +2712,11 @@ async function kcMake() {
 /* ── 3D QR Code Maker ── */
 function qrM() {
   M(`
-    <h3 class="text-sm font-black text-white mb-3"><i class="fa-solid fa-qrcode text-[#00b4d8]"></i> ${t('qr')}</h3>
+    <h3 class="text-sm font-bold text-white mb-3"><i class="fa-solid fa-qrcode text-[#00b4d8]"></i> ${t('qr')}</h3>
     <input id="q1" placeholder="أدخل الرابط أو النص للباركود" value="https://mjar.netlify.app" class="w-full text-sm mb-3" dir="ltr">
     <div class="grid grid-cols-2 gap-3 text-xs mb-4">
-      <div class="r"><label>الحجم (مم):</label><input type="number" id="qz" value="50" class="w-24"></div>
-      <div class="r"><label>الارتفاع (مم):</label><input type="number" id="qh" value="1.5" class="w-24"></div>
+      <div class="r"><label>الحجم (مم):</label><input type="number" id="qz" value="50" class="w-16"></div>
+      <div class="r"><label>الارتفاع (مم):</label><input type="number" id="qh" value="1.5" class="w-16"></div>
     </div>
     <button class="pri w-full !py-2.5" id="qgo">إنشاء رمز 3D</button>
   `);
@@ -3746,13 +2731,9 @@ function qrM() {
       const g = pg((i, j) => i >= 0 && j >= 0 && i < n && j < n && q.isDark(j, i), n, n, hh, k, 1);
       g.translate(-size / 2, -size / 2, 2);
       const base = new THREE.Mesh(new THREE.BoxGeometry(size + 4, size + 4, 2).translate(0, 0, 1), mat(0xffffff));
-      base.userData.bc = 0xffffff;
-      const qm = new THREE.Mesh(g, mat(0x111111));
-      qm.userData = { name: '↳ نقشة الباركود QR', kind: 'qr', bc: 0x111111 };
+      const qm = new THREE.Mesh(g, mat(0x14171c));
       base.add(qm);
       add(base, 'QR Code 3D', 'qr');
-      objs.push(qm);
-      ol();
       $('#md').close();
     } catch (e) {
       toast('تعذر إنشاء رمز QR: ' + e.message);
@@ -3760,7 +2741,7 @@ function qrM() {
   };
 }
 
-/* ── Export & Slicer File Generator (STL / 3MF / OBJ / SVG) ── */
+/* ── Export & Slicer File Generator (STL / 3MF / SVG) ── */
 function stl(a) {
   const n = a.length / 9, b = new DataView(new ArrayBuffer(84 + 50 * n));
   b.setUint32(80, n, true);
@@ -3777,54 +2758,16 @@ function stl(a) {
   return b.buffer;
 }
 
-async function m3(a) {
-  const z = new JSZip();
-  let v = '', trStr = '';
-  for (let i = 0; i < a.length; i += 3) v += `<vertex x="${a[i].toFixed(4)}" y="${a[i+1].toFixed(4)}" z="${a[i+2].toFixed(4)}"/>`;
-  for (let i = 0, n = a.length / 9; i < n; i++) trStr += `<triangle v1="${i*3}" v2="${i*3+1}" v3="${i*3+2}"/>`;
-  z.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>');
-  z.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>');
-  z.file('3D/3dmodel.model', `<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"><resources><object id="1" type="model"><mesh><vertices>${v}</vertices><triangles>${trStr}</triangles></mesh></object></resources><build><item objectid="1"/></build></model>`);
-  return z.generateAsync({ type: 'blob' });
-}
-
-function objOf(a) {
-  let v = '# Mojassam 3D Export\n', f = '';
-  for (let i = 0; i < a.length; i += 3) v += `v ${a[i].toFixed(4)} ${a[i+1].toFixed(4)} ${a[i+2].toFixed(4)}\n`;
-  for (let i = 0, n = a.length / 9; i < n; i++) f += `f ${i*3+1} ${i*3+2} ${i*3+3}\n`;
-  return new Blob([v + f], { type: 'text/plain;charset=utf-8' });
-}
-
-function svgOf(a) {
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, d = '';
-  for (let i = 0; i < a.length; i += 9) {
-    const u = [a[i+3]-a[i], a[i+4]-a[i+1], a[i+5]-a[i+2]];
-    const w = [a[i+6]-a[i], a[i+7]-a[i+1], a[i+8]-a[i+2]];
-    if (u[0]*w[1] - u[1]*w[0] <= 0) continue;
-    for (let j = 0; j < 9; j += 3) {
-      x0 = Math.min(x0, a[i+j]); x1 = Math.max(x1, a[i+j]);
-      y0 = Math.min(y0, -a[i+j+1]); y1 = Math.max(y1, -a[i+j+1]);
-    }
-    d += `M${a[i].toFixed(2)} ${(-a[i+1]).toFixed(2)}L${a[i+3].toFixed(2)} ${(-a[i+4]).toFixed(2)}L${a[i+6].toFixed(2)} ${(-a[i+7]).toFixed(2)}Z`;
-  }
-  const W = Math.max(1, x1 - x0 + 4), H = Math.max(1, y1 - y0 + 4);
-  return new Blob([`<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(2)}mm" height="${H.toFixed(2)}mm" viewBox="${(x0-2).toFixed(2)} ${(y0-2).toFixed(2)} ${W.toFixed(2)} ${H.toFixed(2)}"><path d="${d}" fill="#000"/></svg>`], { type: 'image/svg+xml' });
-}
-
-async function downloadFormat(forcedFmt) {
+async function download() {
   if (!objs.length) return toast(t('empty'));
   if (U && U.credits < 1) return openPlansModal();
   toast('جاري معالجة وتصدير المجسم بدقة هندسية عالية...');
   await new Promise(r => setTimeout(r, 60));
-  const f = (forcedFmt || $('#fmt').value || 'stl').toLowerCase();
-  const a = tris(cur || 0);
+  const f = $('#fmt').value.toLowerCase();
+  const a = tris();
   if (!a.length) return toast(t('empty'));
-  let blob;
-  if (f === '3mf') blob = await m3(a);
-  else if (f === 'obj') blob = objOf(a);
-  else if (f === 'svg') blob = svgOf(a);
-  else blob = new Blob([stl(a)], { type: 'application/octet-stream' });
-
+  const buf = stl(a);
+  const blob = new Blob([buf], { type: 'application/octet-stream' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = `mojassam-export.${f}`;
@@ -3833,9 +2776,8 @@ async function downloadFormat(forcedFmt) {
     U.credits--;
     save();
   }
-  toast(`تم تصدير وتنزيل الملف بصيغة ${f.toUpperCase()} بنجاح!`);
+  toast('تم تصدير وتنزيل الملف بنجاح!');
 }
-async function download() { return downloadFormat(); }
 $('#bd').onclick = download;
 
 /* ── Duplicate / Mirror / Align / Delete ── */
@@ -3860,8 +2802,6 @@ function delObj(o) {
   });
   if (o.parent) o.parent.remove(o);
   if (sel && !objs.includes(sel)) sel = null;
-  updateMoveGizmoScale();
-  updateSelBox();
   ol();
   pp();
   updateFooterStats();
@@ -3870,13 +2810,13 @@ function delObj(o) {
 function arrM() {
   if (!tgt()) return;
   M(`
-    <h3 class="text-sm font-black text-white mb-3">${t('rep')}</h3>
-    <div class="space-y-2 text-xs">
-      <div class="r"><label>عدد النسخ في X:</label><input type="number" id="a1" value="3" min="1" class="w-24"></div>
-      <div class="r"><label>عدد النسخ في Y:</label><input type="number" id="a2" value="2" min="1" class="w-24"></div>
-      <div class="r"><label>المسافة بينها (مم):</label><input type="number" id="a3" value="5" class="w-24"></div>
+    <h3 class="text-sm font-bold text-white mb-3">${t('rep')}</h3>
+    <div class="space-y-3 text-xs">
+      <div class="r"><label>عدد النسخ في X:</label><input type="number" id="a1" value="3" min="1" class="w-16"></div>
+      <div class="r"><label>عدد النسخ في Y:</label><input type="number" id="a2" value="2" min="1" class="w-16"></div>
+      <div class="r"><label>المسافة بينها (مم):</label><input type="number" id="a3" value="5" class="w-16"></div>
     </div>
-    <button class="pri w-full mt-4 !py-2.5" id="agoo">${t('ok')}</button>
+    <button class="pri w-full mt-4 !py-2" id="agoo">${t('ok')}</button>
   `);
   $('#agoo').onclick = () => {
     const r = tgt(), b = new THREE.Box3().setFromObject(r);
@@ -3907,8 +2847,6 @@ function aliM() {
     const oc = ob.getCenter(new THREE.Vector3());
     o.position.x += c.x - oc.x;
   });
-  updateMoveGizmoScale();
-  updateSelBox();
   pp();
   toast('تمت محاذاة المجسمات مع المجسم المحدد');
 }
@@ -3929,266 +2867,13 @@ function pchk() {
 
 function chkM(w) {
   M(`
-    <h3 class="text-sm font-black text-white mb-2"><i class="fa-solid fa-clipboard-check text-emerald-400"></i> ${t('chk')}</h3>
+    <h3 class="text-sm font-bold text-white mb-2"><i class="fa-solid fa-clipboard-check text-emerald-400"></i> ${t('chk')}</h3>
     ${w.length ? `<ul class="text-xs text-amber-400 space-y-1 mb-3">${w.map(x => `<li>⚠️ ${x}</li>`).join('')}</ul>` : `<p class="text-xs text-emerald-400 mb-3">✓ ${t('chkok')}</p>`}
-    <p class="text-[11px] text-[#94a3b8]">يقوم الفحص بمطابقة أبعاد النموذج مع مواصفات الطابعة لمنع فشل الطباعة وهدر الخيوط.</p>
+    <p class="text-[11px] text-[#818f9e]">يقوم الفحص بمطابقة أبعاد النموذج مع مواصفات الطابعة لمنع فشل الطباعة وهدر الخيوط.</p>
   `);
 }
 
-/* ── Real 3D Carve / Boolean Preview & Permanent Apply ── */
-function buildColoredGeoFromTris(r) {
-  const g = geoOf(r);
-  const C = new Float32Array(r.length);
-  const cl = new THREE.Color();
-  for (let i = 0, n = r.length / 9; i < n; i++) {
-    cl.setHex((r.c && r.c[i] != null) ? r.c[i] : 0x00b4d8);
-    for (let k = 0; k < 3; k++) {
-      C[i*9 + k*3] = cl.r;
-      C[i*9 + k*3 + 1] = cl.g;
-      C[i*9 + k*3 + 2] = cl.b;
-    }
-  }
-  g.setAttribute('color', new THREE.BufferAttribute(C, 3));
-  return g;
-}
-
-function pvOff() {
-  if (!pvOn) return;
-  pvOn = 0;
-  if (pvM) {
-    sc.remove(pvM);
-    pvM.geometry.dispose();
-    pvM = null;
-  }
-  if ($('#tpv')) $('#tpv').classList.remove('on');
-  updateSelBox();
-  updateMoveGizmoScale();
-  plr();
-}
-
-async function pvTog() {
-  if (sliceOn) sliceOff();
-  if (pvOn) {
-    pvOff();
-    pp();
-    toast('تم إيقاف معاينة الحفر والعودة لوضع التعديل');
-    return;
-  }
-  if (!objs.length) return toast(t('empty'));
-  toast('جاري حساب الشكل النهائي بعد الحفر...');
-  await new Promise(r => setTimeout(r, 30));
-  const r = tris(0);
-  if (!r.length) return toast(t('empty'));
-
-  const g = buildColoredGeoFromTris(r);
-  pvM = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.05 }));
-  sc.add(pvM);
-  pvOn = 1;
-  tc.detach();
-  moveGizmo.visible = false;
-  selBox.visible = false;
-  if ($('#tpv')) $('#tpv').classList.add('on');
-  plr();
-  pp();
-  toast('أنت تشاهد الآن الشكل النهائي للمجسم بعد الحفر!');
-}
-
-async function applyCarvePermanently() {
-  if (!objs.length) return toast(t('empty'));
-  const cutters = objs.filter(o => o.userData.cut);
-  if (!cutters.length) return toast('لا توجد أداة حفر نشطة لتطبيقها');
-  pvOff();
-  toast('جاري تطبيق الحفر نهائياً على المجسم...');
-  await new Promise(r => setTimeout(r, 30));
-  const r = tris(0);
-  if (!r.length) return toast('نتيجة الحفر فارغة');
-
-  const firstSolid = objs.find(o => !o.userData.cut && o.isMesh);
-  const baseColor = firstSolid ? getMeshHex(firstSolid) : 0x00b4d8;
-  const baseName = firstSolid ? firstSolid.userData.name : 'مجسم محفور';
-
-  objs.slice().forEach(o => { if (o.parent) o.parent.remove(o); });
-  objs.length = 0;
-
-  const g = geoOf(r);
-  g.computeBoundingBox();
-  const bb = g.boundingBox, cc = bb.getCenter(new THREE.Vector3());
-  g.translate(-cc.x, -cc.y, -cc.z);
-  const m = new THREE.Mesh(g, mat(baseColor));
-  m.userData = { name: baseName + ' (محفور)', kind: 'file', bc: baseColor };
-  m.position.set(cc.x, cc.y, cc.z);
-  sc.add(m);
-  objs.push(m);
-  pick(m);
-  commit();
-  toast('تم تطبيق الحفر نهائياً ودمج التعديلات في المجسم!');
-}
-
-/* ── SLICER ENGINE: Slice Button & Layer-by-Layer 3D Print Simulation ── */
-function sliceOff() {
-  if (!sliceOn) return;
-  sliceOn = 0;
-  if (sliceTimer) { clearInterval(sliceTimer); sliceTimer = null; }
-  if (sliceG) {
-    sc.remove(sliceG);
-    sliceG = null;
-  }
-  if ($('#slice-hud')) { $('#slice-hud').hidden = true; $('#slice-hud').innerHTML = ''; }
-  if ($('#b-slice')) $('#b-slice').classList.remove('active');
-  if ($('#tsl')) $('#tsl').classList.remove('on');
-  updateSelBox();
-  updateMoveGizmoScale();
-  plr();
-}
-
-async function sliceTog() {
-  if (pvOn) pvOff();
-  if (sliceOn) {
-    sliceOff();
-    pp();
-    toast('تم إغلاق معاينة Slice والعودة لوضع التعديل');
-    return;
-  }
-  if (!objs.length) return toast(t('empty'));
-
-  toast('جاري تقطيع المجسم (Slicing) وتوليد طبقات الطباعة...');
-  await new Promise(r => setTimeout(r, 40));
-  const r = tris(cur || 0);
-  if (!r.length) return toast(t('empty'));
-
-  const g = buildColoredGeoFromTris(r);
-  g.computeBoundingBox();
-  const bb = g.boundingBox;
-  const zMin = bb.min.z, zMax = bb.max.z;
-  const heightMm = Math.max(0.4, zMax - zMin);
-  sliceMaxLayer = Math.max(1, Math.ceil(heightMm / sliceLH));
-  sliceLayer = sliceMaxLayer;
-
-  // Calculate realistic filament & time stats from bounding volume / surface triangles
-  let volMm3 = 0;
-  for (let i = 0; i < r.length; i += 9) {
-    const ax = r[i], ay = r[i+1], az = r[i+2];
-    const bx = r[i+3], by = r[i+4], bz = r[i+5];
-    const cx = r[i+6], cy = r[i+7], cz = r[i+8];
-    volMm3 += (ax * (by * cz - bz * cy) + ay * (bz * cx - bx * cz) + az * (bx * cy - by * cx)) / 6;
-  }
-  volMm3 = Math.abs(volMm3) || (bb.max.x - bb.min.x) * (bb.max.y - bb.min.y) * heightMm * 0.25;
-  const effectiveCm3 = (volMm3 / 1000) * 0.38; // 20% infill + walls
-  const weightGrams = Math.max(0.8, effectiveCm3 * 1.24).toFixed(1);
-  const filamentMeters = Math.max(0.3, weightGrams / 2.98).toFixed(1);
-  const totalMinutes = Math.max(2, Math.round((sliceMaxLayer * 0.18) + (weightGrams * 2.1)));
-  const hrs = Math.floor(totalMinutes / 60), mins = totalMinutes % 60;
-  const timeStr = hrs > 0 ? `${hrs} س و ${mins} د` : `${mins} دقيقة`;
-
-  const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), zMax + 0.05);
-
-  sliceG = new THREE.Group();
-  const slicedMesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 0.38,
-    metalness: 0.08,
-    side: THREE.DoubleSide,
-    clippingPlanes: [clipPlane]
-  }));
-  sliceG.add(slicedMesh);
-
-  // Horizontal Layer Rings / Slicer Striations Overlay
-  const linePts = [];
-  const stepL = Math.max(1, Math.floor(sliceMaxLayer / 75));
-  for (let l = 1; l <= sliceMaxLayer; l += stepL) {
-    const lz = zMin + l * sliceLH;
-    linePts.push(
-      bb.min.x - 1, bb.min.y - 1, lz, bb.max.x + 1, bb.min.y - 1, lz,
-      bb.max.x + 1, bb.min.y - 1, lz, bb.max.x + 1, bb.max.y + 1, lz
-    );
-  }
-  const nozzlePlaneMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(Math.max(16, (bb.max.x - bb.min.x) + 10), Math.max(16, (bb.max.y - bb.min.y) + 10)),
-    new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false })
-  );
-  const cX = (bb.min.x + bb.max.x) / 2, cY = (bb.min.y + bb.max.y) / 2;
-  nozzlePlaneMesh.position.set(cX, cY, zMax);
-  sliceG.add(nozzlePlaneMesh);
-
-  // Glowing 3D Print Nozzle Indicator
-  const nozzleCone = new THREE.Mesh(
-    new THREE.ConeGeometry(2.8, 7, 16).rotateX(-Math.PI / 2).translate(0, 0, 3.5),
-    new THREE.MeshBasicMaterial({ color: 0xf59e0b })
-  );
-  nozzleCone.position.set(cX, cY, zMax);
-  sliceG.add(nozzleCone);
-
-  sc.add(sliceG);
-  sliceOn = 1;
-  tc.detach();
-  moveGizmo.visible = false;
-  selBox.visible = false;
-  if ($('#b-slice')) $('#b-slice').classList.add('active');
-  if ($('#tsl')) $('#tsl').classList.add('on');
-  plr();
-
-  const hud = $('#slice-hud');
-  hud.hidden = false;
-  hud.innerHTML = `
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-2.5 pb-2 border-b border-[#2d3748]">
-      <div class="flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-lg bg-amber-500 text-[#0b0e12] text-xs font-black"><i class="fa-solid fa-layer-group"></i> وضع Slice جاهز للطباعة</span>
-        <span class="text-xs text-[#cbd5e1] font-bold">الارتفاع: <b>${heightMm.toFixed(1)} مم</b> (${sliceMaxLayer} طبقة)</span>
-      </div>
-      <div class="flex items-center gap-4 text-xs">
-        <div>⏱️ وقت الطباعة: <b class="text-amber-400">${timeStr}</b></div>
-        <div>⚖️ الوزن: <b class="text-emerald-400">${weightGrams} جم</b></div>
-        <div>🧵 الخيط: <b class="text-[#00b4d8]">${filamentMeters} متر</b></div>
-      </div>
-    </div>
-    <div class="flex flex-wrap items-center gap-3">
-      <button type="button" id="sl-play" class="pri !py-1.5 !px-3.5 !text-xs"><i class="fa-solid fa-play"></i> محاكاة الطباعة</button>
-      <div class="flex-1 flex items-center gap-2 min-w-[200px]">
-        <span class="text-xs font-bold text-[#94a3b8]">الطبقة:</span>
-        <input type="range" id="sl-rng" min="1" max="${sliceMaxLayer}" value="${sliceMaxLayer}" class="flex-1">
-        <span id="sl-lbl" class="text-xs font-black text-amber-400 w-24 text-center">${sliceMaxLayer} / ${sliceMaxLayer}</span>
-      </div>
-      <button type="button" onclick="download()" class="teal !py-1.5 !px-3.5 !text-xs"><i class="fa-solid fa-download"></i> تنزيل للطباعة</button>
-      <button type="button" id="sl-close" class="!py-1.5 !px-3 !text-xs text-rose-400 hover:text-white"><i class="fa-solid fa-xmark"></i> إغلاق المعاينة</button>
-    </div>
-  `;
-
-  const updateLayerView = lNum => {
-    sliceLayer = Math.max(1, Math.min(sliceMaxLayer, lNum));
-    const curZ = zMin + sliceLayer * sliceLH;
-    clipPlane.constant = curZ + 0.02;
-    nozzlePlaneMesh.position.z = curZ;
-    nozzleCone.position.z = curZ;
-    nozzleCone.position.x = cX + Math.sin(sliceLayer * 0.35) * ((bb.max.x - bb.min.x) * 0.25);
-    nozzleCone.position.y = cY + Math.cos(sliceLayer * 0.35) * ((bb.max.y - bb.min.y) * 0.25);
-    if ($('#sl-rng')) $('#sl-rng').value = sliceLayer;
-    if ($('#sl-lbl')) $('#sl-lbl').textContent = `${sliceLayer} / ${sliceMaxLayer}`;
-  };
-
-  $('#sl-rng').oninput = e => updateLayerView(+e.target.value);
-  $('#sl-close').onclick = () => sliceTog();
-  $('#sl-play').onclick = () => {
-    if (sliceTimer) {
-      clearInterval(sliceTimer);
-      sliceTimer = null;
-      $('#sl-play').innerHTML = `<i class="fa-solid fa-play"></i> محاكاة الطباعة`;
-      return;
-    }
-    if (sliceLayer >= sliceMaxLayer) updateLayerView(1);
-    $('#sl-play').innerHTML = `<i class="fa-solid fa-pause"></i> إيقاف مؤقت`;
-    sliceTimer = setInterval(() => {
-      if (sliceLayer >= sliceMaxLayer) {
-        clearInterval(sliceTimer);
-        sliceTimer = null;
-        if ($('#sl-play')) $('#sl-play').innerHTML = `<i class="fa-solid fa-rotate-right"></i> إعادة المحاكاة`;
-        return;
-      }
-      updateLayerView(sliceLayer + Math.max(1, Math.ceil(sliceMaxLayer / 120)));
-    }, 35);
-  };
-
-  toast(`تم تقطيع المجسم (Slice) إلى ${sliceMaxLayer} طبقة بنجاح! حرك شريط الطبقات أو اضغط محاكاة الطباعة`);
-}
+function pvTog() { toast('معاينة الحفر نشطة ومحدثة'); }
 
 /* ── Undo / Redo (Ctrl + Z & Ctrl + Y) Engine ── */
 let HS = [], HK = [], hi = -1, hrest = 0, hcm;
@@ -4234,8 +2919,6 @@ const commit = () => {
 };
 
 function hgo(d) {
-  pvOff();
-  sliceOff();
   clearTimeout(hcm);
   hsnap();
   const j = hi + d;
@@ -4257,7 +2940,6 @@ function hgo(d) {
     const a = o.material;
     if (a) {
       a.color.setHex(e.col);
-      if (a.emissive) a.emissive.setHex(0x000000);
       const c = o.userData.cut;
       a.transparent = !!c;
       a.opacity = c ? 0.55 : 1;
@@ -4268,8 +2950,6 @@ function hgo(d) {
   });
   S.forEach(e => { if (e.o.userData.stuck) bend(e.o); });
   if (sel && !objs.includes(sel)) sel = null;
-  updateMoveGizmoScale();
-  updateSelBox();
   ol();
   bedK = '';
   hrest = 0;

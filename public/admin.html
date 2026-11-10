@@ -28,35 +28,17 @@
                         }
                     },
                     fontFamily: {
-                        sans: ['Cairo', 'sans-serif'],
+                        sans: ['IBM Plex Sans Arabic', 'Cairo', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
     <style>
-        html, body, button, input, select, textarea, .font-sans, .font-mono {
-            font-family: 'Cairo', sans-serif !important;
-        }
-        .fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands {
-            font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
-        }
         body {
-            background-color: #0f1318;
-            color: #f1f5f9;
-        }
-        input:not([type="checkbox"]):not([type="radio"]), select, textarea {
-            background-color: #1e2633 !important;
-            border: 1.5px solid #334155 !important;
-            border-radius: 12px !important;
-            color: #ffffff !important;
-            font-weight: 700 !important;
-            transition: all 0.18s ease !important;
-        }
-        input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus {
-            border-color: #00b4d8 !important;
-            box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.2) !important;
-            outline: none !important;
+            background-color: #14171c;
+            color: #e6ebf2;
+            font-family: 'IBM Plex Sans Arabic', sans-serif;
         }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #14171c; }
@@ -388,10 +370,6 @@
                     <h2 id="section-title" class="text-sm font-bold text-white">لوحة المتابعة الشاملة</h2>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button onclick="openChangePinPrompt()" class="bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
-                        <i class="fa-solid fa-key text-xs"></i>
-                        <span>تغيير رقم الإدارة (PIN)</span>
-                    </button>
                     <span id="gateway-status" class="text-[11px] bg-[#242932] border border-[#323844] px-2.5 py-1 rounded-full text-[#00b4d8] flex items-center gap-1.5">
                         <i class="fa-solid fa-credit-card text-[10px]"></i>
                         بوابة Moyasar: <span class="text-emerald-400 font-semibold">جاهز (وثيقة عمل حر)</span>
@@ -1169,12 +1147,9 @@
                 document.getElementById('pin-modal').classList.add('hidden');
                 showToast('تم التحقق بنجاح، مرحباً بك في لوحة الإدارة');
 
-                // Open Change PIN modal immediately upon entry so the admin can change it right away
-                setTimeout(() => {
-                    openChangePinPrompt();
-                    const np = document.getElementById('prompt-new-pin');
-                    if (np) np.focus();
-                }, 150);
+                if (isFirstTimeLogin || currentAdminPin === DEFAULT_PIN) {
+                    setTimeout(() => openChangePinPrompt(), 500);
+                }
                 initDashboardData();
             } else {
                 showToast('رمز PIN غير صحيح!', true);
