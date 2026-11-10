@@ -1330,3 +1330,4 @@ ${polys}</svg>`;
     mergeBufferGeometries
   };
 })();
+

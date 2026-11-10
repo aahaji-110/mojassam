@@ -15,7 +15,7 @@
       --panel-bg: #26292e;
       --panel-header: #2f333a;
       --border-col: #3a3f48;
-      --creality-green: #00c853;
+      --brand-green: #00c853;
       --accent-emerald: #10b981;
     }
     * { box-sizing: border-box; user-select: none; }
@@ -71,7 +71,7 @@
       100% { transform: rotateX(-22deg) rotateY(360deg) rotateZ(0deg); }
     }
 
-    /* Creality Toolbar Button Styling */
+    /* Toolbar Button Styling */
     .tool-btn {
       display: inline-flex;
       flex-direction: column;
@@ -110,7 +110,7 @@
     ::-webkit-scrollbar-thumb { background: #3f4550; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #00c853; }
 
-    /* Primitive Dropdown Menu (Exact Creality Dark List) */
+    /* Primitive Dropdown Menu */
     .primitive-menu {
       background: #23262b;
       border: 1px solid #3e4451;
@@ -159,7 +159,7 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
-       1. CREALITY PRINT HEADER & DESIGN TOOLBAR (TOOLS AT TOP)
+       1. STUDIO HEADER & DESIGN TOOLBAR (TOOLS AT TOP)
        ════════════════════════════════════════════════════════════════ -->
   <header class="bg-[#23262b] border-b border-[#383d47] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 z-30">
 
@@ -387,7 +387,7 @@
        ════════════════════════════════════════════════════════════════ -->
   <div class="flex-1 flex flex-row-reverse relative overflow-hidden" style="min-height: calc(100vh - 135px);">
 
-    <!-- ── 3D WORKSPACE (Creality Print Style Viewport) ── -->
+    <!-- ── 3D WORKSPACE ── -->
     <main class="flex-1 relative bg-[#2d3037]" id="viewport-container">
       <!-- Three.js Canvas attaches here -->
       <div id="three-canvas-wrap" class="w-full h-full"></div>
@@ -405,7 +405,7 @@
         </div>
       </div>
 
-      <!-- Camera View Cube Shortcuts (TOP / FRONT / RIGHT / HOME like Creality Print) -->
+      <!-- Camera View Cube Shortcuts (TOP / FRONT / RIGHT / HOME) -->
       <div class="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
         <div class="bg-[#23262b]/90 border border-[#3e4450] rounded-lg p-1.5 flex flex-col gap-1 shadow-xl">
           <button onclick="MJApp.setCameraView('top')" class="px-2.5 py-1 text-[10px] font-extrabold bg-[#32363f] hover:bg-emerald-600 text-gray-200 hover:text-white rounded transition">TOP</button>
@@ -512,7 +512,7 @@
         </div>
       </div>
 
-      <!-- Bottom Floating Quick Action Bar (Like Creality Slice/Export Pill) -->
+      <!-- Bottom Floating Quick Action Bar -->
       <div class="absolute bottom-3 left-4 flex items-center gap-2 z-10">
         <button onclick="MJApp.runPrintCheck()" class="bg-[#23262b]/95 hover:bg-[#2f343d] border border-[#454c59] text-gray-200 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-xl">
           <i class="fa-solid fa-clipboard-check text-emerald-400"></i>
@@ -525,7 +525,7 @@
       </div>
     </main>
 
-    <!-- ── LEFT PANEL: PRINTER BED SELECTOR, PREVIEW & OBJECT INSPECTOR (Creality Style) ── -->
+    <!-- ── LEFT PANEL: PRINTER BED SELECTOR, PREVIEW & OBJECT INSPECTOR ── -->
     <aside class="w-80 bg-[#23262b] border-r border-[#383d47] flex flex-col z-20 overflow-y-auto">
 
       <!-- 1. Printer & Build Plate Selector -->
@@ -585,7 +585,7 @@
               <input id="obj-color-picker" type="color" value="#10b981" onchange="MJApp.setSelectedColor(this.value)" class="w-6 h-5 rounded cursor-pointer bg-transparent border-0" />
             </div>
             <div class="flex items-center gap-1.5 flex-wrap">
-              <button onclick="MJApp.setSelectedColor('#10b981')" class="w-5 h-5 rounded-full bg-[#10b981] border border-white/30" title="أخضر Creality"></button>
+              <button onclick="MJApp.setSelectedColor('#10b981')" class="w-5 h-5 rounded-full bg-[#10b981] border border-white/30" title="أخضر مجسمات"></button>
               <button onclick="MJApp.setSelectedColor('#ffffff')" class="w-5 h-5 rounded-full bg-[#ffffff] border border-white/30" title="أبيض"></button>
               <button onclick="MJApp.setSelectedColor('#1e293b')" class="w-5 h-5 rounded-full bg-[#1e293b] border border-white/30" title="أسود كربوني"></button>
               <button onclick="MJApp.setSelectedColor('#ef4444')" class="w-5 h-5 rounded-full bg-[#ef4444] border border-white/30" title="أحمر"></button>

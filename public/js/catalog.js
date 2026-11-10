@@ -72,12 +72,12 @@ window.MJCatalog = (function () {
 
   // 2. 3D Printers & Build Plates
   const PRINTERS = [
-    { id: 'creality_hi', brand: 'Creality', name: 'Creality Hi (Textured PEI)', w: 260, d: 260, h: 300, plateLabel: 'Creality Textured PEI Plate' },
-    { id: 'creality_k1', brand: 'Creality', name: 'Creality K1 / K1C', w: 220, d: 220, h: 250, plateLabel: 'Creality K1 PEI Plate' },
-    { id: 'creality_k1_max', brand: 'Creality', name: 'Creality K1 Max', w: 300, d: 300, h: 300, plateLabel: 'Creality K1 Max 300×300' },
-    { id: 'creality_k2_plus', brand: 'Creality', name: 'Creality K2 Plus', w: 350, d: 350, h: 350, plateLabel: 'Creality K2 Plus 350×350' },
-    { id: 'ender3_v3', brand: 'Creality', name: 'Ender-3 V3 / V3 KE / SE', w: 220, d: 220, h: 250, plateLabel: 'Ender-3 V3 PEI Plate' },
-    { id: 'cr10_se', brand: 'Creality', name: 'Creality CR-10 Max / SE', w: 300, d: 300, h: 400, plateLabel: 'Creality CR-10 Plate' },
+    { id: 'std_260', brand: 'Mojassamat', name: 'لوحة بناء قياسية (260×260×300 مم)', w: 260, d: 260, h: 300, plateLabel: 'Mojassamat Textured PEI Plate' },
+    { id: 'k1_220', brand: 'Standard', name: 'K1 / K1C (220×220×250 مم)', w: 220, d: 220, h: 250, plateLabel: 'Textured PEI Plate 220×220' },
+    { id: 'k1_max_300', brand: 'Standard', name: 'K1 Max (300×300×300 مم)', w: 300, d: 300, h: 300, plateLabel: 'Textured PEI Plate 300×300' },
+    { id: 'k2_plus_350', brand: 'Standard', name: 'K2 Plus (350×350×350 مم)', w: 350, d: 350, h: 350, plateLabel: 'Textured PEI Plate 350×350' },
+    { id: 'ender3_v3', brand: 'Standard', name: 'Ender-3 V3 / KE / SE (220×220×250 مم)', w: 220, d: 220, h: 250, plateLabel: 'Ender-3 V3 PEI Plate' },
+    { id: 'cr10_se', brand: 'Standard', name: 'CR-10 Max / SE (300×300×400 مم)', w: 300, d: 300, h: 400, plateLabel: 'Large PEI Plate 300×300' },
     { id: 'bambu_x1c', brand: 'Bambu Lab', name: 'Bambu Lab X1C / P1S / P1P', w: 256, d: 256, h: 256, plateLabel: 'Bambu Textured PEI Plate' },
     { id: 'bambu_a1', brand: 'Bambu Lab', name: 'Bambu Lab A1', w: 256, d: 256, h: 256, plateLabel: 'Bambu A1 PEI Plate' },
     { id: 'bambu_a1_mini', brand: 'Bambu Lab', name: 'Bambu Lab A1 Mini', w: 180, d: 180, h: 180, plateLabel: 'Bambu A1 Mini 180×180' },
@@ -202,3 +202,4 @@ window.MJCatalog = (function () {
     loadAllArabicFonts
   };
 })();
+

@@ -9,7 +9,7 @@ window.MJApp = (function () {
   let sceneObjects = []; // Array of top-level Mesh or Group objects on build plates
   let selectedObject = null;
 
-  let currentPrinter = window.MJCatalog.PRINTERS[0]; // Creality Hi 260x260x300
+  let currentPrinter = window.MJCatalog.PRINTERS[0]; // 260x260x300
   let plateCount = 1;
   let plateCenters = [{ x: 0, z: 0 }];
 
@@ -31,7 +31,7 @@ window.MJApp = (function () {
   const redoStack = [];
 
   /* ──────────────────────────────────────────────────────────────
-     1. Initialization & Three.js Creality Workspace Setup
+     1. Initialization & Three.js Workspace Setup
      ────────────────────────────────────────────────────────────── */
   function init() {
     window.MJCatalog.loadAllArabicFonts();
@@ -70,7 +70,7 @@ window.MJApp = (function () {
     const h = container.clientHeight || window.innerHeight - 140;
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x2d3037); // Exact Creality Print dark viewport background
+    scene.background = new THREE.Color(0x2d3037); // Dark studio viewport background
 
     camera = new THREE.PerspectiveCamera(42, w / h, 1, 8000);
     camera.position.set(0, 270, 340);
@@ -144,7 +144,7 @@ window.MJApp = (function () {
   }
 
   /* ──────────────────────────────────────────────────────────────
-     2. Creality Textured PEI Build Plates (Always Square Grid Layout!)
+     2. Textured PEI Build Plates (Always Square Grid Layout!)
      ────────────────────────────────────────────────────────────── */
   function createPlateTexture(wMm, dMm, titleText, plateNumberStr) {
     const canvas = document.createElement('canvas');
@@ -193,11 +193,11 @@ window.MJApp = (function () {
       ctx.stroke();
     }
 
-    // Top-left plate title ("Creality Textured PEI Plate")
+    // Top-left plate title
     ctx.fillStyle = 'rgba(255,255,255,0.88)';
     ctx.font = 'bold 34px Arial, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(titleText || 'Creality Textured PEI Plate', 48, 82);
+    ctx.fillText(titleText || 'Mojassamat Textured PEI Plate', 48, 82);
 
     // Top-right green plate index ("01", "02"...)
     ctx.fillStyle = '#00e676';
@@ -205,11 +205,11 @@ window.MJApp = (function () {
     ctx.textAlign = 'right';
     ctx.fillText(plateNumberStr, 976, 86);
 
-    // Bottom center brand bar & warning hot surface badges (like Creality Print screenshot)
+    // Bottom center brand bar & warning hot surface badges
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.font = 'bold 28px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('MOJASSAMAT • CREALITY PEI', 512, 972);
+    ctx.fillText('MOJASSAMAT 3D • مجسمات', 512, 972);
 
     ctx.fillStyle = '#fbbf24';
     ctx.font = 'bold 18px Arial, sans-serif';
@@ -267,7 +267,7 @@ window.MJApp = (function () {
       bedMesh.receiveShadow = true;
       platesGroup.add(bedMesh);
 
-      // RGB Origin Axes Indicator at front-left corner of Plate 01 (like Creality Print)
+      // RGB Origin Axes Indicator at front-left corner of Plate 01
       if (i === 0) {
         const originX = cx - w / 2 + 4;
         const originZ = cz + d / 2 - 4;
@@ -1819,3 +1819,4 @@ window.MJApp = (function () {
     openLegalModal
   };
 })();
+
