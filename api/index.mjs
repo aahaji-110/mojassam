@@ -26,16 +26,15 @@ function getSql() {
     _sql = neon(dbUrl);
     return _sql;
   }
-  // Try Netlify database fallback if present
-  try {
-    const { getDatabase } = require('@netlify/database');
-    _sql = getDatabase().sql;
-    return _sql;
-  } catch (e) {
-    throw new Error('Database connection URL not set. Please set POSTGRES_URL or DATABASE_URL in Vercel environment variables.');
-  }
+  return null;
 }
-const sql = (...args) => getSql()(...args);
+const sql = (...args) => {
+  const db = getSql();
+  if (!db) {
+    throw new Error('لم يتم ربط قاعدة بيانات بعد في Vercel Storage (يرجى تفعيل Vercel Postgres أو Neon وإضافة متغير POSTGRES_URL)');
+  }
+  return db(...args);
+};
 
 const DEFAULT_PACKAGES = [
   { id: 'coins_10', category: 'coins', nameAr: 'رصيد 10 كوينز', nameEn: '10 Coins Pack', coins: 10, priceUsd: 3, priceSar: 3, currency: 'USD', noExpiry: true, badgeAr: 'بدون تاريخ انتهاء', badgeEn: 'Never Expires', popular: false },
