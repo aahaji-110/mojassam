@@ -328,31 +328,37 @@
 
       <div class="h-6 w-[1px] bg-[#383d47] mx-0.5"></div>
 
-      <!-- 10. Magnet (Snap Selected Object to Build Plate) -->
+      <!-- 10. Move Mode (Toggle Move / Free Drag on Bed) -->
+      <button id="btn-move-mode" onclick="MJApp.toggleMoveMode()" class="tool-btn active" title="تحريك المجسم بحرية على لوحة البناء">
+        <i class="fa-solid fa-arrows-up-down-left-right !text-emerald-400"></i>
+        <span>تحريك</span>
+      </button>
+
+      <!-- 11. Magnet (Snap Selected Object to Build Plate) -->
       <button onclick="MJApp.snapSelectedToBed()" class="tool-btn" title="مغناطيس: إلصاق المجسم المحدد مباشرة على سطح لوحة البناء">
         <i class="fa-solid fa-magnet !text-red-400"></i>
         <span data-i18n="magnetBtn">مغناطيس</span>
       </button>
 
-      <!-- 11. Rotate 0-360 Professional Panel -->
+      <!-- 12. Rotate 0-360 Professional Panel -->
       <button id="btn-rotate-panel" onclick="MJApp.toggleTransformPopover('rotate')" class="tool-btn" title="تدوير المجسم من 0 إلى 360 درجة">
         <i class="fa-solid fa-arrows-spin"></i>
         <span data-i18n="rotateBtn">تدوير 360°</span>
       </button>
 
-      <!-- 12. Scale Length/Width/Height Professional Panel -->
+      <!-- 13. Scale Length/Width/Height Professional Panel -->
       <button id="btn-scale-panel" onclick="MJApp.toggleTransformPopover('scale')" class="tool-btn" title="تكبير وتصغير المجسم (طول وعرض وارتفاع)">
         <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
         <span data-i18n="scaleBtn">تحجيم وأبعاد</span>
       </button>
 
-      <!-- 13. Eye Preview Button (Toggle Clean Preview vs Edit Mode) -->
+      <!-- 14. Eye Preview Button (Toggle Clean Preview vs Edit Mode) -->
       <button id="btn-eye-preview" onclick="MJApp.toggleEyePreview()" class="tool-btn" title="معاينة التعديلات النهائية / العودة للتحرير">
         <i class="fa-solid fa-eye !text-cyan-400"></i>
         <span data-i18n="previewBtn">معاينة</span>
       </button>
 
-      <!-- 14. Checkmark Button (✔ Full Print Check & Slicer Settings Advisor) -->
+      <!-- 15. Checkmark Button (✔ Full Print Check & Slicer Settings Advisor) -->
       <button onclick="MJApp.runPrintCheck()" class="tool-btn border-emerald-500/40" title="فحص المجسم بالكامل واقتراح إعدادات الطباعة والدعامات والسرعة">
         <i class="fa-solid fa-circle-check !text-emerald-400"></i>
         <span data-i18n="checkBtn">فحص الطباعة ✔</span>
@@ -411,6 +417,7 @@
       <div class="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
         <div class="bg-[#23262b]/90 border border-[#3e4450] rounded-lg p-1.5 flex flex-col gap-1 shadow-xl">
           <button onclick="MJApp.setCameraView('top')" class="px-2.5 py-1 text-[10px] font-extrabold bg-[#32363f] hover:bg-emerald-600 text-gray-200 hover:text-white rounded transition">TOP</button>
+          <button onclick="MJApp.setCameraView('bottom')" class="px-2.5 py-1 text-[10px] font-extrabold bg-[#32363f] hover:bg-emerald-600 text-gray-200 hover:text-white rounded transition" title="رؤية من أسفل لوحة البناء الشفافة">BOTTOM</button>
           <button onclick="MJApp.setCameraView('front')" class="px-2.5 py-1 text-[10px] font-extrabold bg-[#32363f] hover:bg-emerald-600 text-gray-200 hover:text-white rounded transition">FRONT</button>
           <button onclick="MJApp.setCameraView('side')" class="px-2.5 py-1 text-[10px] font-extrabold bg-[#32363f] hover:bg-emerald-600 text-gray-200 hover:text-white rounded transition">SIDE</button>
           <button onclick="MJApp.setCameraView('iso')" class="px-2.5 py-1 text-xs bg-[#2b2f36] hover:bg-emerald-600 text-emerald-400 hover:text-white rounded transition" title="الوضع الافتراضي">

@@ -99,8 +99,14 @@ window.MJApp = (function () {
     orbit = new THREE.OrbitControls(camera, renderer.domElement);
     orbit.enableDamping = true;
     orbit.dampingFactor = 0.08;
-    orbit.maxPolarAngle = Math.PI / 2 + 0.15;
+    // Allow viewing from below the semi-transparent build plate so user can inspect the underside/first-layer
+    orbit.maxPolarAngle = Math.PI - 0.05;
     orbit.target.set(0, 20, 0);
+
+    // Bottom Ambient/Directional Light to clearly illuminate the underside of models through the glass bed
+    const bottomLight = new THREE.DirectionalLight(0xffffff, 0.55);
+    bottomLight.position.set(0, -250, 0);
+    scene.add(bottomLight);
 
     transformControl = new THREE.TransformControls(camera, renderer.domElement);
     transformControl.setSize(0.85);
@@ -152,19 +158,20 @@ window.MJApp = (function () {
     canvas.height = 1024;
     const ctx = canvas.getContext('2d');
 
-    // Dark Textured PEI metallic charcoal surface
-    ctx.fillStyle = '#383b42';
+    // Semi-transparent dark PEI / tinted glass build plate (allows seeing through to the underside)
+    ctx.clearRect(0, 0, 1024, 1024);
+    ctx.fillStyle = 'rgba(28, 33, 41, 0.45)';
     ctx.fillRect(0, 0, 1024, 1024);
 
     // Subtle PEI texture grain
-    ctx.fillStyle = 'rgba(255,255,255,0.025)';
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
     for (let i = 0; i < 1800; i++) {
       ctx.fillRect((i * 73) % 1024, (i * 137) % 1024, 2, 2);
     }
 
     // Outer border
-    ctx.strokeStyle = '#6b7280';
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(16, 185, 129, 0.65)';
+    ctx.lineWidth = 6;
     ctx.strokeRect(18, 18, 988, 988);
 
     // Fine 10mm grid lines
@@ -252,19 +259,36 @@ window.MJApp = (function () {
       const plateNumStr = String(i + 1).padStart(2, '0');
       const tex = createPlateTexture(w, d, currentPrinter.plateLabel, plateNumStr);
 
-      // PEI Bed Base
+      // Semi-transparent PEI Bed Base with glass effect
       const bedGeom = new THREE.BoxGeometry(w, 4, d);
-      const bedMats = [
-        new THREE.MeshStandardMaterial({ color: 0x22252a }),
-        new THREE.MeshStandardMaterial({ color: 0x22252a }),
-        new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6, metalness: 0.15 }),
-        new THREE.MeshStandardMaterial({ color: 0x181a1e }),
-        new THREE.MeshStandardMaterial({ color: 0x22252a }),
-        new THREE.MeshStandardMaterial({ color: 0x22252a })
-      ];
+      const sideMat = new THREE.MeshStandardMaterial({
+        color: 0x1f2937,
+        transparent: true,
+        opacity: 0.45,
+        roughness: 0.3,
+        metalness: 0.1
+      });
+      const topMat = new THREE.MeshStandardMaterial({
+        map: tex,
+        transparent: true,
+        opacity: 0.52,
+        roughness: 0.4,
+        metalness: 0.15,
+        depthWrite: false, // Prevents occluding the underside of objects sticking to plate
+        side: THREE.DoubleSide
+      });
+      const bottomMat = new THREE.MeshStandardMaterial({
+        color: 0x111827,
+        transparent: true,
+        opacity: 0.35,
+        roughness: 0.4,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const bedMats = [sideMat, sideMat, topMat, bottomMat, sideMat, sideMat];
       const bedMesh = new THREE.Mesh(bedGeom, bedMats);
       bedMesh.position.set(cx, -2, cz);
-      bedMesh.receiveShadow = true;
+      bedMesh.receiveShadow = false;
       platesGroup.add(bedMesh);
 
       // RGB Origin Axes Indicator at front-left corner of Plate 01
@@ -537,15 +561,45 @@ window.MJApp = (function () {
 
   function deleteSelected() {
     if (!selectedObject) return;
+    deleteObject(selectedObject);
+  }
+
+  function deleteObject(obj) {
+    if (!obj) return;
     saveUndoSnapshot();
-    transformControl.detach();
-    objectsGroup.remove(selectedObject);
-    sceneObjects = sceneObjects.filter((o) => o !== selectedObject);
-    selectedObject = sceneObjects[sceneObjects.length - 1] || null;
-    if (selectedObject && !isPreviewMode) transformControl.attach(selectedObject);
+    if (selectedObject === obj) {
+      transformControl.detach();
+      selectedObject = null;
+    }
+    objectsGroup.remove(obj);
+    sceneObjects = sceneObjects.filter((o) => o !== obj);
+    if (!selectedObject && sceneObjects.length > 0) {
+      selectedObject = sceneObjects[sceneObjects.length - 1];
+      if (selectedObject && !isPreviewMode) transformControl.attach(selectedObject);
+    }
     refreshObjectsListUI();
     updateInspectorValues();
     updateQuickPrintSummary();
+  }
+
+  function deleteObjectByIndex(idx) {
+    const obj = sceneObjects[idx];
+    if (obj) {
+      deleteObject(obj);
+      showToast(`تم حذف "${obj.name || 'المجسم'}"`);
+    }
+  }
+
+  function toggleMoveMode() {
+    if (transformControl.mode === 'translate') {
+      showToast('وضع التحريك مفعّل (اسحب المجسم أو المقابض للتحريك)');
+      return;
+    }
+    closeTransformPopover();
+    transformControl.setMode('translate');
+    const moveBtn = document.getElementById('btn-move-mode');
+    if (moveBtn) moveBtn.classList.add('active');
+    showToast('تم تفعيل وضع التحريك');
   }
 
   /* ──────────────────────────────────────────────────────────────
@@ -1428,24 +1482,111 @@ window.MJApp = (function () {
   }
 
   /* ──────────────────────────────────────────────────────────────
-     15. Viewport Raycast Selection & Interactive Surface Stick
+     15. Viewport Raycast Selection, Direct Dragging & Interactive Stick
      ────────────────────────────────────────────────────────────── */
   function setupViewportInteraction() {
     const dom = renderer.domElement;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let downX = 0, downY = 0;
+    let isDirectDragging = false;
+    let dragTarget = null;
+    const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // XZ bed plane
+    const planeIntersect = new THREE.Vector3();
+    const dragOffset = new THREE.Vector3();
+
+    function getMouseND(e) {
+      const rect = dom.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+      };
+    }
 
     dom.addEventListener('pointerdown', (e) => {
+      // Only left mouse button (e.button === 0) for dragging / selecting
+      if (e.button !== 0) return;
       downX = e.clientX;
       downY = e.clientY;
+
+      if (isPreviewMode || interactiveSurfacePick) return;
+
+      const m = getMouseND(e);
+      mouse.set(m.x, m.y);
+      raycaster.setFromCamera(mouse, camera);
+
+      // Check if user clicked directly on any 3D model
+      const hits = raycaster.intersectObjects(objectsGroup.children, true);
+      if (hits.length > 0) {
+        let hitObj = hits[0].object;
+        while (hitObj.parent && hitObj.parent !== objectsGroup) {
+          hitObj = hitObj.parent;
+        }
+
+        // Select the clicked object immediately
+        if (selectedObject !== hitObj) {
+          selectObject(hitObj);
+        }
+
+        // Initiate smooth direct bed-plane dragging
+        dragTarget = hitObj;
+        dragPlane.constant = -dragTarget.position.y;
+        if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+          dragOffset.copy(dragTarget.position).sub(planeIntersect);
+          isDirectDragging = true;
+          orbit.enabled = false; // Disable camera orbit while dragging object
+          dom.style.cursor = 'grabbing';
+        }
+      }
     });
 
+    dom.addEventListener('pointermove', (e) => {
+      if (isDirectDragging && dragTarget) {
+        const m = getMouseND(e);
+        mouse.set(m.x, m.y);
+        raycaster.setFromCamera(mouse, camera);
+        if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+          dragTarget.position.x = planeIntersect.x + dragOffset.x;
+          dragTarget.position.z = planeIntersect.z + dragOffset.z;
+          dragTarget.updateMatrixWorld(true);
+          updateInspectorValues();
+        }
+        return;
+      }
+
+      // Hover feedback: change cursor if hovering over an interactive 3D model
+      if (!isPreviewMode && !interactiveSurfacePick && !isDirectDragging) {
+        const m = getMouseND(e);
+        mouse.set(m.x, m.y);
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(objectsGroup.children, true);
+        dom.style.cursor = hits.length > 0 ? 'grab' : 'default';
+      }
+    });
+
+    function endDirectDrag(e) {
+      if (isDirectDragging) {
+        isDirectDragging = false;
+        orbit.enabled = true;
+        dom.style.cursor = 'default';
+        if (dragTarget) {
+          saveUndoSnapshot();
+          updateInspectorValues();
+          updateQuickPrintSummary();
+          dragTarget = null;
+        }
+      }
+    }
+
     dom.addEventListener('pointerup', (e) => {
+      if (isDirectDragging) {
+        endDirectDrag(e);
+        return;
+      }
+
       if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
-      const rect = dom.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      const m = getMouseND(e);
+      mouse.set(m.x, m.y);
 
       raycaster.setFromCamera(mouse, camera);
       const hits = raycaster.intersectObjects(objectsGroup.children, true);
@@ -1484,12 +1625,15 @@ window.MJApp = (function () {
         selectObject(hitObj);
       }
     });
+
+    dom.addEventListener('pointerleave', endDirectDrag);
   }
 
   function setCameraView(view) {
     const dist = 340;
     orbit.target.set(0, 20, 0);
     if (view === 'top') camera.position.set(0, dist * 1.2, 0.01);
+    else if (view === 'bottom') camera.position.set(0, -dist * 1.1, 0.01);
     else if (view === 'front') camera.position.set(0, 40, dist);
     else if (view === 'side') camera.position.set(dist, 40, 0);
     else camera.position.set(0, 260, 330);
@@ -1532,14 +1676,21 @@ window.MJApp = (function () {
       const pNum = String((obj.userData.plateIndex || 0) + 1).padStart(2, '0');
       return `
         <div onclick="MJApp.selectObjectByIndex(${idx})"
-             class="flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer border text-xs transition ${
-               isSel ? 'bg-emerald-950/50 border-emerald-500 text-white' : 'bg-[#1b1d21] border-[#323640] text-gray-300 hover:border-gray-500'
+             class="group flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer border text-xs transition ${
+               isSel ? 'bg-emerald-950/60 border-emerald-500 text-white shadow-sm' : 'bg-[#1b1d21] border-[#323640] text-gray-300 hover:border-gray-500'
              }">
-          <div class="flex items-center gap-2 truncate">
-            <span class="w-3 h-3 rounded-full inline-block border border-white/30" style="background:${hex}"></span>
+          <div class="flex items-center gap-2 truncate flex-1 min-w-0">
+            <span class="w-3 h-3 rounded-full inline-block border border-white/30 flex-shrink-0" style="background:${hex}"></span>
             <span class="font-semibold truncate">${window.MJSecurity.sanitizeText(obj.name || 'مجسم')}</span>
           </div>
-          <span class="text-[10px] font-mono text-emerald-400">P${pNum}</span>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <span class="text-[10px] font-mono text-emerald-400">P${pNum}</span>
+            <button onclick="event.stopPropagation(); MJApp.deleteObjectByIndex(${idx})"
+                    class="w-5 h-5 rounded hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 flex items-center justify-center transition"
+                    title="حذف المجسم (X)">
+              <i class="fa-solid fa-xmark text-xs font-black"></i>
+            </button>
+          </div>
         </div>
       `;
     }).join('');
@@ -1980,6 +2131,8 @@ window.MJApp = (function () {
     setSelectedColor,
     duplicateSelected,
     deleteSelected,
+    deleteObjectByIndex,
+    toggleMoveMode,
     selectObjectByIndex,
     setCameraView,
     switchAuthTab,
