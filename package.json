@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "@netlify/database": "^2.0.3",
     "jose": "^5.10.0"
   }
