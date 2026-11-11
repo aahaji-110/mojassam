@@ -278,6 +278,12 @@
         <span data-i18n="arabicTextBtn">نص عربي</span>
       </button>
 
+      <!-- 4b. Dual-Name 3D Sculpture Maker ("مجسم الأسماء" - الاسم بالعربي والاسم بالإنجليزي) -->
+      <button onclick="MJApp.openDualNameModal()" class="tool-btn !border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20" title="مجسم الأسماء: صناعة مجسم الاسم بالعربي مع الكشيدة والاسم بالإنجليزي البارز (نفس التحف المكتبية)">
+        <i class="fa-solid fa-signature !text-rose-400"></i>
+        <span data-i18n="dualNameBtn" class="text-rose-300 font-extrabold">مجسم الأسماء</span>
+      </button>
+
       <!-- 5. Add Primitive / Calibration Shape (Dropdown matching uploaded image) -->
       <div class="relative" id="primitive-dropdown-wrap">
         <button onclick="MJApp.togglePrimitiveMenu()" class="tool-btn" title="إضافة مجسم أو نموذج اختبار">
@@ -940,6 +946,134 @@
           <div class="text-gray-300 font-bold mb-2">اختر من الموديلات الاحترافية (تأخذ حدود وتفاصيل الحروف تلقائياً مع حلقة الميدالية المدمجة):</div>
           <div id="kc-templates-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3B: Dual-Name 3D Sculpture Maker ("مجسم الأسماء" - الاسم بالعربي والاسم بالإنجليزي) -->
+  <div id="dual-name-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-rose-500/40 rounded-2xl max-w-3xl w-full p-5 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-signature text-rose-400"></i>
+          <span>صانع مجسم الأسماء 3D (الاسم بالعربي بالكشيدة المنحنية + الاسم بالإنجليزي البارز)</span>
+        </h3>
+        <button onclick="MJApp.closeModal('dual-name-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <!-- Live 3D-Styled Preview Box -->
+        <div class="bg-[#181a20] border border-[#383d47] rounded-xl p-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold text-rose-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-eye"></i>
+              <span>معاينة حية لمجسم الأسماء (يتصل كل حرف ونقطة تلقائياً كقطعة واحدة متماسكة):</span>
+            </span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[10px] text-gray-400">ثيمات جاهزة:</span>
+              <button type="button" onclick="MJApp.applyDualNamePreset('#be123c', '#ffffff')" class="px-2 py-0.5 rounded bg-rose-700 text-white text-[10px] font-bold border border-white/30">عنابي وأبيض (نفس الصورة ⭐)</button>
+              <button type="button" onclick="MJApp.applyDualNamePreset('#18181b', '#eab308')" class="px-2 py-0.5 rounded bg-zinc-900 text-amber-400 text-[10px] font-bold border border-amber-400/40">أسود وذهبي ملكي</button>
+              <button type="button" onclick="MJApp.applyDualNamePreset('#1e3a8a', '#ffffff')" class="px-2 py-0.5 rounded bg-blue-900 text-white text-[10px] font-bold border border-white/30">كحلي وأبيض</button>
+              <button type="button" onclick="MJApp.applyDualNamePreset('#065f46', '#fde047')" class="px-2 py-0.5 rounded bg-emerald-900 text-yellow-300 text-[10px] font-bold border border-yellow-300/40">زمردي وذهبي</button>
+              <button type="button" onclick="MJApp.applyDualNamePreset('#db2777', '#ffffff')" class="px-2 py-0.5 rounded bg-pink-600 text-white text-[10px] font-bold border border-white/30">وردي وأبيض</button>
+            </div>
+          </div>
+          <canvas id="dual-name-preview-canvas" width="760" height="220" class="w-full h-44 rounded-lg border border-[#2f343d] bg-[#181a20]"></canvas>
+        </div>
+
+        <!-- Arabic & English Name Inputs + Colors + Fonts -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Arabic Name Card -->
+          <div class="bg-[#1b1d21] border border-rose-500/30 rounded-xl p-3 space-y-2.5">
+            <div class="font-extrabold text-rose-400 flex items-center justify-between">
+              <span>1. الاسم بالعربي (الخلفية الكبيرة الممتدة)</span>
+              <span class="text-[10px] text-gray-400">يمتد بالكشيدة تلقائياً</span>
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">اكتب الاسم بالعربي:</label>
+              <input id="dn-ar-text" type="text" value="جود" oninput="MJApp.updateDualNamePreview()" placeholder="مثال: جود ، محمد ، سارة ، فيصل..." class="w-full bg-[#23262b] border border-[#3c424d] rounded-lg px-3 py-2 text-sm font-extrabold text-white" />
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-end">
+              <div class="col-span-2">
+                <label class="block text-gray-400 mb-1">خط الاسم العربي:</label>
+                <select id="dn-ar-font" onchange="MJApp.updateDualNamePreview()" class="w-full bg-[#23262b] border border-[#3c424d] rounded-lg px-2 py-1.5 text-white font-bold"></select>
+              </div>
+              <div>
+                <label class="block text-gray-400 mb-1">لون العربي:</label>
+                <input id="dn-ar-color" type="color" value="#be123c" oninput="MJApp.updateDualNamePreview()" class="w-full h-8 bg-[#23262b] border border-[#3c424d] rounded-lg cursor-pointer" />
+              </div>
+            </div>
+          </div>
+
+          <!-- English Name Card -->
+          <div class="bg-[#1b1d21] border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
+            <div class="font-extrabold text-emerald-400 flex items-center justify-between">
+              <span>2. الاسم بالإنجليزي (المخطوطة البارزة بالأمام)</span>
+              <span class="text-[10px] text-gray-400">يتداخل ويبرز للأمام</span>
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">اكتب الاسم بالإنجليزي (English):</label>
+              <input id="dn-en-text" type="text" dir="ltr" value="Joud" oninput="MJApp.updateDualNamePreview()" placeholder="e.g. Joud, Mohammed, Sara..." class="w-full bg-[#23262b] border border-[#3c424d] rounded-lg px-3 py-2 text-sm font-extrabold text-white text-left" />
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-end">
+              <div class="col-span-2">
+                <label class="block text-gray-400 mb-1">خط المخطوطة الإنجليزية:</label>
+                <select id="dn-en-font" onchange="MJApp.updateDualNamePreview()" class="w-full bg-[#23262b] border border-[#3c424d] rounded-lg px-2 py-1.5 text-white font-bold"></select>
+              </div>
+              <div>
+                <label class="block text-gray-400 mb-1">لون الإنجليزي:</label>
+                <input id="dn-en-color" type="color" value="#ffffff" oninput="MJApp.updateDualNamePreview()" class="w-full h-8 bg-[#23262b] border border-[#3c424d] rounded-lg cursor-pointer" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calligraphic Kashida, Curve & 3D Dimensions Controls -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#1b1d21] border border-[#383d47] rounded-xl p-3">
+          <div>
+            <label class="block text-gray-400 mb-1">طول مدّة الكشيدة: <span id="dn-kashida-val" class="text-rose-400 font-bold">6</span></label>
+            <input id="dn-kashida-slider" type="range" min="0" max="12" value="6" oninput="document.getElementById('dn-kashida-val').textContent=this.value; MJApp.updateDualNamePreview()" class="w-full accent-rose-500" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">انحناء الكشيدة: <span id="dn-curve-val" class="text-rose-400 font-bold">26</span></label>
+            <input id="dn-curve-slider" type="range" min="0" max="50" value="26" oninput="document.getElementById('dn-curve-val').textContent=this.value; MJApp.updateDualNamePreview()" class="w-full accent-rose-500" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">حجم الإنجليزي: <span id="dn-enscale-val" class="text-emerald-400 font-bold">44%</span></label>
+            <input id="dn-enscale-slider" type="range" min="25" max="75" value="44" oninput="document.getElementById('dn-enscale-val').textContent=this.value+'%'; MJApp.updateDualNamePreview()" class="w-full accent-emerald-500" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">إزاحة الإنجليزي أفقياً: <span id="dn-enoffx-val" class="text-sky-400 font-bold">0</span></label>
+            <input id="dn-enoffx-slider" type="range" min="-35" max="35" value="0" oninput="document.getElementById('dn-enoffx-val').textContent=this.value; MJApp.updateDualNamePreview()" class="w-full accent-sky-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">العرض الكلي للمجسم (مم)</label>
+            <input id="dn-total-width" type="number" value="160" min="60" max="300" step="5" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-white font-bold" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">سُمك الاسم العربي (مم)</label>
+            <input id="dn-ar-depth" type="number" value="12" min="4" max="30" step="1" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-white font-bold" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">بروز الإنجليزي للأمام (مم)</label>
+            <input id="dn-en-protrude" type="number" value="3.5" min="1.5" max="10" step="0.5" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-white font-bold" />
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">وضعية المجسم على اللوحة</label>
+            <select id="dn-orientation" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-lg px-2 py-1.5 text-emerald-400 font-bold">
+              <option value="standing">واقف كتحفة مكتبية (نفس الصورة ⭐)</option>
+              <option value="flat">مسطح على ظهره (للطباعة بدون دعامات)</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="dn-submit-btn" onclick="MJApp.generateDualNameToScene()" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-extrabold py-3 rounded-xl shadow-lg shadow-rose-600/25 flex items-center justify-center gap-2 text-sm transition">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>توليد مجسم الأسماء 3D وإضافته للوحة البناء</span>
+        </button>
       </div>
     </div>
   </div>

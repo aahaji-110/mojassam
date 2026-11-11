@@ -1549,6 +1549,641 @@ ${polys}</svg>`;
     return { svgString, shapes, width: cw, height: ch };
   }
 
+  /* ──────────────────────────────────────────────────────────────
+     10. Dual-Name 3D Sculpture Maker ("مجسم الأسماء")
+         Creates the iconic Arabic Calligraphic Stretched Kashida Name
+         in the background + Overlapping English Cursive Script Name in front!
+     ────────────────────────────────────────────────────────────── */
+  const ARABIC_CONNECTING_AFTER = new Set(Array.from('بتثجحخسشصضطظعغفقكلمنهيئـ'));
+
+  function insertSmartKashida(rawText, kashidaCount = 6) {
+    const clean = String(rawText || 'جود').trim();
+    if (!clean) return { text: 'جــــــود', hasNativeKashida: true };
+    const count = Math.max(0, Math.min(14, Number(kashidaCount || 0)));
+    if (count === 0) return { text: clean, hasNativeKashida: true };
+
+    // If user already typed tatweel 'ـ', expand it to match desired kashidaCount
+    if (clean.includes('ـ')) {
+      const firstIdx = clean.indexOf('ـ');
+      const stripped = clean.replace(/ـ+/g, '');
+      const pos = Math.min(stripped.length - 1, Math.max(1, firstIdx));
+      return {
+        text: stripped.slice(0, pos) + 'ـ'.repeat(count) + stripped.slice(pos),
+        hasNativeKashida: true
+      };
+    }
+
+    const chars = Array.from(clean);
+    if (chars.length < 2) {
+      return { text: clean + 'ـ'.repeat(count), hasNativeKashida: true };
+    }
+
+    // Find best connecting character before the last letter (prefer near middle/first half like 'ج' in 'جود')
+    let bestIdx = -1;
+    const mid = Math.floor((chars.length - 1) / 2);
+    for (let offset = 0; offset < chars.length - 1; offset++) {
+      const candidates = [mid - offset, mid + offset];
+      for (const idx of candidates) {
+        if (idx >= 0 && idx < chars.length - 1 && ARABIC_CONNECTING_AFTER.has(chars[idx])) {
+          bestIdx = idx;
+          break;
+        }
+      }
+      if (bestIdx !== -1) break;
+    }
+
+    if (bestIdx !== -1) {
+      return {
+        text: chars.slice(0, bestIdx + 1).join('') + 'ـ'.repeat(count) + chars.slice(bestIdx + 1).join(''),
+        hasNativeKashida: true
+      };
+    }
+
+    // No standard connecting letter (e.g. 'ورود' or 'رؤى'): insert space for calligraphic swash bridge
+    return {
+      text: clean,
+      hasNativeKashida: false
+    };
+  }
+
+  function applyCalligraphicCradleWarp(canvas, curveDipPx = 28) {
+    if (!curveDipPx || Math.abs(curveDipPx) < 1) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const src = ctx.getImageData(0, 0, w, h);
+    const sData = src.data;
+
+    let minX = w, maxX = 0;
+    for (let y = 0; y < h; y += 2) {
+      for (let x = 0; x < w; x += 2) {
+        if (sData[(y * w + x) * 4 + 3] > 60) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+        }
+      }
+    }
+    if (minX >= maxX) return;
+
+    const spanX = Math.max(1, maxX - minX);
+    const dst = ctx.createImageData(w, h);
+    const dData = dst.data;
+
+    for (let x = 0; x < w; x++) {
+      let shiftY = 0;
+      if (x >= minX && x <= maxX) {
+        const u = (x - minX) / spanX; // 0 .. 1
+        // Smooth calligraphic cradle curve dipping in the center (sin^1.3 profile)
+        shiftY = Math.round(curveDipPx * Math.pow(Math.sin(Math.PI * u), 1.25));
+      }
+      for (let y = 0; y < h; y++) {
+        const sy = y - shiftY;
+        if (sy >= 0 && sy < h) {
+          const sIdx = (sy * w + x) * 4;
+          const dIdx = (y * w + x) * 4;
+          dData[dIdx] = sData[sIdx];
+          dData[dIdx + 1] = sData[sIdx + 1];
+          dData[dIdx + 2] = sData[sIdx + 2];
+          dData[dIdx + 3] = sData[sIdx + 3];
+        }
+      }
+    }
+    ctx.putImageData(dst, 0, 0);
+  }
+
+  function connectAllCanvasIslands(canvas, bridgeWidth = 14) {
+    const w = canvas.width;
+    const h = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, w, h).data;
+
+    const step = 2;
+    const gw = Math.ceil(w / step);
+    const gh = Math.ceil(h / step);
+    const mask = new Uint8Array(gw * gh);
+    const visited = new Int32Array(gw * gh);
+
+    for (let gy = 0; gy < gh; gy++) {
+      const py = Math.min(h - 1, gy * step);
+      for (let gx = 0; gx < gw; gx++) {
+        const px = Math.min(w - 1, gx * step);
+        if (imgData[(py * w + px) * 4 + 3] > 90) {
+          mask[gy * gw + gx] = 1;
+        }
+      }
+    }
+
+    const islands = [];
+    const queue = new Int32Array(gw * gh);
+
+    for (let i = 0; i < gw * gh; i++) {
+      if (!mask[i] || visited[i]) continue;
+      const compId = islands.length + 1;
+      let head = 0, tail = 0;
+      queue[tail++] = i;
+      visited[i] = compId;
+      let area = 0;
+      const boundary = [];
+
+      while (head < tail) {
+        const cur = queue[head++];
+        area++;
+        const cx = cur % gw;
+        const cy = (cur / gw) | 0;
+        let isBorder = false;
+
+        for (let dy = -1; dy <= 1; dy++) {
+          const ny = cy + dy;
+          if (ny < 0 || ny >= gh) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = cx + dx;
+            if (nx < 0 || nx >= gw) continue;
+            const nIdx = ny * gw + nx;
+            if (!mask[nIdx]) {
+              isBorder = true;
+            } else if (!visited[nIdx]) {
+              visited[nIdx] = compId;
+              queue[tail++] = nIdx;
+            }
+          }
+        }
+        // Subsample boundary points slightly for ultra-fast nearest-pair search
+        if (isBorder && (area % 2 === 0)) {
+          boundary.push({ x: cx * step, y: cy * step });
+        }
+      }
+
+      if (area >= 4 && boundary.length > 0) {
+        islands.push({ id: compId, area, boundary, merged: false });
+      }
+    }
+
+    if (islands.length <= 1) return;
+
+    // Sort islands largest first (islands[0] is the main calligraphic body)
+    islands.sort((a, b) => b.area - a.area);
+    islands[0].merged = true;
+    const mainBoundary = [...islands[0].boundary];
+
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.fillStyle = '#ffffff';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    for (let stepIter = 1; stepIter < islands.length; stepIter++) {
+      let bestIsl = null;
+      let bestDistSq = Infinity;
+      let bestA = null;
+      let bestB = null;
+
+      for (let i = 1; i < islands.length; i++) {
+        const isl = islands[i];
+        if (isl.merged) continue;
+        const bList = isl.boundary;
+        for (let aIdx = 0; aIdx < bList.length; aIdx++) {
+          const pa = bList[aIdx];
+          for (let mIdx = 0; mIdx < mainBoundary.length; mIdx += 2) {
+            const pb = mainBoundary[mIdx];
+            const dx = pa.x - pb.x;
+            const dy = pa.y - pb.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < bestDistSq) {
+              bestDistSq = d2;
+              bestIsl = isl;
+              bestA = pa;
+              bestB = pb;
+            }
+          }
+        }
+      }
+
+      if (!bestIsl || !bestA || !bestB) break;
+      bestIsl.merged = true;
+
+      const isDot = bestIsl.area < 450;
+      if (isDot) {
+        // Connect Arabic/English dot directly to letter stroke so it never falls off during 3D printing
+        ctx.lineWidth = Math.max(8, bridgeWidth * 0.82);
+        ctx.beginPath();
+        ctx.moveTo(bestA.x, bestA.y);
+        ctx.lineTo(bestB.x, bestB.y);
+        ctx.stroke();
+      } else {
+        // Connect disconnected letter (like 'د', 'و', 'ر') with a graceful curved calligraphic swash
+        const midX = (bestA.x + bestB.x) * 0.5;
+        const midY = Math.max(bestA.y, bestB.y) + Math.min(18, Math.hypot(bestA.x - bestB.x, bestA.y - bestB.y) * 0.22);
+        ctx.lineWidth = bridgeWidth;
+        ctx.beginPath();
+        ctx.moveTo(bestA.x, bestA.y);
+        ctx.quadraticCurveTo(midX, midY, bestB.x, bestB.y);
+        ctx.stroke();
+      }
+
+      for (let k = 0; k < bestIsl.boundary.length; k++) {
+        mainBoundary.push(bestIsl.boundary[k]);
+      }
+    }
+    ctx.restore();
+  }
+
+  function getCanvasAlphaBounds(canvas) {
+    const w = canvas.width;
+    const h = canvas.height;
+    const data = canvas.getContext('2d').getImageData(0, 0, w, h).data;
+    let minX = w, maxX = 0, minY = h, maxY = 0;
+    for (let y = 0; y < h; y += 2) {
+      for (let x = 0; x < w; x += 2) {
+        if (data[(y * w + x) * 4 + 3] > 80) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (minX >= maxX) {
+      return { minX: w * 0.25, maxX: w * 0.75, minY: h * 0.3, maxY: h * 0.7, width: w * 0.5, height: h * 0.4 };
+    }
+    return { minX, maxX, minY, maxY, width: maxX - minX, height: maxY - minY };
+  }
+
+  async function buildDualNameCanvases(opts = {}) {
+    const {
+      arText = 'جود',
+      enText = 'Joud',
+      arFont = 'Aref Ruqaa',
+      enFont = 'Great Vibes',
+      kashidaCount = 6,
+      curveDip = 26,
+      enScalePct = 44,
+      enOffsetX = 0,
+      enOffsetY = 0
+    } = opts;
+
+    try {
+      if (document.fonts && document.fonts.load) {
+        await Promise.race([
+          Promise.all([
+            document.fonts.load(`bold 150px "${arFont}"`),
+            document.fonts.load(`bold 120px "${enFont}"`)
+          ]),
+          new Promise((r) => setTimeout(r, 750))
+        ]);
+      }
+    } catch (e) {}
+
+    const cw = 1500;
+    const ch = 620;
+
+    // 1. Render Stretched Calligraphic Arabic Name
+    const arCanvas = document.createElement('canvas');
+    arCanvas.width = cw;
+    arCanvas.height = ch;
+    const arCtx = arCanvas.getContext('2d');
+
+    const { text: stretchedAr, hasNativeKashida } = insertSmartKashida(arText, kashidaCount);
+    let arFontPx = 175;
+    arCtx.font = `bold ${arFontPx}px "${arFont}", "Amiri", "Cairo", serif`;
+    let measuredW = arCtx.measureText(stretchedAr).width;
+    if (measuredW > cw * 0.82) {
+      arFontPx = Math.max(95, Math.floor(arFontPx * ((cw * 0.82) / measuredW)));
+      arCtx.font = `bold ${arFontPx}px "${arFont}", "Amiri", "Cairo", serif`;
+    }
+
+    const cx = cw / 2;
+    const cy = ch * 0.48;
+
+    arCtx.clearRect(0, 0, cw, ch);
+    arCtx.direction = 'rtl';
+    arCtx.textAlign = 'center';
+    arCtx.textBaseline = 'middle';
+    arCtx.lineJoin = 'round';
+    arCtx.lineCap = 'round';
+    // Reinforce stroke slightly so thin calligraphic necks print strong & solid
+    arCtx.strokeStyle = '#ffffff';
+    arCtx.lineWidth = Math.max(6, arFontPx * 0.048);
+    arCtx.strokeText(stretchedAr, cx, cy);
+    arCtx.fillStyle = '#ffffff';
+    arCtx.fillText(stretchedAr, cx, cy);
+
+    // If the Arabic name had no connecting letters (e.g. 'ورود'), draw a sweeping calligraphic kashida bar
+    if (!hasNativeKashida && kashidaCount > 0) {
+      const b0 = getCanvasAlphaBounds(arCanvas);
+      arCtx.strokeStyle = '#ffffff';
+      arCtx.lineWidth = Math.max(16, arFontPx * 0.11);
+      arCtx.beginPath();
+      arCtx.moveTo(b0.minX + b0.width * 0.15, cy + arFontPx * 0.12);
+      arCtx.lineTo(b0.maxX - b0.width * 0.15, cy + arFontPx * 0.12);
+      arCtx.stroke();
+    }
+
+    // Apply the signature Calligraphic Cradle Curve Warp (انحناء الكشيدة الانسيابي في الوسط نفس الصورة)
+    applyCalligraphicCradleWarp(arCanvas, Number(curveDip));
+
+    // Automatically connect all dots (نقاط) and disconnected letters (د، و، ر) into ONE solid 3D piece
+    connectAllCanvasIslands(arCanvas, Math.max(13, Math.round(arFontPx * 0.085)));
+
+    const arBounds = getCanvasAlphaBounds(arCanvas);
+
+    // Find bottom baseline in the center cradle region of the Arabic name so English sits flush on the desk & kashida
+    const arData = arCtx.getImageData(0, 0, cw, ch).data;
+    const cradleLeft = Math.floor(arBounds.minX + arBounds.width * 0.30);
+    const cradleRight = Math.ceil(arBounds.minX + arBounds.width * 0.70);
+    let cradleMaxY = cy + 20;
+    for (let y = ch - 1; y >= 0; y--) {
+      let found = false;
+      for (let x = cradleLeft; x <= cradleRight; x += 2) {
+        if (arData[(y * cw + x) * 4 + 3] > 90) {
+          cradleMaxY = y;
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+
+    // 2. Render Overlapping English Cursive Script Name on a Temporary Canvas first, then position into enCanvas
+    const tmpEn = document.createElement('canvas');
+    tmpEn.width = cw;
+    tmpEn.height = ch;
+    const tmpCtx = tmpEn.getContext('2d');
+    const cleanEn = String(enText || 'Joud').trim() || 'Joud';
+
+    const enFontPx = 150;
+    tmpCtx.clearRect(0, 0, cw, ch);
+    tmpCtx.direction = 'ltr';
+    tmpCtx.textAlign = 'center';
+    tmpCtx.textBaseline = 'middle';
+    tmpCtx.lineJoin = 'round';
+    tmpCtx.lineCap = 'round';
+    tmpCtx.font = `bold ${enFontPx}px "${enFont}", "Great Vibes", cursive, sans-serif`;
+    // Thicken English cursive hairlines so every script loop is strong & 3D-printable
+    tmpCtx.strokeStyle = '#ffffff';
+    tmpCtx.lineWidth = 7;
+    tmpCtx.strokeText(cleanEn, cw / 2, ch / 2);
+    tmpCtx.fillStyle = '#ffffff';
+    tmpCtx.fillText(cleanEn, cw / 2, ch / 2);
+
+    // Connect English dots ('i', 'j') & detached capital script letters into one solid English piece
+    connectAllCanvasIslands(tmpEn, 11);
+
+    const rawEnBounds = getCanvasAlphaBounds(tmpEn);
+    const desiredEnWidth = Math.max(80, arBounds.width * (Number(enScalePct || 44) / 100));
+    const enScale = desiredEnWidth / Math.max(1, rawEnBounds.width);
+    const targetEnW = rawEnBounds.width * enScale;
+    const targetEnH = rawEnBounds.height * enScale;
+
+    const enCanvas = document.createElement('canvas');
+    enCanvas.width = cw;
+    enCanvas.height = ch;
+    const enCtx = enCanvas.getContext('2d');
+
+    // Align English script horizontally in the center cradle and vertically resting on the bottom baseline
+    const arCenterX = (arBounds.minX + arBounds.maxX) * 0.5;
+    const destX = arCenterX - targetEnW * 0.5 + Number(enOffsetX || 0) * 3;
+    const targetBottomY = Math.max(cradleMaxY + 6, arBounds.maxY - 4) - Number(enOffsetY || 0) * 3;
+    const destY = targetBottomY - targetEnH;
+
+    enCtx.drawImage(
+      tmpEn,
+      rawEnBounds.minX,
+      rawEnBounds.minY,
+      rawEnBounds.width,
+      rawEnBounds.height,
+      destX,
+      destY,
+      targetEnW,
+      targetEnH
+    );
+
+    const enBounds = getCanvasAlphaBounds(enCanvas);
+    const totalMinX = Math.min(arBounds.minX, enBounds.minX);
+    const totalMaxX = Math.max(arBounds.maxX, enBounds.maxX);
+    const totalMinY = Math.min(arBounds.minY, enBounds.minY);
+    const totalMaxY = Math.max(arBounds.maxY, enBounds.maxY);
+
+    return {
+      arCanvas,
+      enCanvas,
+      bounds: {
+        minX: totalMinX,
+        maxX: totalMaxX,
+        minY: totalMinY,
+        maxY: totalMaxY,
+        width: Math.max(1, totalMaxX - totalMinX),
+        height: Math.max(1, totalMaxY - totalMinY),
+        centerX: (totalMinX + totalMaxX) * 0.5,
+        centerY: (totalMinY + totalMaxY) * 0.5
+      }
+    };
+  }
+
+  function tintMaskCanvas(maskCanvas, hexColor) {
+    const c = document.createElement('canvas');
+    c.width = maskCanvas.width;
+    c.height = maskCanvas.height;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(maskCanvas, 0, 0);
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.fillStyle = hexColor;
+    ctx.fillRect(0, 0, c.width, c.height);
+    return c;
+  }
+
+  function shadeHexColor(hex, factor = 0.65) {
+    const clean = String(hex || '#be123c').replace('#', '');
+    const num = parseInt(clean, 16) || 0xbe123c;
+    const r = Math.min(255, Math.max(0, Math.round(((num >> 16) & 255) * factor)));
+    const g = Math.min(255, Math.max(0, Math.round(((num >> 8) & 255) * factor)));
+    const b = Math.min(255, Math.max(0, Math.round((num & 255) * factor)));
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  async function renderDualNamePreview(previewCanvas, opts = {}) {
+    if (!previewCanvas) return;
+    const { arCanvas, enCanvas, bounds } = await buildDualNameCanvases(opts);
+    const arColor = opts.arColor || '#be123c';
+    const enColor = opts.enColor || '#ffffff';
+
+    const pw = previewCanvas.width;
+    const ph = previewCanvas.height;
+    const ctx = previewCanvas.getContext('2d');
+
+    // Studio photo-booth background with subtle floor reflection like the reference image
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, ph);
+    bgGrad.addColorStop(0, '#1e2128');
+    bgGrad.addColorStop(0.76, '#282c35');
+    bgGrad.addColorStop(0.77, '#181a20');
+    bgGrad.addColorStop(1, '#121418');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, pw, ph);
+
+    // Desk horizon line
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(20, ph * 0.77);
+    ctx.lineTo(pw - 20, ph * 0.77);
+    ctx.stroke();
+
+    const padX = 56;
+    const padY = 34;
+    const scale = Math.min((pw - padX * 2) / bounds.width, (ph * 0.68 - padY) / bounds.height);
+    const drawW = bounds.width * scale;
+    const drawH = bounds.height * scale;
+    const dx = (pw - drawW) * 0.5;
+    const dy = ph * 0.77 - drawH;
+
+    // Ground soft shadow on desk
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(pw * 0.5, ph * 0.78, drawW * 0.46, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 1. Draw 3D extruded Arabic layer (back depth + front face)
+    const arSide = tintMaskCanvas(arCanvas, shadeHexColor(arColor, 0.58));
+    const arFront = tintMaskCanvas(arCanvas, arColor);
+    const depthStepsAr = 8;
+    for (let d = depthStepsAr; d >= 1; d--) {
+      ctx.drawImage(
+        arSide,
+        bounds.minX, bounds.minY, bounds.width, bounds.height,
+        dx - d * 0.85, dy - d * 0.55, drawW, drawH
+      );
+    }
+    ctx.drawImage(
+      arFront,
+      bounds.minX, bounds.minY, bounds.width, bounds.height,
+      dx, dy, drawW, drawH
+    );
+
+    // 2. Draw 3D extruded English layer in front (with drop shadow onto Arabic kashida)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = -2;
+    ctx.shadowOffsetY = 3;
+    const enSide = tintMaskCanvas(enCanvas, shadeHexColor(enColor, 0.72));
+    for (let d = 5; d >= 1; d--) {
+      ctx.drawImage(
+        enSide,
+        bounds.minX, bounds.minY, bounds.width, bounds.height,
+        dx + 2 - d * 0.7, dy + 1 - d * 0.45, drawW, drawH
+      );
+    }
+    ctx.restore();
+
+    const enFront = tintMaskCanvas(enCanvas, enColor);
+    ctx.drawImage(
+      enFront,
+      bounds.minX, bounds.minY, bounds.width, bounds.height,
+      dx + 2, dy + 1, drawW, drawH
+    );
+  }
+
+  async function createDualNameSculpture(opts = {}) {
+    const {
+      arText = 'جود',
+      enText = 'Joud',
+      arColor = '#be123c',
+      enColor = '#ffffff',
+      totalWidthMm = 160,
+      arDepthMm = 12,
+      enProtrudeMm = 3.5,
+      orientation = 'standing'
+    } = opts;
+
+    const { arCanvas, enCanvas, bounds } = await buildDualNameCanvases(opts);
+    const mmPerPx = Number(totalWidthMm || 160) / Math.max(1, bounds.width);
+
+    const arLoops = traceCanvasToShapes(arCanvas, 115, 0.55);
+    const enLoops = traceCanvasToShapes(enCanvas, 115, 0.50);
+
+    const arShapes = loopsToThreeShapes(arLoops, mmPerPx, bounds.centerX, bounds.centerY);
+    const enShapes = loopsToThreeShapes(enLoops, mmPerPx, bounds.centerX, bounds.centerY);
+
+    if (!arShapes.length) {
+      throw new Error('لم يتم العثور على حروف عربية صالحة لتوليد المجسم');
+    }
+
+    const backDepth = Math.max(3, Number(arDepthMm || 12));
+    const frontProtrude = Math.max(1.2, Number(enProtrudeMm || 3.5));
+
+    // Arabic base sculpture geometry (from Z = 0 to Z = backDepth)
+    const arGeom = new THREE.ExtrudeGeometry(arShapes, {
+      depth: backDepth,
+      bevelEnabled: true,
+      bevelThickness: 0.35,
+      bevelSize: 0.28,
+      bevelSegments: 2,
+      curveSegments: 7
+    });
+
+    // English foreground script geometry: starts embedded inside Arabic mesh (Z = backDepth * 0.35)
+    // and protrudes out the front to (Z = backDepth + frontProtrude) so they interlock solidly!
+    const embedStart = backDepth * 0.35;
+    const enTotalDepth = (backDepth - embedStart) + frontProtrude;
+    const enGeom = enShapes.length
+      ? new THREE.ExtrudeGeometry(enShapes, {
+          depth: enTotalDepth,
+          bevelEnabled: true,
+          bevelThickness: 0.3,
+          bevelSize: 0.22,
+          bevelSegments: 2,
+          curveSegments: 7
+        })
+      : new THREE.BoxGeometry(10, 10, enTotalDepth);
+
+    if (enShapes.length) {
+      enGeom.translate(0, 0, embedStart);
+    }
+
+    if (orientation === 'flat') {
+      // Lay flat on build plate (Y is extrusion thickness upward) for zero-support printing & color change
+      arGeom.rotateX(-Math.PI / 2);
+      enGeom.rotateX(-Math.PI / 2);
+    }
+
+    arGeom.computeVertexNormals();
+    enGeom.computeVertexNormals();
+
+    const group = new THREE.Group();
+    const arMesh = new THREE.Mesh(
+      arGeom,
+      new THREE.MeshStandardMaterial({ color: arColor, roughness: 0.3, metalness: 0.12 })
+    );
+    arMesh.name = `الاسم العربي (${arText})`;
+    arMesh.castShadow = true;
+    arMesh.receiveShadow = true;
+
+    const enMesh = new THREE.Mesh(
+      enGeom,
+      new THREE.MeshStandardMaterial({ color: enColor, roughness: 0.25, metalness: 0.1 })
+    );
+    enMesh.name = `الاسم الإنجليزي (${enText})`;
+    enMesh.castShadow = true;
+    enMesh.receiveShadow = true;
+
+    group.add(arMesh);
+    group.add(enMesh);
+
+    // Center the whole dual-name sculpture on X and Z, and ground firmly at Y = 0 on the build plate
+    const box = new THREE.Box3().setFromObject(group);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    group.children.forEach((ch) => {
+      ch.geometry.translate(-center.x, -box.min.y, -center.z);
+      ch.geometry.computeBoundingBox();
+    });
+
+    group.userData.isMultiColorGroup = true;
+    return group;
+  }
+
   return {
     traceCanvasToShapes,
     loopsToThreeShapes,
@@ -1564,7 +2199,9 @@ ${polys}</svg>`;
     exportTo3MF,
     exportToSVGProjection,
     imageFileToSVGAndShapes,
-    mergeBufferGeometries
+    mergeBufferGeometries,
+    renderDualNamePreview,
+    createDualNameSculpture
   };
 })();
 

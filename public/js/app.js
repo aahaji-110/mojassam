@@ -789,6 +789,20 @@ window.MJApp = (function () {
       .join('');
     document.getElementById('ar-font-select').innerHTML = html;
     document.getElementById('kc-font-select').innerHTML = html;
+
+    const dnArFont = document.getElementById('dn-ar-font');
+    if (dnArFont) {
+      dnArFont.innerHTML = html;
+      dnArFont.value = 'Aref Ruqaa';
+    }
+
+    const dnEnFont = document.getElementById('dn-en-font');
+    if (dnEnFont && window.MJCatalog.ENGLISH_SCRIPT_FONTS) {
+      dnEnFont.innerHTML = window.MJCatalog.ENGLISH_SCRIPT_FONTS
+        .map((f) => `<option value="${f.name}" style="font-family:'${f.name}',cursive">${f.label}</option>`)
+        .join('');
+      dnEnFont.value = 'Great Vibes';
+    }
   }
 
   function updateArabicTextPreview() {
@@ -841,6 +855,76 @@ window.MJApp = (function () {
     } finally {
       btn.disabled = false;
       btn.textContent = 'إضافة النص الثلاثي الأبعاد الآن';
+    }
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     7b. Dual-Name 3D Sculpture Maker ("مجسم الأسماء" - الاسم بالعربي والاسم بالإنجليزي)
+     ────────────────────────────────────────────────────────────── */
+  function getDualNameOptionsFromUI() {
+    return {
+      arText: document.getElementById('dn-ar-text')?.value.trim() || 'جود',
+      enText: document.getElementById('dn-en-text')?.value.trim() || 'Joud',
+      arFont: document.getElementById('dn-ar-font')?.value || 'Aref Ruqaa',
+      enFont: document.getElementById('dn-en-font')?.value || 'Great Vibes',
+      arColor: document.getElementById('dn-ar-color')?.value || '#be123c',
+      enColor: document.getElementById('dn-en-color')?.value || '#ffffff',
+      kashidaCount: Number(document.getElementById('dn-kashida-slider')?.value ?? 6),
+      curveDip: Number(document.getElementById('dn-curve-slider')?.value ?? 26),
+      enScalePct: Number(document.getElementById('dn-enscale-slider')?.value ?? 44),
+      enOffsetX: Number(document.getElementById('dn-enoffx-slider')?.value ?? 0),
+      totalWidthMm: Number(document.getElementById('dn-total-width')?.value || 160),
+      arDepthMm: Number(document.getElementById('dn-ar-depth')?.value || 12),
+      enProtrudeMm: Number(document.getElementById('dn-en-protrude')?.value || 3.5),
+      orientation: document.getElementById('dn-orientation')?.value || 'standing'
+    };
+  }
+
+  function openDualNameModal() {
+    if (!checkAuthOrGate('صناعة مجسم الأسماء')) return;
+    openModal('dual-name-modal');
+    updateDualNamePreview();
+  }
+
+  function applyDualNamePreset(arColor, enColor) {
+    const arColEl = document.getElementById('dn-ar-color');
+    const enColEl = document.getElementById('dn-en-color');
+    if (arColEl) arColEl.value = arColor;
+    if (enColEl) enColEl.value = enColor;
+    updateDualNamePreview();
+  }
+
+  let dualNamePreviewTimer = null;
+  function updateDualNamePreview() {
+    clearTimeout(dualNamePreviewTimer);
+    dualNamePreviewTimer = setTimeout(async () => {
+      const canvas = document.getElementById('dual-name-preview-canvas');
+      if (!canvas || !window.MJEngine.renderDualNamePreview) return;
+      const opts = getDualNameOptionsFromUI();
+      await window.MJEngine.renderDualNamePreview(canvas, opts);
+    }, 60);
+  }
+
+  async function generateDualNameToScene() {
+    if (!checkAuthOrGate('صناعة مجسم الأسماء')) return;
+    const btn = document.getElementById('dn-submit-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>جاري نحت مجسم الأسماء ثلاثي الأبعاد...</span>';
+    }
+    try {
+      const opts = getDualNameOptionsFromUI();
+      const group = await window.MJEngine.createDualNameSculpture(opts);
+      registerSceneObject(group, `مجسم الأسماء (${opts.arText} - ${opts.enText})`, 0);
+      closeModal('dual-name-modal');
+      showToast(`✨ تم توليد مجسم الأسماء (${opts.arText} / ${opts.enText}) بنجاح! يمكنك أيضاً استخدام زر (فصل الألوان) لطباعة كل لون في لوحة`);
+    } catch (err) {
+      showToast(err.message || 'تعذر توليد مجسم الأسماء', true);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i><span>توليد مجسم الأسماء 3D وإضافته للوحة البناء</span>';
+      }
     }
   }
 
@@ -2165,6 +2249,10 @@ window.MJApp = (function () {
     handleFilesUpload,
     updateArabicTextPreview,
     addArabicTextToScene,
+    openDualNameModal,
+    applyDualNamePreset,
+    updateDualNamePreview,
+    generateDualNameToScene,
     togglePrimitiveMenu,
     addPrimitive,
     openStickSurfaceModal,

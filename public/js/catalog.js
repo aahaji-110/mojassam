@@ -57,11 +57,26 @@ window.MJCatalog = (function () {
     { name: 'Zain', label: 'زين (Zain)' }
   ];
 
-  // Load Google Fonts dynamically in batches so all 48 fonts work smoothly
+  // 1b. English Cursive & Calligraphy Fonts for Dual-Name 3D Sculptures ("مجسم الأسماء")
+  const ENGLISH_SCRIPT_FONTS = [
+    { name: 'Great Vibes', label: 'Great Vibes (مخطوطة كلاسيكية فاخرة - نفس الصورة ⭐)' },
+    { name: 'Dancing Script', label: 'Dancing Script (خط متصل انسيابي)' },
+    { name: 'Pacifico', label: 'Pacifico (خط متصل سميك ممتاز للطباعة 3D)' },
+    { name: 'Sacramento', label: 'Sacramento (توقيع يدوي ناعم)' },
+    { name: 'Satisfy', label: 'Satisfy (خط كاليغرافي متصل)' },
+    { name: 'Kaushan Script', label: 'Kaushan Script (خط فرشاة بارز)' },
+    { name: 'Lobster', label: 'Lobster (خط متصل عريض وقوي)' },
+    { name: 'Allura', label: 'Allura (مخطوطة ملكية أنيقة)' },
+    { name: 'Alex Brush', label: 'Alex Brush (خط ديواني إنجليزي)' },
+    { name: 'Courgette', label: 'Courgette (مائل متصل متوازن)' }
+  ];
+
+  // Load Google Fonts dynamically in batches so all 48 Arabic fonts + 10 English script fonts work smoothly
   function loadAllArabicFonts() {
+    const allFonts = [...ARABIC_FONTS, ...ENGLISH_SCRIPT_FONTS];
     const chunkSize = 10;
-    for (let i = 0; i < ARABIC_FONTS.length; i += chunkSize) {
-      const slice = ARABIC_FONTS.slice(i, i + chunkSize);
+    for (let i = 0; i < allFonts.length; i += chunkSize) {
+      const slice = allFonts.slice(i, i + chunkSize);
       const families = slice.map((f) => `family=${encodeURIComponent(f.name)}:wght@400;700`).join('&');
       const link = document.createElement('link');
       link.rel = 'stylesheet';
@@ -151,6 +166,7 @@ window.MJCatalog = (function () {
       newBtn: 'جديد',
       uploadBtn: 'رفع مجسم',
       arabicTextBtn: 'نص عربي',
+      dualNameBtn: 'مجسم الأسماء',
       addShapeBtn: 'إضافة مجسم',
       stickSurfaceBtn: 'لصق على السطح',
       keychainBtn: 'صانع الميداليات والتاق',
@@ -175,6 +191,7 @@ window.MJCatalog = (function () {
       newBtn: 'New',
       uploadBtn: 'Upload 3D/SVG',
       arabicTextBtn: 'Arabic Text',
+      dualNameBtn: 'Name Sculpture',
       addShapeBtn: 'Add Shape',
       stickSurfaceBtn: 'Stick to Surface',
       keychainBtn: 'Keychain & Tag Maker',
@@ -197,6 +214,7 @@ window.MJCatalog = (function () {
 
   return {
     ARABIC_FONTS,
+    ENGLISH_SCRIPT_FONTS,
     PRINTERS,
     PRIMITIVES,
     KEYCHAIN_TEMPLATES,
