@@ -82,10 +82,11 @@ window.MJLoaders = (function () {
       if (!line || line.startsWith('#')) continue;
       const parts = line.split(/\s+/);
       if (parts[0] === 'v' && parts.length >= 4) {
-        const x = parseFloat(parts[1]);
-        const y = parseFloat(parts[2]);
-        const z = parseFloat(parts[3]);
-        rawV.push([x, y, z]);
+        const vx = parseFloat(parts[1]);
+        const vy = parseFloat(parts[2]);
+        const vz = parseFloat(parts[3]);
+        // Convert Slicer Z-up to Three.js Y-up (consistent with parseSTL, parse3MF & exportToOBJ)
+        rawV.push([vx, vz, -vy]);
       } else if (parts[0] === 'f' && parts.length >= 4) {
         const idxs = parts.slice(1).map((tok) => {
           const i = parseInt(tok.split('/')[0], 10);
@@ -108,7 +109,22 @@ window.MJLoaders = (function () {
     return geom;
   }
 
-  /* ── 3. 3MF Parser (ZIP + XML Model with Multi-Part & Color Support) ── */
+  /* ── 3. 3MF Parser (ZIP + XML Model with Transform, Multi-Part & Color Support) ── */
+  function parse3MFTransform(str) {
+    const mat = new THREE.Matrix4();
+    if (!str) return mat;
+    const nums = str.trim().split(/\s+/).map(Number);
+    if (nums.length === 12 && nums.every((n) => !Number.isNaN(n))) {
+      mat.set(
+        nums[0], nums[3], nums[6], nums[9],
+        nums[1], nums[4], nums[7], nums[10],
+        nums[2], nums[5], nums[8], nums[11],
+        0, 0, 0, 1
+      );
+    }
+    return mat;
+  }
+
   async function parse3MF(buffer) {
     if (typeof window.JSZip === 'undefined') {
       throw new Error('مكتبة فك ضغط 3MF غير متوفرة');
@@ -117,7 +133,7 @@ window.MJLoaders = (function () {
     const modelFiles = [];
     zip.forEach((relPath, file) => {
       if (relPath.toLowerCase().endsWith('.model')) {
-        modelFiles.push(file);
+        modelFiles.push({ path: '/' + relPath.replace(/^\/+/, ''), file });
       }
     });
     if (!modelFiles.length) {
@@ -128,49 +144,120 @@ window.MJLoaders = (function () {
     const group = new THREE.Group();
     let partIdx = 0;
 
+    // Parse all XML docs and index <object> elements by path and id
+    const objectsByPathAndId = new Map();
+    const objectsByIdFallback = new Map();
+    const buildItems = [];
+
     for (const mf of modelFiles) {
-      const xmlText = await mf.async('string');
+      const xmlText = await mf.file.async('string');
       const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
-      const meshes = doc.getElementsByTagName('mesh');
+      const objEls = doc.getElementsByTagName('object');
+      for (let i = 0; i < objEls.length; i++) {
+        const objEl = objEls[i];
+        const id = objEl.getAttribute('id');
+        if (id) {
+          objectsByPathAndId.set(`${mf.path}#${id}`, { objEl, path: mf.path });
+          if (!objectsByIdFallback.has(id)) {
+            objectsByIdFallback.set(id, { objEl, path: mf.path });
+          }
+        }
+      }
+      const itemEls = doc.getElementsByTagName('item');
+      for (let i = 0; i < itemEls.length; i++) {
+        const itemEl = itemEls[i];
+        const objId = itemEl.getAttribute('objectid');
+        if (objId) {
+          buildItems.push({
+            objId,
+            path: itemEl.getAttribute('p:path') || itemEl.getAttribute('path') || mf.path,
+            transform: parse3MFTransform(itemEl.getAttribute('transform'))
+          });
+        }
+      }
+    }
 
+    function buildMeshFromElement(meshEl, transformMat) {
+      const vEls = meshEl.getElementsByTagName('vertex');
+      const tEls = meshEl.getElementsByTagName('triangle');
+      if (!vEls.length || !tEls.length) return;
+
+      const verts = new Float32Array(vEls.length * 3);
+      const tmpV = new THREE.Vector3();
+      for (let i = 0; i < vEls.length; i++) {
+        const vx = parseFloat(vEls[i].getAttribute('x') || '0');
+        const vy = parseFloat(vEls[i].getAttribute('y') || '0');
+        const vz = parseFloat(vEls[i].getAttribute('z') || '0');
+        tmpV.set(vx, vy, vz);
+        if (transformMat) tmpV.applyMatrix4(transformMat);
+        // Convert 3MF Z-up to Three.js Y-up
+        verts[i * 3] = tmpV.x;
+        verts[i * 3 + 1] = tmpV.z;
+        verts[i * 3 + 2] = -tmpV.y;
+      }
+
+      const indices = new Uint32Array(tEls.length * 3);
+      for (let i = 0; i < tEls.length; i++) {
+        indices[i * 3] = parseInt(tEls[i].getAttribute('v1') || '0', 10);
+        indices[i * 3 + 1] = parseInt(tEls[i].getAttribute('v2') || '0', 10);
+        indices[i * 3 + 2] = parseInt(tEls[i].getAttribute('v3') || '0', 10);
+      }
+
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+      geom.setIndex(new THREE.BufferAttribute(indices, 1));
+      geom.computeVertexNormals();
+
+      const color = palette[partIdx % palette.length];
+      const mesh = new THREE.Mesh(
+        geom,
+        new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.1 })
+      );
+      mesh.name = `جزء 3MF #${partIdx + 1}`;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+      partIdx++;
+    }
+
+    function traverse3MFObject(filePath, objId, parentMat, depth = 0) {
+      if (depth > 12) return;
+      const cleanPath = '/' + String(filePath || '').replace(/^\/+/, '');
+      const entry = objectsByPathAndId.get(`${cleanPath}#${objId}`) || objectsByIdFallback.get(objId);
+      if (!entry) return;
+
+      const { objEl, path: currentPath } = entry;
+      const meshes = objEl.getElementsByTagName('mesh');
       for (let m = 0; m < meshes.length; m++) {
-        const meshEl = meshes[m];
-        const vEls = meshEl.getElementsByTagName('vertex');
-        const tEls = meshEl.getElementsByTagName('triangle');
-        if (!vEls.length || !tEls.length) continue;
+        buildMeshFromElement(meshes[m], parentMat);
+      }
 
-        const verts = new Float32Array(vEls.length * 3);
-        for (let i = 0; i < vEls.length; i++) {
-          const vx = parseFloat(vEls[i].getAttribute('x') || '0');
-          const vy = parseFloat(vEls[i].getAttribute('y') || '0');
-          const vz = parseFloat(vEls[i].getAttribute('z') || '0');
-          verts[i * 3] = vx;
-          verts[i * 3 + 1] = vz;
-          verts[i * 3 + 2] = -vy;
+      const compEls = objEl.getElementsByTagName('component');
+      for (let c = 0; c < compEls.length; c++) {
+        const compEl = compEls[c];
+        const childId = compEl.getAttribute('objectid');
+        const childPath = compEl.getAttribute('p:path') || compEl.getAttribute('path') || currentPath;
+        const compMat = parse3MFTransform(compEl.getAttribute('transform'));
+        const nextMat = parentMat ? parentMat.clone().multiply(compMat) : compMat;
+        if (childId) {
+          traverse3MFObject(childPath, childId, nextMat, depth + 1);
         }
+      }
+    }
 
-        const indices = new Uint32Array(tEls.length * 3);
-        for (let i = 0; i < tEls.length; i++) {
-          indices[i * 3] = parseInt(tEls[i].getAttribute('v1') || '0', 10);
-          indices[i * 3 + 1] = parseInt(tEls[i].getAttribute('v2') || '0', 10);
-          indices[i * 3 + 2] = parseInt(tEls[i].getAttribute('v3') || '0', 10);
+    if (buildItems.length > 0) {
+      for (const item of buildItems) {
+        traverse3MFObject(item.path, item.objId, item.transform, 0);
+      }
+    }
+
+    // Fallback if no meshes were resolved via <build>
+    if (group.children.length === 0) {
+      for (const [, entry] of objectsByPathAndId.entries()) {
+        const meshes = entry.objEl.getElementsByTagName('mesh');
+        for (let m = 0; m < meshes.length; m++) {
+          buildMeshFromElement(meshes[m], null);
         }
-
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.BufferAttribute(verts, 3));
-        geom.setIndex(new THREE.BufferAttribute(indices, 1));
-        geom.computeVertexNormals();
-
-        const color = palette[partIdx % palette.length];
-        const mesh = new THREE.Mesh(
-          geom,
-          new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.1 })
-        );
-        mesh.name = `جزء 3MF #${partIdx + 1}`;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        group.add(mesh);
-        partIdx++;
       }
     }
 
@@ -209,7 +296,14 @@ window.MJLoaders = (function () {
       canvas.width = 700;
       canvas.height = 700;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 50, 50, 600, 600);
+      const iw = img.naturalWidth || img.width || 600;
+      const ih = img.naturalHeight || img.height || 600;
+      const scale = Math.min(600 / Math.max(1, iw), 600 / Math.max(1, ih));
+      const dw = Math.max(1, Math.round(iw * scale));
+      const dh = Math.max(1, Math.round(ih * scale));
+      const dx = Math.round((700 - dw) / 2);
+      const dy = Math.round((700 - dh) / 2);
+      ctx.drawImage(img, dx, dy, dw, dh);
 
       // Ensure non-transparent pixels become solid alpha for contour tracing
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height);

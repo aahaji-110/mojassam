@@ -124,7 +124,7 @@ window.MJEngine = (function () {
         const p2 = cur[(i + 1) % n];
         next[i] = {
           x: p0.x * 0.2 + p1.x * 0.6 + p2.x * 0.2,
-          y: p0.y * 0.2 + p1.y * 0.6 + p2.x * 0.2
+          y: p0.y * 0.2 + p1.y * 0.6 + p2.y * 0.2
         };
       }
       cur = next;
