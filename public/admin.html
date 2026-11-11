@@ -277,22 +277,46 @@
         </div>
       </div>
 
-      <!-- Redeem Codes List -->
-      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4 overflow-x-auto">
-        <h3 class="text-sm font-extrabold text-white mb-3">أكواد التفعيل الصادرة (مع إمكانية إلغاء الكود/الدفعة)</h3>
+      <!-- Redeem Codes List with Pagination (20 codes per page) -->
+      <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4 overflow-x-auto space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-extrabold text-white flex items-center gap-2">
+              <i class="fa-solid fa-ticket text-emerald-400"></i>
+              <span>الأكواد الفعّالة وقائمة الأكواد (20 كود في كل صفحة)</span>
+            </h3>
+            <p class="text-[11px] text-gray-400 mt-0.5">الأكواد الملغية تُحذف نهائياً وفوراً لمنع الزحمة في الموقع.</p>
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button id="codes-tab-active" onclick="AdminApp.setCodesFilter('active')" class="px-3 py-1 text-xs rounded-lg font-bold bg-emerald-600 text-white transition">الأكواد الفعالة فقط ⭐</button>
+            <button id="codes-tab-used" onclick="AdminApp.setCodesFilter('used')" class="px-3 py-1 text-xs rounded-lg font-bold bg-[#141619] text-gray-300 border border-[#323741] hover:border-emerald-500 transition">المستخدمة</button>
+            <button id="codes-tab-all" onclick="AdminApp.setCodesFilter('all')" class="px-3 py-1 text-xs rounded-lg font-bold bg-[#141619] text-gray-300 border border-[#323741] hover:border-emerald-500 transition">الكل</button>
+            <button onclick="AdminApp.cleanCancelledCodes()" class="px-2.5 py-1 text-xs rounded-lg font-bold bg-rose-600/20 text-rose-300 hover:bg-rose-600 hover:text-white border border-rose-500/40 transition" title="حذف وتنظيف أي أكواد ملغية">تنظيف الملغي 🗑️</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <input id="codes-search-input" oninput="AdminApp.onSearchCodes()" type="text" placeholder="🔍 بحث برقم الكود أو الإيميل..." class="w-full sm:w-64 bg-[#141619] border border-[#323741] rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-500 outline-none focus:border-emerald-500" />
+          <div id="codes-count-badge" class="text-xs text-gray-400"></div>
+        </div>
+
         <table class="w-full text-xs text-right">
           <thead class="text-gray-400 border-b border-[#323741]">
             <tr>
               <th class="py-2 px-2">الكود</th>
-              <th class="py-2 px-2">الإيميل</th>
+              <th class="py-2 px-2">البريد</th>
               <th class="py-2 px-2">الكوينز</th>
               <th class="py-2 px-2">المبلغ</th>
               <th class="py-2 px-2">الحالة</th>
+              <th class="py-2 px-2">تاريخ الإصدار</th>
               <th class="py-2 px-2">إجراء</th>
             </tr>
           </thead>
           <tbody id="codes-tbody" class="divide-y divide-[#2a2e37]"></tbody>
         </table>
+
+        <!-- Pagination Controls (20 codes per page) -->
+        <div id="codes-pagination-bar" class="flex flex-wrap items-center justify-between gap-2 border-t border-[#323741] pt-3 text-xs"></div>
       </div>
 
       <!-- Transactions List -->
@@ -335,7 +359,7 @@
             <span>رابط المتجر الخارجي لبيع الأكواد (سلة Salla / زد Zid / مررها Mrrha / Paylink) — يعمل بوثيقة العمل الحر ⭐</span>
           </div>
           <p class="text-gray-300 text-[11px]">ضع رابط متجرك الخارجي هنا ليتم تحويل العميل إليه لشراء كود الباقة، أو يمكنك وضع رابط مخصص لكل باقة من تبويب (الباقات والأسعار):</p>
-          <input id="set-external-store-url" type="text" dir="ltr" placeholder="https://salla.sa/your-store أو رابط متجر الأكواد..." class="w-full bg-[#141619] border border-emerald-500/50 rounded-lg px-3 py-2 text-white font-bold" />
+          <input id="set-external-store-url" type="text" dir="ltr" placeholder="https://www.3dyat.com" class="w-full bg-[#141619] border border-emerald-500/50 rounded-lg px-3 py-2 text-white font-bold" />
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -702,10 +726,166 @@
         toast('📋 تم نسخ جميع الأكواد للحافظة! يمكنك لصقها مباشرة في متجر سلة / زد / مررها');
       }
 
+      let codesCurrentPage = 1;
+      const codesPerPage = 20;
+      let codesFilterStatus = 'active'; // 'active' (unused), 'used', 'all'
+      let codesSearchQuery = '';
+
+      function getFilteredCodes() {
+        let list = (overviewData?.redeemCodes || []).filter((c) => c.status !== 'cancelled');
+        if (codesFilterStatus === 'active') {
+          list = list.filter((c) => c.status === 'unused');
+        } else if (codesFilterStatus === 'used') {
+          list = list.filter((c) => c.status === 'used');
+        }
+        if (codesSearchQuery) {
+          const q = codesSearchQuery.toLowerCase().trim();
+          list = list.filter((c) =>
+            (c.code || '').toLowerCase().includes(q) ||
+            (c.email || '').toLowerCase().includes(q) ||
+            (c.package_id || '').toLowerCase().includes(q)
+          );
+        }
+        return list;
+      }
+
+      function renderCodesTable() {
+        const list = getFilteredCodes();
+        const totalItems = list.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / codesPerPage));
+        if (codesCurrentPage > totalPages) codesCurrentPage = totalPages;
+        if (codesCurrentPage < 1) codesCurrentPage = 1;
+
+        const startIdx = (codesCurrentPage - 1) * codesPerPage;
+        const pageItems = list.slice(startIdx, startIdx + codesPerPage);
+
+        const countBadge = document.getElementById('codes-count-badge');
+        if (countBadge) {
+          countBadge.innerHTML = `المعروض: <span class="font-bold text-white">${pageItems.length}</span> من أصل <span class="font-bold text-emerald-400">${totalItems}</span> كود ${codesFilterStatus === 'active' ? '(فعال)' : ''}`;
+        }
+
+        const tbody = document.getElementById('codes-tbody');
+        if (tbody) {
+          if (pageItems.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="7" class="py-8 text-center text-gray-400">
+                  <i class="fa-solid fa-ticket-simple text-2xl text-gray-500 mb-2 block"></i>
+                  لا توجد أكواد مطابقة في هذا القسم
+                </td>
+              </tr>
+            `;
+          } else {
+            tbody.innerHTML = pageItems.map((c) => {
+              const isUnused = c.status === 'unused';
+              const statusBadge = isUnused
+                ? '<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">فعال (جاهز للشحن)</span>'
+                : '<span class="bg-gray-700/60 text-gray-300 border border-gray-600 px-2 py-0.5 rounded-full">تم استخدامه</span>';
+
+              const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('ar-SA') : '—';
+              return `
+                <tr class="hover:bg-[#252830] transition">
+                  <td class="py-2.5 px-2 font-mono font-bold text-emerald-400 select-all flex items-center gap-1.5">
+                    <span>${c.code}</span>
+                    <button onclick="AdminApp.copySingleCode('${c.code}')" class="text-gray-400 hover:text-white text-[11px] p-1" title="نسخ الكود"><i class="fa-regular fa-copy"></i></button>
+                  </td>
+                  <td class="py-2.5 px-2 text-gray-300">${c.email || '—'}</td>
+                  <td class="py-2.5 px-2 font-bold text-amber-400">${c.coins} كوينز</td>
+                  <td class="py-2.5 px-2 text-gray-300">${c.amount_sar || 0} ر.س</td>
+                  <td class="py-2.5 px-2">${statusBadge}</td>
+                  <td class="py-2.5 px-2 text-gray-400 text-[11px]">${dateStr}</td>
+                  <td class="py-2.5 px-2">
+                    <button onclick="AdminApp.deleteCode('${c.code}')" class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1" title="حذف الكود نهائياً من الموقع لمنع الزحمة">
+                      <i class="fa-solid fa-trash-can"></i>
+                      <span>حذف نهائي</span>
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+
+        // Pagination controls bar (20 codes per page)
+        const pBar = document.getElementById('codes-pagination-bar');
+        if (pBar) {
+          pBar.innerHTML = `
+            <div class="text-gray-400">
+              عرض <strong class="text-white">${totalItems > 0 ? startIdx + 1 : 0}</strong> إلى 
+              <strong class="text-white">${Math.min(startIdx + codesPerPage, totalItems)}</strong> 
+              من إجمالي <strong class="text-emerald-400">${totalItems}</strong> كود
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button onclick="AdminApp.changeCodesPage(${codesCurrentPage - 1})" ${codesCurrentPage <= 1 ? 'disabled class="opacity-40 cursor-not-allowed px-3 py-1 rounded-lg bg-[#141619] border border-[#323741] text-gray-400"' : 'class="px-3 py-1 rounded-lg bg-[#141619] hover:bg-[#252830] border border-[#323741] text-white font-bold transition"'}>
+                <i class="fa-solid fa-chevron-right ml-1"></i> السابق
+              </button>
+              <span class="px-3 py-1 font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 rounded-lg">
+                صفحة ${codesCurrentPage} من ${totalPages}
+              </span>
+              <button onclick="AdminApp.changeCodesPage(${codesCurrentPage + 1})" ${codesCurrentPage >= totalPages ? 'disabled class="opacity-40 cursor-not-allowed px-3 py-1 rounded-lg bg-[#141619] border border-[#323741] text-gray-400"' : 'class="px-3 py-1 rounded-lg bg-[#141619] hover:bg-[#252830] border border-[#323741] text-white font-bold transition"'}>
+                التالي <i class="fa-solid fa-chevron-left mr-1"></i>
+              </button>
+            </div>
+          `;
+        }
+      }
+
+      function setCodesFilter(status) {
+        codesFilterStatus = status;
+        codesCurrentPage = 1;
+        ['active', 'used', 'all'].forEach((tab) => {
+          const btn = document.getElementById(`codes-tab-${tab}`);
+          if (!btn) return;
+          if (tab === status) {
+            btn.className = 'px-3 py-1 text-xs rounded-lg font-bold bg-emerald-600 text-white transition';
+          } else {
+            btn.className = 'px-3 py-1 text-xs rounded-lg font-bold bg-[#141619] text-gray-300 border border-[#323741] hover:border-emerald-500 transition';
+          }
+        });
+        renderCodesTable();
+      }
+
+      function changeCodesPage(page) {
+        const list = getFilteredCodes();
+        const totalPages = Math.max(1, Math.ceil(list.length / codesPerPage));
+        if (page < 1 || page > totalPages) return;
+        codesCurrentPage = page;
+        renderCodesTable();
+      }
+
+      function onSearchCodes() {
+        codesSearchQuery = document.getElementById('codes-search-input')?.value || '';
+        codesCurrentPage = 1;
+        renderCodesTable();
+      }
+
+      function copySingleCode(code) {
+        navigator.clipboard.writeText(code);
+        toast('📋 تم نسخ الكود: ' + code);
+      }
+
+      async function deleteCode(code) {
+        if (!confirm(`هل أنت متأكد من حذف الكود (${code}) نهائياً من الموقع لمنع الزحمة؟`)) return;
+        const res = await window.MJ.api('adminCancelCode', { adminPin: currentPin, code });
+        if (res && res.success) {
+          toast('🗑️ تم حذف الكود نهائياً من الموقع');
+          loadOverview();
+        } else {
+          toast('تعذر حذف الكود: ' + (res?.error || 'خطأ غير معروف'));
+        }
+      }
+
+      async function cleanCancelledCodes() {
+        if (!confirm('هل تريد حذف وتفريغ جميع الأكواد الملغية نهائياً من قاعدة البيانات لمنع الزحمة؟')) return;
+        const res = await window.MJ.api('adminClearCancelledCodes', { adminPin: currentPin });
+        if (res && res.success) {
+          toast('✨ تم تنظيف وحذف جميع الأكواد الملغية');
+          loadOverview();
+        }
+      }
+
       async function cancelCode(code) {
-        await window.MJ.api('adminCancelCode', { adminPin: currentPin, code });
-        toast('تم إلغاء الكود');
-        loadOverview();
+        return deleteCode(code);
       }
 
       async function updateTxStatus(txId, status) {
@@ -731,19 +911,7 @@
       }
 
       function renderCodesAndTransactions() {
-        const codes = overviewData?.redeemCodes || [];
-        document.getElementById('codes-tbody').innerHTML = codes.map((c) => `
-          <tr>
-            <td class="py-2 px-2 font-mono font-bold text-emerald-400">${c.code}</td>
-            <td class="py-2 px-2">${c.email || '—'}</td>
-            <td class="py-2 px-2 font-bold text-amber-400">${c.coins}</td>
-            <td class="py-2 px-2">${c.amount_sar} ر.س</td>
-            <td class="py-2 px-2">${c.status}</td>
-            <td class="py-2 px-2">
-              ${c.status === 'unused' ? `<button onclick="AdminApp.cancelCode('${c.code}')" class="bg-rose-600/30 hover:bg-rose-600 text-rose-200 px-2 py-0.5 rounded">إلغاء الكود</button>` : '—'}
-            </td>
-          </tr>
-        `).join('');
+        renderCodesTable();
 
         const coupons = overviewData?.coupons || [];
         document.getElementById('coupons-list').innerHTML = coupons.map((c) => `
@@ -774,7 +942,7 @@
         const s = overviewData?.settings || {};
         document.getElementById('set-payment-enabled').checked = s.paymentEnabled !== false;
         const extStoreEl = document.getElementById('set-external-store-url');
-        if (extStoreEl) extStoreEl.value = s.externalStoreUrl || '';
+        if (extStoreEl) extStoreEl.value = s.externalStoreUrl || 'https://www.3dyat.com';
         document.getElementById('set-moyasar-link').value = s.moyasarPaymentLink || '';
         document.getElementById('set-moyasar-pk').value = s.moyasarPublishableKey || '';
         document.getElementById('set-moyasar-sk').value = s.moyasarSecretKey || '';
@@ -794,7 +962,7 @@
       async function saveSettings() {
         const settings = {
           paymentEnabled: document.getElementById('set-payment-enabled').checked,
-          externalStoreUrl: document.getElementById('set-external-store-url')?.value.trim() || '',
+          externalStoreUrl: document.getElementById('set-external-store-url')?.value.trim() || 'https://www.3dyat.com',
           moyasarPaymentLink: document.getElementById('set-moyasar-link').value.trim(),
           moyasarPublishableKey: document.getElementById('set-moyasar-pk').value.trim(),
           moyasarSecretKey: document.getElementById('set-moyasar-sk').value.trim(),
@@ -859,6 +1027,12 @@
         applyGenCodePreset,
         generateCode,
         copyGeneratedCodes,
+        copySingleCode,
+        deleteCode,
+        cleanCancelledCodes,
+        setCodesFilter,
+        changeCodesPage,
+        onSearchCodes,
         cancelCode,
         updateTxStatus,
         saveCoupon,

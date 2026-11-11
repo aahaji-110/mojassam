@@ -59,7 +59,7 @@ const DEFAULT_SITE_SETTINGS = {
   referralBonusCoins: 5,
   referralCommissionPercent: 20,
   paymentEnabled: true,
-  externalStoreUrl: '',
+  externalStoreUrl: 'https://www.3dyat.com',
   moyasarPublishableKey: '',
   moyasarSecretKey: '',
   moyasarPaymentLink: '',
@@ -228,7 +228,7 @@ function publicSettings(s) {
     referralBonusCoins: Number(s.referralBonusCoins || 5),
     referralCommissionPercent: Number(s.referralCommissionPercent || 20),
     paymentEnabled: s.paymentEnabled !== false,
-    externalStoreUrl: s.externalStoreUrl || '',
+    externalStoreUrl: s.externalStoreUrl || 'https://www.3dyat.com',
     moyasarPublishableKey: s.moyasarPublishableKey || '',
     moyasarPaymentLink: s.moyasarPaymentLink || '',
     paypalClientId: s.paypalClientId || '',
@@ -483,9 +483,11 @@ export default async function handler(req, res) {
       }
 
       if (action === 'adminOverview') {
+        // تنظيف وحذف أي أكواد ملغية قديمة نهائياً لمنع الزحمة في الموقع
+        await sql`DELETE FROM redeem_codes WHERE status = 'cancelled'`.catch(() => {});
         const users = await sql`SELECT * FROM users ORDER BY created_at DESC LIMIT 500`;
         const txs = await sql`SELECT * FROM transactions ORDER BY created_at DESC LIMIT 300`;
-        const codes = await sql`SELECT * FROM redeem_codes ORDER BY created_at DESC LIMIT 300`;
+        const codes = await sql`SELECT * FROM redeem_codes WHERE status != 'cancelled' ORDER BY created_at DESC LIMIT 1000`;
         const coupons = await sql`SELECT * FROM coupons ORDER BY created_at DESC`;
         const secLogs = await sql`SELECT * FROM security_logs ORDER BY created_at DESC LIMIT 100`;
         const [changedRow] = await sql`SELECT value FROM app_meta WHERE key = 'admin_pin_changed'`;
@@ -602,9 +604,14 @@ export default async function handler(req, res) {
         });
       }
 
-      if (action === 'adminCancelCode') {
-        await sql`UPDATE redeem_codes SET status = 'cancelled' WHERE code = ${body.code}`;
-        return json(200, { success: true });
+      if (action === 'adminCancelCode' || action === 'adminDeleteCode') {
+        await sql`DELETE FROM redeem_codes WHERE code = ${body.code}`;
+        return json(200, { success: true, message: 'تم حذف الكود نهائياً' });
+      }
+
+      if (action === 'adminClearCancelledCodes') {
+        await sql`DELETE FROM redeem_codes WHERE status = 'cancelled'`;
+        return json(200, { success: true, message: 'تم تنظيف وحذف جميع الأكواد الملغية' });
       }
 
       if (action === 'adminUpdateTransaction') {
@@ -835,7 +842,7 @@ export default async function handler(req, res) {
       case 'cancelPaymentOrder': {
         const { code, orderId } = body;
         if (code) {
-          await sql`UPDATE redeem_codes SET status = 'cancelled' WHERE code = ${code} AND uid = ${user.uid} AND status = 'unused'`;
+          await sql`DELETE FROM redeem_codes WHERE code = ${code} AND uid = ${user.uid} AND status = 'unused'`;
         }
         if (orderId) {
           await sql`UPDATE transactions SET status = 'cancelled' WHERE id = ${Number(orderId)} AND uid = ${user.uid}`;

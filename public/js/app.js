@@ -2020,25 +2020,18 @@ window.MJApp = (function () {
     const priceVal = pkg.priceUsd !== undefined ? pkg.priceUsd : pkg.priceSar;
     const targetStoreUrl = (pkg.storeUrl || '').trim() ||
                            (siteSettings.externalStoreUrl || '').trim() ||
-                           (siteSettings.moyasarPaymentLink || '').trim() ||
-                           (siteSettings.paypalPaymentLink || '').trim();
+                           'https://www.3dyat.com';
 
-    if (targetStoreUrl) {
-      window.open(targetStoreUrl, '_blank');
-    } else if (siteSettings.whatsappNumber) {
-      const waPhone = String(siteSettings.whatsappNumber).replace(/[^0-9]/g, '');
-      const waMsg = encodeURIComponent(`مرحباً، أرغب بشراء كود تفعيل باقة (${pkg.nameAr} - ${pkg.coins} كوينز بسعر $${priceVal}) لحسابي (${userProfile?.email || ''})`);
-      window.open(`https://wa.me/${waPhone}?text=${waMsg}`, '_blank');
-    }
+    window.open(targetStoreUrl, '_blank');
 
     const box = document.getElementById('active-order-box');
     const det = document.getElementById('active-order-details');
     if (box && det) {
       box.classList.remove('hidden');
       det.innerHTML = `
-        <div class="font-extrabold text-sky-300 text-sm mb-1">🛒 خطوة التفعيل لباقة: ${pkg.nameAr} (${pkg.coins} كوينز — $${priceVal})</div>
-        <div>1. أكمل شراء الكود من المتجر في الصفحة التي فُتحت لك الآن.</div>
-        <div>2. فور استلام الكود (بصيغة <span class="font-mono text-emerald-400 font-bold">MJ-XXXX-XXXX</span>)، الصقه في خانة <strong>تفعيل الكود الفوري</strong> بالأعلى واضغط <strong>(تفعيل الكود الآن ⚡)</strong> ليتم شحن رصيدك واشتراكك في ثانية واحدة!</div>
+        <div class="font-extrabold text-emerald-300 text-sm mb-1">🛒 جاري تحويلك لمتجر الشحن: <a href="${targetStoreUrl}" target="_blank" class="underline text-emerald-400 font-bold">${targetStoreUrl}</a></div>
+        <div>1. أكمل شراء كود باقة (${pkg.nameAr} — $${priceVal}) عبر المتجر.</div>
+        <div>2. فور استلام الكود (بصيغة <span class="font-mono text-emerald-400 font-bold">MJ-XXXX-XXXX</span>)، الصقه في خانة <strong>تفعيل الكود الفوري</strong> بالأعلى واضغط <strong>(تفعيل الكود الآن ⚡)</strong> ليتم شحن رصيدك واشتراكك فوراً!</div>
       `;
     }
 
@@ -2046,7 +2039,7 @@ window.MJApp = (function () {
     if (inlineInput) {
       inlineInput.focus();
     }
-    showToast('أكمل شراء الكود من المتجر ثم الصقه في خانة التفعيل الفوري بالأعلى!');
+    showToast('تم فتح موقع الشحن (www.3dyat.com) — بعد الشراء الصق الكود هنا للتفعيل!');
   }
 
   async function submitInlineRedeemCode() {
