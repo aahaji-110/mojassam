@@ -59,9 +59,21 @@ window.MJApp = (function () {
         } else {
           userProfile = null;
           updateUserTopBar();
+          const closeBtn = document.getElementById('auth-modal-close-btn');
+          if (closeBtn) closeBtn.classList.add('hidden');
+          openModal('auth-modal');
         }
       });
     }
+
+    // Mandatory authentication gate: enforce modal display on load if not authenticated
+    setTimeout(() => {
+      if (!userProfile && !(window.MJ && window.MJ.getCurrentUser())) {
+        const closeBtn = document.getElementById('auth-modal-close-btn');
+        if (closeBtn) closeBtn.classList.add('hidden');
+        openModal('auth-modal');
+      }
+    }, 1200);
   }
 
   function initThreeScene() {
@@ -391,6 +403,7 @@ window.MJApp = (function () {
   }
 
   function snapSelectedToBed() {
+    if (!checkAuthOrGate('تثبيت المجسم')) return;
     if (!selectedObject) {
       showToast('اختر مجسماً أولاً لتثبيته بالمغناطيس على اللوحة', true);
       return;
@@ -512,6 +525,7 @@ window.MJApp = (function () {
   }
 
   function toggleTransformPopover(mode) {
+    if (!checkAuthOrGate('تحجيم وتدوير المجسم')) return;
     const pop = document.getElementById('transform-popover');
     const rotSec = document.getElementById('popover-rotate-section');
     const scaleSec = document.getElementById('popover-scale-section');
@@ -538,6 +552,7 @@ window.MJApp = (function () {
   }
 
   function setSelectedColor(hex) {
+    if (!checkAuthOrGate('تغيير لون المجسم')) return;
     if (!selectedObject) return;
     saveUndoSnapshot();
     document.getElementById('obj-color-picker').value = hex;
@@ -551,6 +566,7 @@ window.MJApp = (function () {
   }
 
   function duplicateSelected() {
+    if (!checkAuthOrGate('نسخ وتكرار المجسم')) return;
     if (!selectedObject) return;
     const clone = selectedObject.clone(true);
     clone.position.x += 25;
@@ -560,11 +576,13 @@ window.MJApp = (function () {
   }
 
   function deleteSelected() {
+    if (!checkAuthOrGate('حذف المجسم')) return;
     if (!selectedObject) return;
     deleteObject(selectedObject);
   }
 
   function deleteObject(obj) {
+    if (!checkAuthOrGate('حذف وتعديل المجسم')) return;
     if (!obj) return;
     saveUndoSnapshot();
     if (selectedObject === obj) {
@@ -628,6 +646,7 @@ window.MJApp = (function () {
      5. New Project Confirmation ("زر جديد") & Undo / Redo (Ctrl+Z)
      ────────────────────────────────────────────────────────────── */
   function confirmNewWorkspace() {
+    if (!checkAuthOrGate('بدء مساحة عمل جديدة')) return;
     if (sceneObjects.length > 0) {
       const ok = window.confirm('هل أنت متأكد من البدء من جديد؟ سيتم مسح جميع المجسمات الحالية وفتح لوحة بناء جديدة.');
       if (!ok) return;
@@ -706,6 +725,7 @@ window.MJApp = (function () {
   function setupKeyboardShortcuts() {
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+      if (!userProfile && !(window.MJ && window.MJ.getCurrentUser())) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         undo();
@@ -722,6 +742,7 @@ window.MJApp = (function () {
      6. Uploading STL / OBJ / 3MF / SVG + Auto Multi-Plate Allocation
      ────────────────────────────────────────────────────────────── */
   async function handleFilesUpload(fileList) {
+    if (!checkAuthOrGate('رفع المجسمات')) return;
     if (!fileList || !fileList.length) return;
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
@@ -779,6 +800,7 @@ window.MJApp = (function () {
   }
 
   async function addArabicTextToScene() {
+    if (!checkAuthOrGate('إضافة النصوص العربية ثلاثية الأبعاد')) return;
     const text = document.getElementById('ar-text-input').value.trim() || 'مجسمات';
     const fontFamily = document.getElementById('ar-font-select').value || 'Cairo';
     const sizeMm = Number(document.getElementById('ar-text-size').value || 28);
@@ -847,10 +869,12 @@ window.MJApp = (function () {
   }
 
   function togglePrimitiveMenu() {
+    if (!checkAuthOrGate('إضافة مجسم هندسي')) return;
     document.getElementById('primitive-menu').classList.toggle('hidden');
   }
 
   function addPrimitive(typeId) {
+    if (!checkAuthOrGate('إضافة مجسم هندسي')) return;
     document.getElementById('primitive-menu').classList.add('hidden');
     const mode = document.getElementById('primitive-add-mode').value || 'part';
     const prevTarget = selectedObject;
@@ -880,6 +904,7 @@ window.MJApp = (function () {
   let lastStickFace = 'front';
 
   function openStickSurfaceModal() {
+    if (!checkAuthOrGate('لصق أو حفر المجسم')) return;
     if (sceneObjects.length < 2) {
       showToast('أضف مجسماً أساسياً ثم أضف نصاً عربياً أو شكلاً للصقه أو حفره على سطحه!', true);
       return;
@@ -1103,6 +1128,7 @@ window.MJApp = (function () {
   }
 
   async function buildKeychainFromTemplate(templateId) {
+    if (!checkAuthOrGate('تصميم الميداليات')) return;
     const template = window.MJCatalog.KEYCHAIN_TEMPLATES.find((t) => t.id === templateId);
     if (!template) return;
 
@@ -1148,6 +1174,7 @@ window.MJApp = (function () {
   }
 
   async function runFileConversion(addToScene = false) {
+    if (!checkAuthOrGate('تحويل الملفات')) return;
     if (!converterSelectedFile) {
       showToast('اختر ملفاً أولاً لتحويل صيغته', true);
       return;
@@ -1254,6 +1281,7 @@ window.MJApp = (function () {
   }
 
   function generate3DQR() {
+    if (!checkAuthOrGate('صناعة باركود 3D')) return;
     const primary = document.getElementById('qr-primary-input').value.trim();
     const secondary = document.getElementById('qr-secondary-input').value.trim();
     const sizeMm = Number(document.getElementById('qr-size-mm').value || 50);
@@ -1506,6 +1534,7 @@ window.MJApp = (function () {
     dom.addEventListener('pointerdown', (e) => {
       // Only left mouse button (e.button === 0) for dragging / selecting
       if (e.button !== 0) return;
+      if (!checkAuthOrGate('التحكم في الاستوديو والمجسمات')) return;
       downX = e.clientX;
       downY = e.clientY;
 
@@ -1738,6 +1767,14 @@ window.MJApp = (function () {
     updateUserTopBar();
     renderPackagesUI();
 
+    const closeBtn = document.getElementById('auth-modal-close-btn');
+    if (closeBtn) closeBtn.classList.remove('hidden');
+    const authModal = document.getElementById('auth-modal');
+    if (authModal) {
+      authModal.classList.add('hidden');
+      authModal.classList.remove('flex');
+    }
+
     if (data.referrals) {
       document.getElementById('ref-month-count').textContent = data.referrals.thisMonth;
       document.getElementById('ref-total-count').textContent = data.referrals.total;
@@ -1845,7 +1882,10 @@ window.MJApp = (function () {
     await window.MJ.signOut();
     userProfile = null;
     updateUserTopBar();
-    showToast('تم تسجيل الخروج');
+    const closeBtn = document.getElementById('auth-modal-close-btn');
+    if (closeBtn) closeBtn.classList.add('hidden');
+    openModal('auth-modal');
+    showToast('تم تسجيل الخروج. يُرجى تسجيل الدخول مجدداً للمتابعة');
   }
 
   function renderPackagesUI() {
@@ -2058,7 +2098,28 @@ window.MJApp = (function () {
     openModal('legal-modal');
   }
 
+  function checkAuthOrGate(actionName = 'المتابعة واستخدام الاستوديو') {
+    if (!userProfile && !(window.MJ && window.MJ.getCurrentUser())) {
+      const closeBtn = document.getElementById('auth-modal-close-btn');
+      if (closeBtn) closeBtn.classList.add('hidden');
+      openModal('auth-modal');
+      showToast(`🔒 يُرجى تسجيل الدخول أو إنشاء حساب أولاً لـ ${actionName}! (ستحصل فوراً على 6 كوينز مجاناً)`, true);
+      return false;
+    }
+    return true;
+  }
+
   function openModal(id) {
+    // If not authenticated, prevent opening any tool modal and redirect to auth-modal
+    if (id !== 'auth-modal' && id !== 'legal-modal') {
+      if (!userProfile && !(window.MJ && window.MJ.getCurrentUser())) {
+        const closeBtn = document.getElementById('auth-modal-close-btn');
+        if (closeBtn) closeBtn.classList.add('hidden');
+        openModal('auth-modal');
+        showToast('🔒 يجب تسجيل الدخول أو إنشاء حساب مجاني أولاً للبدء (ستحصل فوراً على 6 كوينز مجاناً)!', true);
+        return;
+      }
+    }
     const el = document.getElementById(id);
     if (el) {
       el.classList.remove('hidden');
@@ -2067,6 +2128,12 @@ window.MJApp = (function () {
   }
 
   function closeModal(id) {
+    if (id === 'auth-modal') {
+      if (!userProfile && !(window.MJ && window.MJ.getCurrentUser())) {
+        showToast('🔒 تسجيل الدخول أو إنشاء الحساب مطلوب للمتابعة واستخدام منصة مجسمات', true);
+        return;
+      }
+    }
     const el = document.getElementById(id);
     if (el) {
       el.classList.add('hidden');
