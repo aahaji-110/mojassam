@@ -59,6 +59,7 @@ const DEFAULT_SITE_SETTINGS = {
   referralBonusCoins: 5,
   referralCommissionPercent: 20,
   paymentEnabled: true,
+  externalStoreUrl: '',
   moyasarPublishableKey: '',
   moyasarSecretKey: '',
   moyasarPaymentLink: '',
@@ -227,6 +228,7 @@ function publicSettings(s) {
     referralBonusCoins: Number(s.referralBonusCoins || 5),
     referralCommissionPercent: Number(s.referralCommissionPercent || 20),
     paymentEnabled: s.paymentEnabled !== false,
+    externalStoreUrl: s.externalStoreUrl || '',
     moyasarPublishableKey: s.moyasarPublishableKey || '',
     moyasarPaymentLink: s.moyasarPaymentLink || '',
     paypalClientId: s.paypalClientId || '',
@@ -568,22 +570,36 @@ export default async function handler(req, res) {
       }
 
       if (action === 'adminGenerateCode') {
-        const code = generateActivationCode();
+        const quantity = Math.min(200, Math.max(1, Number(body.quantity || 1)));
         const coins = Number(body.coins || 20);
         const plan = body.plan || 'free';
         const durationDays = Number(body.durationDays || 0);
         const amountSar = Number(body.amountSar || 0);
         const email = String(body.email || '').trim();
+        const packageId = String(body.packageId || 'custom');
 
-        await sql`
-          INSERT INTO redeem_codes (code, email, coins, plan, duration_days, amount_sar, payment_method, status)
-          VALUES (${code}, ${email || null}, ${coins}, ${plan}, ${durationDays}, ${amountSar}, 'admin_manual', 'unused')`;
+        const generatedCodes = [];
+        for (let i = 0; i < quantity; i++) {
+          const code = generateActivationCode();
+          await sql`
+            INSERT INTO redeem_codes (code, email, package_id, coins, plan, duration_days, amount_sar, payment_method, status)
+            VALUES (${code}, ${email || null}, ${packageId}, ${coins}, ${plan}, ${durationDays}, ${amountSar}, 'external_store', 'unused')`;
+          generatedCodes.push(code);
+        }
 
         let emailResult = { sent: false };
-        if (email) {
-          emailResult = await sendActivationEmail(settings, email, code, 'باقة مخصصة', coins, amountSar);
+        if (email && generatedCodes.length === 1) {
+          emailResult = await sendActivationEmail(settings, email, generatedCodes[0], 'باقة مجسمات', coins, amountSar);
         }
-        return json(200, { success: true, data: { code, emailSent: emailResult.sent } });
+        return json(200, {
+          success: true,
+          data: {
+            code: generatedCodes[0],
+            codes: generatedCodes,
+            count: generatedCodes.length,
+            emailSent: emailResult.sent
+          }
+        });
       }
 
       if (action === 'adminCancelCode') {

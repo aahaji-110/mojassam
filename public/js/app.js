@@ -1994,8 +1994,9 @@ window.MJApp = (function () {
             <div class="text-xs text-amber-300 font-bold mb-1"><i class="fa-solid fa-coins ml-1"></i>${p.coins} كوينز (${Math.floor(p.coins / 2)} عملية تصدير)</div>
             ${validityText}
           </div>
-          <button onclick="MJApp.buyPackage('${p.id}')" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-lg text-xs transition">
-            ${p.category === 'subscription' ? 'اشترك الآن' : 'اشحن الرصيد الآن'} ($${priceVal})
+          <button onclick="MJApp.buyPackage('${p.id}')" class="mt-3 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>شراء كود الباقة ($${priceVal})</span>
           </button>
         </div>
       `;
@@ -2009,41 +2010,64 @@ window.MJApp = (function () {
     if (!window.MJ.getCurrentUser()) {
       closeModal('pricing-modal');
       openModal('auth-modal');
-      showToast('سجّل دخولك أولاً لشراء الباقة واستلام كود الشحن تلقائياً على إيميلك', true);
+      showToast('سجّل دخولك أولاً لشراء وتفعيل كود الباقة في حسابك', true);
       return;
     }
 
-    const method = document.querySelector('input[name="pay-method"]:checked')?.value || 'mada_visa';
-    const coupon = document.getElementById('checkout-coupon').value.trim();
+    const pkg = packagesList.find((p) => p.id === packageId);
+    if (!pkg) return;
 
-    if (method === 'paypal' && siteSettings.paypalPaymentLink) {
-      window.open(siteSettings.paypalPaymentLink, '_blank');
-    } else if (siteSettings.moyasarPaymentLink) {
-      window.open(siteSettings.moyasarPaymentLink, '_blank');
+    const priceVal = pkg.priceUsd !== undefined ? pkg.priceUsd : pkg.priceSar;
+    const targetStoreUrl = (pkg.storeUrl || '').trim() ||
+                           (siteSettings.externalStoreUrl || '').trim() ||
+                           (siteSettings.moyasarPaymentLink || '').trim() ||
+                           (siteSettings.paypalPaymentLink || '').trim();
+
+    if (targetStoreUrl) {
+      window.open(targetStoreUrl, '_blank');
+    } else if (siteSettings.whatsappNumber) {
+      const waPhone = String(siteSettings.whatsappNumber).replace(/[^0-9]/g, '');
+      const waMsg = encodeURIComponent(`مرحباً، أرغب بشراء كود تفعيل باقة (${pkg.nameAr} - ${pkg.coins} كوينز بسعر $${priceVal}) لحسابي (${userProfile?.email || ''})`);
+      window.open(`https://wa.me/${waPhone}?text=${waMsg}`, '_blank');
     }
 
-    const res = await window.MJ.createPaymentOrder(packageId, method, coupon);
-    if (!res.success) {
-      showToast(res.error || 'تعذر إنشاء طلب الدفع', true);
-      return;
-    }
-
-    activePaymentOrder = res.data;
     const box = document.getElementById('active-order-box');
     const det = document.getElementById('active-order-details');
-    const amt = res.data.amountUsd !== undefined ? res.data.amountUsd : res.data.amountSar;
-    box.classList.remove('hidden');
-    det.innerHTML = `
-      <div>• الباقة: <strong>${res.data.packageName}</strong> (${res.data.coins} كوينز) — المبلغ: <strong>$${amt} دولار</strong></div>
-      <div>• تم توليد وإرسال كود الشحن تلقائياً إلى بريدك: <strong class="text-emerald-300">${res.data.email}</strong></div>
-      <div class="mt-2 p-2.5 bg-[#16181c] border border-emerald-500/40 rounded-lg flex items-center justify-between">
-        <span>كود الشحن التلقائي الصادر لك: <strong class="font-mono text-emerald-400 text-sm">${res.data.activationCode}</strong></span>
-        <button onclick="MJApp.quickRedeemGenerated('${res.data.activationCode}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded font-bold">
-          تفعيل الكود الآن
-        </button>
-      </div>
-    `;
-    showToast('تم توليد كود الشحن تلقائياً وإرساله لبريدك الإلكتروني!');
+    if (box && det) {
+      box.classList.remove('hidden');
+      det.innerHTML = `
+        <div class="font-extrabold text-sky-300 text-sm mb-1">🛒 خطوة التفعيل لباقة: ${pkg.nameAr} (${pkg.coins} كوينز — $${priceVal})</div>
+        <div>1. أكمل شراء الكود من المتجر في الصفحة التي فُتحت لك الآن.</div>
+        <div>2. فور استلام الكود (بصيغة <span class="font-mono text-emerald-400 font-bold">MJ-XXXX-XXXX</span>)، الصقه في خانة <strong>تفعيل الكود الفوري</strong> بالأعلى واضغط <strong>(تفعيل الكود الآن ⚡)</strong> ليتم شحن رصيدك واشتراكك في ثانية واحدة!</div>
+      `;
+    }
+
+    const inlineInput = document.getElementById('inline-redeem-code-input');
+    if (inlineInput) {
+      inlineInput.focus();
+    }
+    showToast('أكمل شراء الكود من المتجر ثم الصقه في خانة التفعيل الفوري بالأعلى!');
+  }
+
+  async function submitInlineRedeemCode() {
+    const inp = document.getElementById('inline-redeem-code-input');
+    const code = (inp?.value || '').trim();
+    if (!code) {
+      showToast('أدخل كود التفعيل أولاً (MJ-XXXX-XXXX)', true);
+      if (inp) inp.focus();
+      return;
+    }
+    const res = await window.MJ.redeemCode(code);
+    if (!res.success) {
+      showToast(res.error || 'الكود غير صالح أو مستخدم مسبقاً', true);
+      return;
+    }
+    userProfile = res.data.profile;
+    updateUserTopBar();
+    if (inp) inp.value = '';
+    document.getElementById('active-order-box')?.classList.add('hidden');
+    closeModal('pricing-modal');
+    showToast(`🎉 تم تفعيل الكود بنجاح وإضافة ${res.data.coinsAdded} كوينز لحسابك!`);
   }
 
   function quickRedeemGenerated(code) {
@@ -2295,6 +2319,7 @@ window.MJApp = (function () {
     handleEmailAuth,
     handleLogout,
     buyPackage,
+    submitInlineRedeemCode,
     quickRedeemGenerated,
     cancelCurrentPaymentOrder,
     submitRedeemCode,

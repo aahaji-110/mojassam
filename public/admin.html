@@ -198,37 +198,68 @@
     <!-- TAB 3: PAYMENTS, REDEEM CODES & COUPONS -->
     <section id="tab-payments" class="hidden space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Generate Activation Code for Customer -->
+        <!-- Generate Activation Codes (Single or Bulk Batch for External Store like Salla / Zid / Mrrha) -->
         <div class="bg-[#1e2127] border border-[#323741] rounded-2xl p-4 space-y-3 text-xs">
-          <h3 class="text-sm font-extrabold text-emerald-400">توليد وإرسال كود شحن لعميل</h3>
-          <div class="grid grid-cols-2 gap-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-extrabold text-emerald-400">توليد أكواد الشحن والتفعيل (مفرد أو دفعة للمتجر الخارجي)</h3>
+            <span class="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold">يدعم سلة / زد / مررها</span>
+          </div>
+
+          <!-- Quick Package Preset Selector -->
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">اختر الباقة لتعبئة بياناتها تلقائياً:</label>
+            <select id="gen-code-pkg-preset" onchange="AdminApp.applyGenCodePreset(this.value)" class="w-full bg-[#141619] border border-emerald-500/40 rounded-xl px-3 py-2 text-emerald-300 font-bold">
+              <option value="coins_10">رصيد 10 كوينز ($3) — بدون انتهاء</option>
+              <option value="coins_30">رصيد 30 كوينز ($8) — بدون انتهاء</option>
+              <option value="coins_50" selected>رصيد 50 كوينز ($10) — بدون انتهاء</option>
+              <option value="sub_monthly">اشتراك شهري 100 كوينز ($20) — 30 يوم</option>
+              <option value="sub_yearly">اشتراك سنوي 500 كوينز ($80) — 365 يوم</option>
+              <option value="custom">مخصص (تحديد يدوي)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <div>
-              <label class="block text-gray-400 mb-1">عدد الكوينز</label>
-              <input id="gen-code-coins" type="number" value="50" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+              <label class="block text-gray-400 mb-1">عدد الأكواد المطلوب توليدها</label>
+              <input id="gen-code-qty" type="number" value="10" min="1" max="200" class="w-full bg-[#141619] border border-amber-500/50 rounded-xl px-3 py-2 text-amber-300 font-extrabold" />
             </div>
             <div>
-              <label class="block text-gray-400 mb-1">المبلغ المدفوع ($ دولار)</label>
-              <input id="gen-code-amount" type="number" value="10" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+              <label class="block text-gray-400 mb-1">عدد الكوينز لكل كود</label>
+              <input id="gen-code-coins" type="number" value="50" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white font-bold" />
+            </div>
+            <div>
+              <label class="block text-gray-400 mb-1">السعر ($ دولار)</label>
+              <input id="gen-code-amount" type="number" value="10" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white font-bold" />
             </div>
             <div>
               <label class="block text-gray-400 mb-1">الباقة المرفقة</label>
               <select id="gen-code-plan" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white">
-                <option value="free">كوينز فقط</option>
+                <option value="free">كوينز فقط (بدون انتهاء)</option>
                 <option value="daily">اشتراك يومي (1 يوم)</option>
                 <option value="weekly">اشتراك أسبوعي (7 أيام)</option>
                 <option value="monthly">اشتراك شهري (30 يوم)</option>
                 <option value="yearly">اشتراك سنوي (365 يوم)</option>
               </select>
             </div>
-            <div>
-              <label class="block text-gray-400 mb-1">إيميل العميل (لإرسال الكود)</label>
-              <input id="gen-code-email" type="email" dir="ltr" placeholder="customer@mail.com" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
+            <div class="col-span-2">
+              <label class="block text-gray-400 mb-1">إيميل العميل (اختياري - عند توليد كود واحد فقط)</label>
+              <input id="gen-code-email" type="email" dir="ltr" placeholder="اتركه فارغاً عند توليد دفعة أكواد للمتجر الخارجي" class="w-full bg-[#141619] border border-[#363b46] rounded-xl px-3 py-2 text-white" />
             </div>
           </div>
-          <button onclick="AdminApp.generateCode()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl">
-            توليد كود التفعيل وإرساله بالإيميل
+
+          <button onclick="AdminApp.generateCode()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl shadow-lg">
+            ⚡ توليد الأكواد الآن
           </button>
-          <div id="generated-code-display" class="hidden bg-[#141619] border border-emerald-500/40 rounded-xl p-2.5 text-center font-mono text-base font-extrabold text-emerald-400"></div>
+
+          <div id="generated-code-display" class="hidden bg-[#141619] border border-emerald-500/40 rounded-xl p-3 space-y-2">
+            <div class="flex items-center justify-between">
+              <span id="generated-code-title" class="text-emerald-400 font-extrabold text-xs">الأكواد الصادرة (جاهزة للنسخ واللصق في متجرك):</span>
+              <button type="button" onclick="AdminApp.copyGeneratedCodes()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg font-extrabold text-[11px]">
+                📋 نسخ جميع الأكواد
+              </button>
+            </div>
+            <textarea id="generated-codes-textarea" readonly rows="5" dir="ltr" class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg p-2 font-mono text-sm font-bold text-emerald-300"></textarea>
+          </div>
         </div>
 
         <!-- Discount Coupons Manager -->
@@ -296,6 +327,15 @@
             <input id="set-payment-enabled" type="checkbox" checked class="accent-emerald-500 w-4 h-4" />
             <span class="font-extrabold text-white">تفعيل استقبال المدفوعات في الموقع</span>
           </label>
+        </div>
+
+        <div class="bg-emerald-950/30 border border-emerald-500/40 rounded-xl p-4 space-y-2">
+          <div class="font-extrabold text-emerald-400 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-store"></i>
+            <span>رابط المتجر الخارجي لبيع الأكواد (سلة Salla / زد Zid / مررها Mrrha / Paylink) — يعمل بوثيقة العمل الحر ⭐</span>
+          </div>
+          <p class="text-gray-300 text-[11px]">ضع رابط متجرك الخارجي هنا ليتم تحويل العميل إليه لشراء كود الباقة، أو يمكنك وضع رابط مخصص لكل باقة من تبويب (الباقات والأسعار):</p>
+          <input id="set-external-store-url" type="text" dir="ltr" placeholder="https://salla.sa/your-store أو رابط متجر الأكواد..." class="w-full bg-[#141619] border border-emerald-500/50 rounded-lg px-3 py-2 text-white font-bold" />
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -564,18 +604,24 @@
         const pkgs = overviewData?.packages || [];
         const wrap = document.getElementById('admin-packages-editor');
         wrap.innerHTML = pkgs.map((p, idx) => `
-          <div class="bg-[#141619] border border-[#363b46] rounded-xl p-3.5 grid grid-cols-3 gap-2 items-center">
-            <div>
-              <label class="text-[10px] text-gray-400 block">اسم الباقة</label>
-              <input type="text" data-pkg-idx="${idx}" data-field="nameAr" value="${p.nameAr}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-white font-bold" />
+          <div class="bg-[#141619] border border-[#363b46] rounded-xl p-3.5 space-y-2">
+            <div class="grid grid-cols-3 gap-2 items-center">
+              <div>
+                <label class="text-[10px] text-gray-400 block">اسم الباقة</label>
+                <input type="text" data-pkg-idx="${idx}" data-field="nameAr" value="${p.nameAr}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-white font-bold" />
+              </div>
+              <div>
+                <label class="text-[10px] text-amber-400 block">عدد الكوينز</label>
+                <input type="number" data-pkg-idx="${idx}" data-field="coins" value="${p.coins}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-amber-300 font-bold" />
+              </div>
+              <div>
+                <label class="text-[10px] text-emerald-400 block">السعر بالدولار ($ USD)</label>
+                <input type="number" data-pkg-idx="${idx}" data-field="priceUsd" value="${p.priceUsd !== undefined ? p.priceUsd : p.priceSar}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-emerald-300 font-bold" />
+              </div>
             </div>
             <div>
-              <label class="text-[10px] text-amber-400 block">عدد الكوينز</label>
-              <input type="number" data-pkg-idx="${idx}" data-field="coins" value="${p.coins}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-amber-300 font-bold" />
-            </div>
-            <div>
-              <label class="text-[10px] text-emerald-400 block">السعر بالدولار ($ USD)</label>
-              <input type="number" data-pkg-idx="${idx}" data-field="priceUsd" value="${p.priceUsd !== undefined ? p.priceUsd : p.priceSar}" class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-emerald-300 font-bold" />
+              <label class="text-[10px] text-sky-400 block">رابط شراء كود هذه الباقة في متجرك الخارجي (سلة / زد / مررها - اختياري):</label>
+              <input type="text" dir="ltr" data-pkg-idx="${idx}" data-field="storeUrl" value="${p.storeUrl || ''}" placeholder="https://salla.sa/your-store/product-link..." class="w-full bg-[#1e2127] border border-[#363b46] rounded px-2 py-1 text-sky-200 font-mono text-[11px]" />
             </div>
           </div>
         `).join('');
@@ -589,6 +635,8 @@
           if (pkgs[i]) {
             if (f === 'nameAr') {
               pkgs[i].nameAr = inp.value;
+            } else if (f === 'storeUrl') {
+              pkgs[i].storeUrl = inp.value.trim();
             } else if (f === 'priceUsd') {
               pkgs[i].priceUsd = Number(inp.value);
               pkgs[i].priceSar = Number(inp.value);
@@ -598,10 +646,27 @@
           }
         });
         const res = await window.MJ.api('adminSavePackages', { adminPin: currentPin, packages: pkgs });
-        if (res.success) toast('تم حفظ واعتماد جميع أسعار الباقات بالدولار في الموقع!');
+        if (res.success) toast('تم حفظ واعتماد جميع أسعار الباقات وروابط المتجر الخارجي!');
+      }
+
+      function applyGenCodePreset(presetId) {
+        const presets = {
+          coins_10: { coins: 10, price: 3, plan: 'free' },
+          coins_30: { coins: 30, price: 8, plan: 'free' },
+          coins_50: { coins: 50, price: 10, plan: 'free' },
+          sub_monthly: { coins: 100, price: 20, plan: 'monthly' },
+          sub_yearly: { coins: 500, price: 80, plan: 'yearly' }
+        };
+        const p = presets[presetId];
+        if (!p) return;
+        document.getElementById('gen-code-coins').value = p.coins;
+        document.getElementById('gen-code-amount').value = p.price;
+        document.getElementById('gen-code-plan').value = p.plan;
       }
 
       async function generateCode() {
+        const quantity = Math.min(200, Math.max(1, Number(document.getElementById('gen-code-qty')?.value || 1)));
+        const packageId = document.getElementById('gen-code-pkg-preset')?.value || 'custom';
         const coins = Number(document.getElementById('gen-code-coins').value || 20);
         const amountSar = Number(document.getElementById('gen-code-amount').value || 0);
         const plan = document.getElementById('gen-code-plan').value;
@@ -609,6 +674,8 @@
         const durMap = { free: 0, daily: 1, weekly: 7, monthly: 30, yearly: 365 };
         const res = await window.MJ.api('adminGenerateCode', {
           adminPin: currentPin,
+          quantity,
+          packageId,
           coins,
           amountSar,
           plan,
@@ -617,11 +684,22 @@
         });
         if (res.success) {
           const box = document.getElementById('generated-code-display');
+          const title = document.getElementById('generated-code-title');
+          const ta = document.getElementById('generated-codes-textarea');
+          const codesList = res.data.codes || [res.data.code];
           box.classList.remove('hidden');
-          box.textContent = `الكود الصادر: ${res.data.code} ${res.data.emailSent ? '(تم الإرسال للإيميل ✔)' : ''}`;
-          toast('تم إصدار كود التفعيل بنجاح');
+          title.textContent = `تم إصدار ${codesList.length} كود تفعيل بنجاح ${res.data.emailSent ? '(وتم الإرسال للإيميل ✔)' : '(انسخها والصقها في متجرك الخارجي)'}:`;
+          ta.value = codesList.join('\n');
+          toast(`تم توليد ${codesList.length} كود تفعيل بنجاح!`);
           loadOverview();
         }
+      }
+
+      function copyGeneratedCodes() {
+        const ta = document.getElementById('generated-codes-textarea');
+        if (!ta || !ta.value) return;
+        navigator.clipboard.writeText(ta.value);
+        toast('📋 تم نسخ جميع الأكواد للحافظة! يمكنك لصقها مباشرة في متجر سلة / زد / مررها');
       }
 
       async function cancelCode(code) {
@@ -695,6 +773,8 @@
       function populateSettingsFields() {
         const s = overviewData?.settings || {};
         document.getElementById('set-payment-enabled').checked = s.paymentEnabled !== false;
+        const extStoreEl = document.getElementById('set-external-store-url');
+        if (extStoreEl) extStoreEl.value = s.externalStoreUrl || '';
         document.getElementById('set-moyasar-link').value = s.moyasarPaymentLink || '';
         document.getElementById('set-moyasar-pk').value = s.moyasarPublishableKey || '';
         document.getElementById('set-moyasar-sk').value = s.moyasarSecretKey || '';
@@ -714,6 +794,7 @@
       async function saveSettings() {
         const settings = {
           paymentEnabled: document.getElementById('set-payment-enabled').checked,
+          externalStoreUrl: document.getElementById('set-external-store-url')?.value.trim() || '',
           moyasarPaymentLink: document.getElementById('set-moyasar-link').value.trim(),
           moyasarPublishableKey: document.getElementById('set-moyasar-pk').value.trim(),
           moyasarSecretKey: document.getElementById('set-moyasar-sk').value.trim(),
@@ -775,7 +856,9 @@
         cancelAndRefundUser,
         deleteUser,
         savePackages,
+        applyGenCodePreset,
         generateCode,
+        copyGeneratedCodes,
         cancelCode,
         updateTxStatus,
         saveCoupon,

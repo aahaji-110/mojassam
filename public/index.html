@@ -1301,103 +1301,79 @@
     </div>
   </div>
 
-  <!-- MODAL 9: Pricing, Packages (Coins Never Expire + Monthly / Yearly Subscriptions) & Multi-Gateway Checkout -->
+  <!-- MODAL 9: Pricing, Packages (Coins Never Expire + Monthly / Yearly Subscriptions) & External Store Code Redemption -->
   <div id="pricing-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-[#23262b] border border-[#3e4450] rounded-2xl max-w-4xl w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
         <div>
           <h3 class="text-lg font-extrabold text-white flex items-center gap-2">
             <i class="fa-solid fa-gem text-emerald-400"></i>
-            <span>باقات شحن الرصيد (بدون تاريخ انتهاء) والاشتراكات (شهري / سنوي)</span>
+            <span>باقات شحن الكوينز والاشتراكات + تفعيل الأكواد الفوري</span>
           </h3>
-          <p class="text-xs text-gray-400 mt-0.5">التصدير الواحد = 2 كوينز • بمجرد الدفع يتم توليد وإرسال كود الشحن لبريدك الإلكتروني تلقائياً فوراً</p>
+          <p class="text-xs text-gray-400 mt-0.5">التصدير الواحد = 2 كوينز • اشترِ كود الباقة من المتجر ثم أدخل الكود بالأسفل ليتفعل اشتراكك ورصيدك فوراً!</p>
         </div>
         <button onclick="MJApp.closeModal('pricing-modal')" class="text-gray-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Instant Code Redemption Box right inside Pricing Modal -->
+      <div id="inline-redeem-box" class="mb-5 bg-emerald-950/35 border-2 border-emerald-500/50 rounded-2xl p-4">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="text-xs">
+            <div class="font-extrabold text-emerald-300 text-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-bolt text-amber-400"></i>
+              <span>لديك كود تفعيل اشتريته من المتجر؟ أدخله هنا للتفعيل الفوري:</span>
+            </div>
+            <div id="inline-redeem-hint" class="text-gray-300 text-[11px] mt-0.5">بمجرد إدخال الكود والضغط على تفعيل، ينزل الرصيد أو الاشتراك في حسابك خلال ثانية واحدة!</div>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <input id="inline-redeem-code-input" type="text" dir="ltr" placeholder="MJ-XXXX-XXXX" class="w-full sm:w-48 bg-[#1b1d21] border border-emerald-500/60 rounded-xl px-3 py-2 text-center font-mono text-sm font-extrabold text-emerald-400 tracking-wider uppercase outline-none" />
+            <button onclick="MJApp.submitInlineRedeemCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-4 py-2 rounded-xl text-xs whitespace-nowrap shadow-lg">
+              تفعيل الكود الآن ⚡
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Coin Packs Row (10 Coins = $3, 30 Coins = $8, 50 Coins = $10 — Never Expire!) -->
       <div class="mb-5">
         <div class="text-xs font-extrabold text-amber-400 mb-2 flex items-center gap-1.5">
           <i class="fa-solid fa-coins"></i>
-          <span>باقات شحن الرصيد المباشر (بدون تاريخ انتهاء — تبقى في حسابك دائماً):</span>
+          <span>1. اختر باقة شحن الرصيد لشراء كودها (بدون تاريخ انتهاء — تبقى في حسابك دائماً):</span>
         </div>
         <div id="packages-coins-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
       </div>
 
       <!-- Subscriptions Row (Monthly 100 Coins = $20, Yearly 500 Coins = $80) -->
-      <div class="mb-5">
+      <div class="mb-4">
         <div class="text-xs font-extrabold text-emerald-400 mb-2 flex items-center gap-1.5">
           <i class="fa-solid fa-calendar-check"></i>
-          <span>باقات الاشتراك المتجدد (اشتراك شهري 100 كوينز بـ 20$ • اشتراك سنوي 500 كوينز بـ 80$):</span>
+          <span>2. أو اختر باقة الاشتراك لشراء كودها (اشتراك شهري 100 كوينز • اشتراك سنوي 500 كوينز):</span>
         </div>
         <div id="packages-sub-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
       </div>
 
-      <!-- Payment Methods & Coupon Section -->
-      <div class="bg-[#1b1d21] border border-[#383d47] rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-        <div>
-          <label class="block text-gray-300 font-bold mb-1.5">اختر وسيلة الدفع (إرسال تلقائي لكود الشحن للإيميل بمجرد الدفع):</label>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="bg-[#23262b] border border-emerald-500/50 rounded-lg p-2.5 flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="pay-method" value="mada_visa" checked class="accent-emerald-500" />
-              <span>مدى / Visa / MasterCard</span>
-            </label>
-            <label class="bg-[#23262b] border border-[#3c424d] rounded-lg p-2.5 flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="pay-method" value="apple_pay" class="accent-emerald-500" />
-              <span><i class="fa-brands fa-apple ml-1"></i>Apple Pay</span>
-            </label>
-            <label class="bg-[#23262b] border border-[#3c424d] rounded-lg p-2.5 flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="pay-method" value="paypal" class="accent-emerald-500" />
-              <span><i class="fa-brands fa-paypal text-sky-400 ml-1"></i>PayPal دولي</span>
-            </label>
-            <label class="bg-[#23262b] border border-[#3c424d] rounded-lg p-2.5 flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="pay-method" value="stc_pay" class="accent-emerald-500" />
-              <span>STC Pay / تحويل</span>
-            </label>
-          </div>
-        </div>
-        <div class="flex flex-col justify-between">
-          <div>
-            <label class="block text-gray-300 font-bold mb-1">هل لديك كود خصم؟</label>
-            <input id="checkout-coupon" type="text" dir="ltr" placeholder="COUPON..." class="w-full bg-[#23262b] border border-[#3c424d] rounded-lg px-3 py-2 text-white uppercase" />
-          </div>
-          <div class="flex items-center justify-between mt-3 pt-2 border-t border-[#343942]">
-            <button onclick="MJApp.openModal('redeem-modal')" class="text-emerald-400 hover:underline font-bold">
-              <i class="fa-solid fa-key ml-1"></i>لدي كود تفعيل جاهز من الإيميل
-            </button>
-            <span class="text-[11px] text-amber-300">إرسال كود تلقائي للإيميل</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Order / Cancel Payment Box (Appears immediately when an order is created) -->
-      <div id="active-order-box" class="hidden mt-4 bg-emerald-950/40 border border-emerald-500/50 rounded-xl p-4 text-xs space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="font-extrabold text-emerald-300 text-sm">تم توليد كود الشحن تلقائياً وإرساله لبريدك الإلكتروني!</span>
-          <button onclick="MJApp.cancelCurrentPaymentOrder()" class="bg-rose-600/30 hover:bg-rose-600 text-rose-200 px-3 py-1 rounded-lg font-bold">
-            إلغاء عملية الدفع
-          </button>
-        </div>
+      <!-- Active Store Redirect Notice -->
+      <div id="active-order-box" class="hidden mt-3 bg-sky-950/40 border border-sky-500/50 rounded-xl p-4 text-xs space-y-2">
         <div id="active-order-details" class="text-gray-200"></div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 10: Redeem Activation Code ("تفعيل كود الشحن المرسل للإيميل") -->
+  <!-- MODAL 10: Redeem Activation Code ("تفعيل كود الشحن") -->
   <div id="redeem-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-[#23262b] border border-emerald-500/50 rounded-2xl max-w-md w-full p-5 shadow-2xl">
       <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
         <h3 class="text-base font-extrabold text-white flex items-center gap-2">
           <i class="fa-solid fa-ticket text-emerald-400"></i>
-          <span>تفعيل كود شحن الرصيد</span>
+          <span>تفعيل كود الاشتراك أو شحن الرصيد</span>
         </h3>
         <button onclick="MJApp.closeModal('redeem-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="space-y-3.5 text-xs">
-        <p class="text-gray-300">أدخل الكود الذي وصلك على البريد الإلكتروني بعد عملية الدفع ليتم شحن حسابك بالكوينز والباقة فوراً:</p>
+        <p class="text-gray-300">أدخل الكود الذي حصلت عليه من المتجر بعد عملية الشراء ليتم تفعيل اشتراكك وإضافة الكوينز لحسابك فوراً:</p>
         <input id="redeem-code-input" type="text" dir="ltr" placeholder="MJ-XXXX-XXXX" class="w-full bg-[#1b1d21] border-2 border-emerald-500/50 rounded-xl px-4 py-3 text-center font-mono text-lg font-extrabold text-emerald-400 tracking-widest uppercase outline-none" />
         <button onclick="MJApp.submitRedeemCode()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl shadow-lg">
-          تفعيل الكود وإضافة الرصيد الآن
+          تفعيل الكود وإضافة الرصيد الآن ⚡
         </button>
       </div>
     </div>
