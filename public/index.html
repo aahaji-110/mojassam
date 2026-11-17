@@ -285,11 +285,69 @@
         <span data-i18n="arabicTextBtn">نص عربي</span>
       </button>
 
-      <!-- 4b. Dual-Name 3D Sculpture Maker ("مجسم الأسماء" - الاسم بالعربي والاسم بالإنجليزي) -->
-      <button onclick="MJApp.openDualNameModal()" class="tool-btn !border-rose-500/50 bg-rose-500/10 hover:bg-rose-500/20" title="مجسم الأسماء: صناعة مجسم الاسم بالعربي مع الكشيدة والاسم بالإنجليزي البارز (نفس التحف المكتبية)">
-        <i class="fa-solid fa-signature !text-rose-400"></i>
-        <span data-i18n="dualNameBtn" class="text-rose-300 font-extrabold">مجسم الأسماء</span>
-      </button>
+      <!-- 4b. Unified Design Tools Menu ("أدوات التصميم: كيبل تاق، اللوحة السعودية، ميدالية المفاتيح، QR Code، مجسم الأسماء") -->
+      <div class="relative" id="design-tools-dropdown-wrap">
+        <button onclick="MJApp.toggleDesignToolsMenu()" class="tool-btn !border-emerald-500/60 bg-emerald-500/15 hover:bg-emerald-500/25" title="أدوات التصميم الذكية (كيبل تاق، لوحة سيارة سعودية، ميدالية المفاتيح، QR Code، مجسم الأسماء)">
+          <i class="fa-solid fa-toolbox !text-emerald-400"></i>
+          <span class="font-extrabold text-emerald-300">أدوات التصميم</span>
+          <i class="fa-solid fa-chevron-down text-[9px] text-emerald-300 mr-0.5"></i>
+        </button>
+        <div id="design-tools-menu" class="primitive-menu hidden absolute top-full mt-1.5 right-0 w-72 py-2 z-50 rounded-xl shadow-2xl border border-[#3c424d] bg-[#23262b]">
+          <div class="px-3.5 py-1.5 text-[11px] font-extrabold text-gray-400 border-b border-[#383d47] mb-1">
+            اختر أداة التصميم لبدء الإنشاء:
+          </div>
+
+          <button onclick="MJApp.closeDesignToolsMenu(); MJApp.openCableTagModal()" class="w-full px-3.5 py-2.5 text-right hover:bg-[#2f333a] transition flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-plug-circle-bolt text-cyan-400 text-sm"></i>
+            </span>
+            <span class="flex flex-col">
+              <span class="text-xs font-extrabold text-white">كيبل تاق (Cable Tag)</span>
+              <span class="text-[10px] text-gray-400">تاق للأسلاك والشواحن كبس بدون غراء</span>
+            </span>
+          </button>
+
+          <button onclick="MJApp.closeDesignToolsMenu(); MJApp.openSaudiPlateModal()" class="w-full px-3.5 py-2.5 text-right hover:bg-[#2f333a] transition flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-car-side text-emerald-400 text-sm"></i>
+            </span>
+            <span class="flex flex-col">
+              <span class="text-xs font-extrabold text-white">لوحة سيارة سعودية</span>
+              <span class="text-[10px] text-gray-400">لوحة طويلة ومربعة بخط المرور السعودي</span>
+            </span>
+          </button>
+
+          <button onclick="MJApp.closeDesignToolsMenu(); MJApp.openModal('keychain-modal')" class="w-full px-3.5 py-2.5 text-right hover:bg-[#2f333a] transition flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-pink-500/15 border border-pink-500/30 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-key text-pink-400 text-sm"></i>
+            </span>
+            <span class="flex flex-col">
+              <span class="text-xs font-extrabold text-white">ميدالية المفاتيح</span>
+              <span class="text-[10px] text-gray-400">صانع الميداليات وتاق الشنط بالاسم</span>
+            </span>
+          </button>
+
+          <button onclick="MJApp.closeDesignToolsMenu(); MJApp.openModal('qr-modal')" class="w-full px-3.5 py-2.5 text-right hover:bg-[#2f333a] transition flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-qrcode text-purple-400 text-sm"></i>
+            </span>
+            <span class="flex flex-col">
+              <span class="text-xs font-extrabold text-white">QR Code ثلاثي الأبعاد</span>
+              <span class="text-[10px] text-gray-400">باركود 3D للروابط والواي فاي والواتساب</span>
+            </span>
+          </button>
+
+          <button onclick="MJApp.closeDesignToolsMenu(); MJApp.openDualNameModal()" class="w-full px-3.5 py-2.5 text-right hover:bg-[#2f333a] transition flex items-center gap-3">
+            <span class="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-signature text-rose-400 text-sm"></i>
+            </span>
+            <span class="flex flex-col">
+              <span class="text-xs font-extrabold text-white">مجسم الأسماء</span>
+              <span class="text-[10px] text-gray-400">اسم عربي بالكشيدة + إنجليزي بارز</span>
+            </span>
+          </button>
+        </div>
+      </div>
 
       <!-- 5. Add Primitive / Calibration Shape (Dropdown matching uploaded image) -->
       <div class="relative" id="primitive-dropdown-wrap">
@@ -321,34 +379,10 @@
         <span data-i18n="stickSurfaceBtn">لصق / حفر بالسطح</span>
       </button>
 
-      <!-- 7. Keychain, Charger Tag & Bag Tag Maker -->
-      <button onclick="MJApp.openModal('keychain-modal')" class="tool-btn" title="صانع الميداليات وتاق الشاحن وتاق الشنطة بالعربي">
-        <i class="fa-solid fa-key !text-pink-400"></i>
-        <span data-i18n="keychainBtn">ميدالية / تاق</span>
-      </button>
-
-      <!-- 7b. Snap-Fit Cable Tag Maker ("كيبل تاق كبس بدون غراء") -->
-      <button onclick="MJApp.openCableTagModal()" class="tool-btn !border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20" title="صانع الكيبل تاق: تاق يركب على أسلاك الشواحن والكيابل بالكبس بدون غراء">
-        <i class="fa-solid fa-plug-circle-bolt !text-cyan-400"></i>
-        <span data-i18n="cableTagBtn">كيبل تاق</span>
-      </button>
-
-      <!-- 7c. Saudi License Plate Maker ("لوحة سيارة سعودية - طويلة ومربعة") -->
-      <button onclick="MJApp.openSaudiPlateModal()" class="tool-btn !border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20" title="صانع لوحة سيارة سعودية (طويلة أو مربعة) بخط المرور السعودي">
-        <i class="fa-solid fa-car-side !text-emerald-400"></i>
-        <span data-i18n="saudiPlateBtn">لوحة سيارة سعودية</span>
-      </button>
-
       <!-- 8. Universal File Format Converter (PNG <-> SVG <-> STL <-> OBJ <-> 3MF) -->
       <button onclick="MJApp.openModal('converter-modal')" class="tool-btn" title="تحويل صيغ الملفات (PNG إلى SVG وإلى STL/OBJ/3MF)">
         <i class="fa-solid fa-repeat !text-sky-400"></i>
         <span data-i18n="converterBtn">تحويل الصيغ</span>
-      </button>
-
-      <!-- 9. 3D QR Code Generator -->
-      <button onclick="MJApp.openModal('qr-modal')" class="tool-btn" title="صانع باركود QR ثلاثي الأبعاد (رابط، واتساب، واي فاي، نص)">
-        <i class="fa-solid fa-qrcode !text-purple-400"></i>
-        <span data-i18n="qrBtn">QR ثلاثي الأبعاد</span>
       </button>
 
       <div class="h-6 w-[1px] bg-[#383d47] mx-0.5"></div>

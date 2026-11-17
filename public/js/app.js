@@ -1155,8 +1155,25 @@ window.MJApp = (function () {
       `).join('');
   }
 
+  function toggleDesignToolsMenu() {
+    document.getElementById('primitive-menu')?.classList.add('hidden');
+    document.getElementById('design-tools-menu')?.classList.toggle('hidden');
+  }
+
+  function closeDesignToolsMenu() {
+    document.getElementById('design-tools-menu')?.classList.add('hidden');
+  }
+
+  document.addEventListener('click', (e) => {
+    const dtWrap = document.getElementById('design-tools-dropdown-wrap');
+    if (dtWrap && !dtWrap.contains(e.target)) {
+      closeDesignToolsMenu();
+    }
+  });
+
   function togglePrimitiveMenu() {
     if (!checkAuthOrGate('إضافة مجسم هندسي')) return;
+    closeDesignToolsMenu();
     document.getElementById('primitive-menu').classList.toggle('hidden');
   }
 
@@ -2483,6 +2500,8 @@ window.MJApp = (function () {
     appendSaudiQuickLetter,
     renderSaudiPlatePreview,
     generateSaudiPlate,
+    toggleDesignToolsMenu,
+    closeDesignToolsMenu,
     togglePrimitiveMenu,
     addPrimitive,
     openStickSurfaceModal,
