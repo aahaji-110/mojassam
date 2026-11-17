@@ -267,8 +267,14 @@
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-center">
               <textarea id="generated-codes-textarea" readonly rows="5" dir="ltr" class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg p-2 font-mono text-sm font-bold text-emerald-300"></textarea>
-              <div class="flex flex-col items-center justify-center bg-[#1e2127] border border-[#363b46] rounded-lg p-2">
-                <span class="text-[10px] text-gray-400 mb-1">معاينة بطاقة الكود للمتجر:</span>
+              <div class="flex flex-col items-center justify-center bg-[#1e2127] border border-[#363b46] rounded-lg p-2 space-y-1.5">
+                <div class="flex items-center justify-between w-full gap-1">
+                  <span class="text-[10px] text-gray-400">معاينة البطاقة:</span>
+                  <select id="card-display-mode" onchange="AdminApp.refreshGeneratedCardPreview()" class="bg-[#141619] border border-[#363b46] rounded px-1.5 py-0.5 text-[10px] text-emerald-300 font-bold">
+                    <option value="store" selected>صورة عرض للمتجر (بدون كود — آمنة)</option>
+                    <option value="private">صورة تسليم للعميل (مع الكود)</option>
+                  </select>
+                </div>
                 <img id="generated-card-preview" alt="معاينة بطاقة الكود" class="w-full max-w-[230px] rounded-lg border border-emerald-500/30 shadow-md" />
               </div>
             </div>
@@ -374,6 +380,49 @@
           </div>
           <p class="text-gray-300 text-[11px]">ضع رابط متجرك الخارجي هنا ليتم تحويل العميل إليه لشراء كود الباقة، أو يمكنك وضع رابط مخصص لكل باقة من تبويب (الباقات والأسعار):</p>
           <input id="set-external-store-url" type="text" dir="ltr" placeholder="https://www.3dyat.com" class="w-full bg-[#141619] border border-emerald-500/50 rounded-lg px-3 py-2 text-white font-bold" />
+        </div>
+
+        <!-- Automatic Salla Store Webhook Integration (3dyat.com -> Mojassamat) -->
+        <div class="bg-sky-950/30 border border-sky-500/40 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="font-extrabold text-sky-400 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-amber-400"></i>
+              <span>الربط التلقائي مع متجر سلة (3dyat.com Webhook) — إصدار وإرسال الكود آلياً عند الدفع ⚡</span>
+            </div>
+            <button type="button" onclick="AdminApp.testSallaWebhook()" class="bg-sky-600 hover:bg-sky-500 text-white font-extrabold px-3 py-1.5 rounded-lg text-[11px] flex items-center gap-1.5 shadow">
+              <i class="fa-solid fa-flask"></i>
+              <span>اختبار الربط التلقائي الآن</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-gray-300 font-bold mb-1">رابط الـ Webhook (انسخه والصقه في سلة أو Make/Zapier):</label>
+              <div class="flex items-center gap-1.5">
+                <input id="salla-webhook-url-preview" type="text" readonly dir="ltr" class="flex-1 bg-[#141619] border border-sky-500/40 rounded-lg px-3 py-2 text-sky-300 font-mono text-[11px]" />
+                <button type="button" onclick="AdminApp.copySallaWebhookUrl()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-extrabold text-[11px] whitespace-nowrap">
+                  📋 نسخ
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-gray-300 font-bold mb-1">مفتاح الحماية السري (Webhook Secret Token):</label>
+              <div class="flex items-center gap-1.5">
+                <input id="set-salla-webhook-secret" oninput="AdminApp.updateSallaWebhookUrlPreview()" type="text" dir="ltr" placeholder="MJ-SALLA-9824-SECURE" class="flex-1 bg-[#141619] border border-[#363b46] rounded-lg px-3 py-2 text-white font-mono text-[11px]" />
+                <button type="button" onclick="AdminApp.regenerateSallaSecret()" class="bg-[#23262b] hover:bg-[#323741] text-gray-200 border border-[#363b46] px-2.5 py-2 rounded-lg text-[11px] font-bold whitespace-nowrap">
+                  توليد
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-[#141619] border border-[#2f3540] rounded-lg p-3 text-[11px] text-gray-300 space-y-1 leading-relaxed">
+            <div class="font-extrabold text-amber-300">طريقة تفعيل الإرسال التلقائي في متجر سلة (3dyat.com):</div>
+            <div>1. افتح لوحة تحكم سلة ⬅️ <strong>التطبيقات / Webhooks</strong> (أو عبر <strong>Make / Zapier</strong>).</div>
+            <div>2. أضف Webhook جديد والصق الرابط بالأعلى، واختر حدث: <strong>تحديث حالة الطلب / الدفع (order.updated / order.payment.updated)</strong>.</div>
+            <div>3. في منتجات الباقات بمتجرك، اجعل رمز المنتج (SKU) مطابقاً لـ: <span class="font-mono text-emerald-400">coins_10, coins_30, coins_50, sub_monthly, sub_yearly</span> (أو اكتب عدد الكوينز في اسم المنتج مثل "50 كوينز").</div>
+            <div class="text-emerald-400 font-bold">✔ بمجرد إتمام العميل للدفع في سلة، يولّد موقع مجسمات كود التفعيل ويرسله فوراً لإيميل العميل (تأكد من وضع مفتاح Resend بالأسفل)!</div>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -732,7 +781,7 @@
         return priceNum > 0 ? `${baseTxt}  •  قيمة البطاقة: $${priceNum}` : baseTxt;
       }
 
-      async function renderCodeCardData(code, coins, plan, amount) {
+      async function renderCodeCardData(code, coins, plan, amount, displayMode = 'private') {
         const bg = await loadCardBgImage();
         if (document.fonts && document.fonts.ready) {
           try { await document.fonts.ready; } catch (e) {}
@@ -756,7 +805,7 @@
         ctx.fillStyle = '#6ee7b7';
         ctx.fillText(label, W / 2, H * 0.408);
 
-        // 3. Subtle pill box behind the activation code
+        // 3. Subtle pill box in center
         const pillW = Math.min(W * 0.72, 660);
         const pillH = 88;
         const pillX = (W - pillW) / 2;
@@ -769,12 +818,20 @@
         ctx.fill();
         ctx.stroke();
 
-        // 4. Activation Code in crisp bold monospace
-        ctx.font = '800 46px "Courier New", Consolas, monospace';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = 'rgba(16, 185, 129, 0.45)';
-        ctx.shadowBlur = 14;
-        ctx.fillText(String(code || '').toUpperCase(), W / 2, H * 0.528);
+        // 4. Either safe Store Display text (no code exposed) or private delivery code
+        if (displayMode === 'store') {
+          ctx.font = '800 32px "Cairo", sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = 'rgba(16, 185, 129, 0.45)';
+          ctx.shadowBlur = 12;
+          ctx.fillText('بطاقة شحن رقمية • يصلك الكود فوراً', W / 2, H * 0.528);
+        } else {
+          ctx.font = '800 46px "Courier New", Consolas, monospace';
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = 'rgba(16, 185, 129, 0.45)';
+          ctx.shadowBlur = 14;
+          ctx.fillText(String(code || '').toUpperCase(), W / 2, H * 0.528);
+        }
         ctx.restore();
 
         const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
@@ -828,7 +885,32 @@
         }
       }
 
+      async function refreshGeneratedCardPreview() {
+        const mode = document.getElementById('card-display-mode')?.value || 'store';
+        const dlTxt = document.getElementById('btn-dl-gen-cards-txt');
+        const codesList = lastGeneratedBatch.codes || [];
+        if (dlTxt) {
+          if (mode === 'store') {
+            dlTxt.textContent = 'حفظ صورة العرض للمتجر (بدون كود)';
+          } else {
+            dlTxt.textContent = codesList.length <= 1 ? 'حفظ البطاقة كصورة (PNG)' : `حفظ ${codesList.length} بطاقة (ZIP)`;
+          }
+        }
+        try {
+          const { dataUrl } = await renderCodeCardData(codesList[0] || 'MJ-XXXX-XXXX', lastGeneratedBatch.coins, lastGeneratedBatch.plan, lastGeneratedBatch.amount, mode);
+          const prevImg = document.getElementById('generated-card-preview');
+          if (prevImg) prevImg.src = dataUrl;
+        } catch (e) {}
+      }
+
       async function downloadGeneratedCards() {
+        const mode = document.getElementById('card-display-mode')?.value || 'store';
+        if (mode === 'store') {
+          const { blob } = await renderCodeCardData('STORE', lastGeneratedBatch.coins, lastGeneratedBatch.plan, lastGeneratedBatch.amount, 'store');
+          triggerBlobDownload(blob, `store-card-${lastGeneratedBatch.coins}coins.png`);
+          toast('🖼️ تم حفظ صورة العرض للمتجر (بدون كود) بأمان!');
+          return;
+        }
         const items = (lastGeneratedBatch.codes || []).map((c) => ({
           code: c,
           coins: lastGeneratedBatch.coins,
@@ -883,14 +965,7 @@
           ta.value = codesList.join('\n');
 
           const dlTxt = document.getElementById('btn-dl-gen-cards-txt');
-          if (dlTxt) {
-            dlTxt.textContent = codesList.length === 1 ? 'حفظ البطاقة كصورة (PNG)' : `حفظ ${codesList.length} بطاقة (ZIP)`;
-          }
-          try {
-            const { dataUrl } = await renderCodeCardData(codesList[0], coins, plan, amountSar);
-            const prevImg = document.getElementById('generated-card-preview');
-            if (prevImg) prevImg.src = dataUrl;
-          } catch (e) {}
+          await refreshGeneratedCardPreview();
 
           toast(`تم توليد ${codesList.length} كود تفعيل بنجاح!`);
           loadOverview();
@@ -1127,6 +1202,9 @@
         document.getElementById('set-payment-enabled').checked = s.paymentEnabled !== false;
         const extStoreEl = document.getElementById('set-external-store-url');
         if (extStoreEl) extStoreEl.value = s.externalStoreUrl || 'https://www.3dyat.com';
+        const secEl = document.getElementById('set-salla-webhook-secret');
+        if (secEl) secEl.value = s.sallaWebhookSecret || 'MJ-SALLA-9824-SECURE';
+        updateSallaWebhookUrlPreview();
         document.getElementById('set-moyasar-link').value = s.moyasarPaymentLink || '';
         document.getElementById('set-moyasar-pk').value = s.moyasarPublishableKey || '';
         document.getElementById('set-moyasar-sk').value = s.moyasarSecretKey || '';
@@ -1143,10 +1221,65 @@
         document.getElementById('set-announce-ar').value = s.announcementAr || '';
       }
 
+      function updateSallaWebhookUrlPreview() {
+        const sec = document.getElementById('set-salla-webhook-secret')?.value.trim() || 'MJ-SALLA-9824-SECURE';
+        const origin = window.location.origin || 'https://mojassam.vercel.app';
+        const prev = document.getElementById('salla-webhook-url-preview');
+        if (prev) prev.value = `${origin}/api/salla-webhook?token=${encodeURIComponent(sec)}`;
+      }
+
+      function copySallaWebhookUrl() {
+        updateSallaWebhookUrlPreview();
+        const prev = document.getElementById('salla-webhook-url-preview');
+        if (!prev || !prev.value) return;
+        navigator.clipboard.writeText(prev.value);
+        toast('📋 تم نسخ رابط Salla Webhook بنجاح!');
+      }
+
+      function regenerateSallaSecret() {
+        const rand = 'MJ-SALLA-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+        const el = document.getElementById('set-salla-webhook-secret');
+        if (el) el.value = rand;
+        updateSallaWebhookUrlPreview();
+        toast('🔑 تم توليد مفتاح سري جديد — لا تنسَ الضغط على حفظ الإعدادات!');
+      }
+
+      async function testSallaWebhook() {
+        const sec = document.getElementById('set-salla-webhook-secret')?.value.trim() || 'MJ-SALLA-9824-SECURE';
+        const testEmail = prompt('أدخل إيميل تجريبي لاستلام كود الاختبار (أو اتركه فارغاً للاختبار فقط):', '') || '';
+        try {
+          toast('جاري اختبار الربط التلقائي مع سلة...');
+          const resp = await fetch(`/api/salla-webhook?token=${encodeURIComponent(sec)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'order.updated',
+              forceTest: true,
+              data: {
+                id: 'TEST-' + Date.now(),
+                payment_status: 'paid',
+                customer: { email: testEmail },
+                items: [{ name: 'رصيد 50 كوينز', sku: 'coins_50', quantity: 1 }]
+              }
+            })
+          });
+          const data = await resp.json();
+          if (data.success && data.codes && data.codes.length) {
+            toast(`✅ نجح الربط! تم إصدار الكود التجريبي: ${data.codes[0]}`);
+            loadOverview();
+          } else {
+            toast('⚠️ فشل الاختبار: ' + (data.error || JSON.stringify(data)));
+          }
+        } catch (err) {
+          toast('تعذر الاتصال بالـ Webhook: ' + err.message);
+        }
+      }
+
       async function saveSettings() {
         const settings = {
           paymentEnabled: document.getElementById('set-payment-enabled').checked,
           externalStoreUrl: document.getElementById('set-external-store-url')?.value.trim() || 'https://www.3dyat.com',
+          sallaWebhookSecret: document.getElementById('set-salla-webhook-secret')?.value.trim() || 'MJ-SALLA-9824-SECURE',
           moyasarPaymentLink: document.getElementById('set-moyasar-link').value.trim(),
           moyasarPublishableKey: document.getElementById('set-moyasar-pk').value.trim(),
           moyasarSecretKey: document.getElementById('set-moyasar-sk').value.trim(),
@@ -1214,6 +1347,11 @@
         downloadCodeCard,
         downloadGeneratedCards,
         downloadCurrentPageCards,
+        refreshGeneratedCardPreview,
+        updateSallaWebhookUrlPreview,
+        copySallaWebhookUrl,
+        regenerateSallaSecret,
+        testSallaWebhook,
         copySingleCode,
         deleteCode,
         cleanCancelledCodes,

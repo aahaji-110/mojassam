@@ -60,6 +60,7 @@ const DEFAULT_SITE_SETTINGS = {
   referralCommissionPercent: 20,
   paymentEnabled: true,
   externalStoreUrl: 'https://www.3dyat.com',
+  sallaWebhookSecret: 'MJ-SALLA-9824-SECURE',
   moyasarPublishableKey: '',
   moyasarSecretKey: '',
   moyasarPaymentLink: '',
@@ -420,11 +421,110 @@ export default async function handler(req, res) {
   }
 
   const { action } = body || {};
+  const reqUrl = String(req.url || '');
+  const isWebhookRoute = reqUrl.includes('salla-webhook') || reqUrl.includes('/webhook') || action === 'storeWebhook';
 
   try {
     await ensureSchema();
     const settings = await getMetaJson('site_settings', DEFAULT_SITE_SETTINGS);
     const packages = await getPackages();
+
+    /* ── 0. Salla / External Store Automatic Webhook (/api/salla-webhook) ── */
+    if (isWebhookRoute) {
+      const urlObj = new URL(reqUrl.startsWith('http') ? reqUrl : `https://mojassam.vercel.app${reqUrl}`);
+      const qToken = urlObj.searchParams.get('token') || '';
+      const hToken = getHeader(req, 'x-webhook-token') || getHeader(req, 'authorization').replace(/^Bearer\s+/i, '').trim();
+      const providedToken = qToken || hToken || String(body.token || '');
+      const expectedToken = settings.sallaWebhookSecret || DEFAULT_SITE_SETTINGS.sallaWebhookSecret;
+
+      if (expectedToken && providedToken !== expectedToken) {
+        return json(401, { success: false, error: 'Unauthorized webhook token' });
+      }
+
+      const data = (body.data && typeof body.data === 'object') ? body.data : body;
+      const eventName = String(body.event || 'order.paid');
+      const rawStatus = String(data.payment_status || data.status?.slug || data.status?.name || (body.forceTest ? 'paid' : '')).toLowerCase();
+      const isPaid = body.forceTest === true ||
+        ['paid', 'completed', 'delivered', 'delivering', 'under_review', 'in_progress', 'تم الدفع', 'مكتمل', 'مدفوع'].some((k) => rawStatus.includes(k)) ||
+        eventName === 'order.payment.updated';
+
+      if (!isPaid) {
+        return json(200, { success: true, skipped: true, reason: 'Order not yet paid', status: rawStatus });
+      }
+
+      const orderId = String(data.id || data.reference_id || body.orderId || `manual_${Date.now()}`);
+      const extOrderKey = `salla_${orderId}`;
+      const [existingTx] = await sql`SELECT id FROM transactions WHERE external_order_id = ${extOrderKey} LIMIT 1`;
+      if (existingTx) {
+        return json(200, { success: true, duplicate: true, orderId });
+      }
+
+      const customerEmail = String(data.customer?.email || body.email || '').trim();
+      const rawItems = Array.isArray(data.items) && data.items.length
+        ? data.items
+        : [{ name: body.productName || 'رصيد 50 كوينز', sku: body.sku || '', quantity: Number(body.quantity || 1), coins: body.coins, plan: body.plan }];
+
+      const matchPkg = (item) => {
+        const sku = String(item.sku || item.product?.sku || '').toLowerCase();
+        const pid = String(item.product?.id || item.product_id || '').toLowerCase();
+        const name = String(item.name || '').toLowerCase();
+        const bySku = packages.find((p) =>
+          (p.id && p.id.toLowerCase() === sku) ||
+          (p.sallaProductId && String(p.sallaProductId).toLowerCase() === pid)
+        );
+        if (bySku) return bySku;
+        if (name.includes('500') || name.includes('سنوي') || name.includes('year')) return packages.find((p) => p.id === 'sub_yearly') || packages[4];
+        if (name.includes('100') || name.includes('شهري') || name.includes('month')) return packages.find((p) => p.id === 'sub_monthly') || packages[3];
+        if (name.includes('50')) return packages.find((p) => p.id === 'coins_50') || packages[2];
+        if (name.includes('30')) return packages.find((p) => p.id === 'coins_30') || packages[1];
+        if (name.includes('10')) return packages.find((p) => p.id === 'coins_10') || packages[0];
+        if (Number(item.coins) > 0) {
+          return { id: 'custom', nameAr: item.name || 'باقة مجسمات', coins: Number(item.coins), period: item.plan || 'free', durationDays: item.plan === 'yearly' ? 365 : (item.plan === 'monthly' ? 30 : 0), priceUsd: Number(item.amount || 0) };
+        }
+        return packages.find((p) => p.id === 'coins_50') || packages[0];
+      };
+
+      const issuedCodes = [];
+      let totalCoinsAll = 0;
+      let totalAmountAll = 0;
+      let emailSentAny = false;
+
+      for (const item of rawItems) {
+        const pkg = matchPkg(item);
+        const qty = Math.min(20, Math.max(1, Number(item.quantity || 1)));
+        const coins = Number(pkg?.coins || 50);
+        const plan = pkg?.period || 'free';
+        const durationDays = Number(pkg?.durationDays || 0);
+        const amountUsd = Number(pkg?.priceUsd ?? pkg?.priceSar ?? 0);
+
+        for (let q = 0; q < qty; q++) {
+          const code = generateActivationCode();
+          await sql`
+            INSERT INTO redeem_codes (code, email, package_id, coins, plan, duration_days, amount_sar, payment_method, status)
+            VALUES (${code}, ${customerEmail || null}, ${pkg?.id || 'salla'}, ${coins}, ${plan}, ${durationDays}, ${amountUsd}, 'salla_webhook', 'unused')`;
+          issuedCodes.push(code);
+          totalCoinsAll += coins;
+          totalAmountAll += amountUsd;
+
+          if (customerEmail) {
+            const mailRes = await sendActivationEmail(settings, customerEmail, code, pkg?.nameAr || 'باقة مجسمات', coins, amountUsd);
+            if (mailRes.sent) emailSentAny = true;
+          }
+        }
+      }
+
+      await sql`
+        INSERT INTO transactions (uid, email, type, coins_delta, amount_sar, payment_method, status, external_order_id, description)
+        VALUES (${null}, ${customerEmail || null}, 'external_order', ${totalCoinsAll}, ${totalAmountAll}, 'salla_webhook', 'completed', ${extOrderKey}, ${`طلب سلة تلقائي #${orderId} (${issuedCodes.join(', ')})`})`;
+
+      return json(200, {
+        success: true,
+        orderId,
+        codes: issuedCodes,
+        email: customerEmail,
+        emailSent: emailSentAny
+      });
+    }
 
     /* ── 1. Public Endpoints ── */
     if (action === 'getPublicConfig') {
