@@ -718,20 +718,21 @@
         return _cardBgImgPromise;
       }
 
-      function getPlanLabelAr(coins, plan) {
+      function getPlanLabelAr(coins, plan, amount) {
         const planNames = {
           daily: 'اشتراك يومي',
           weekly: 'اشتراك أسبوعي',
           monthly: 'اشتراك شهري',
           yearly: 'اشتراك سنوي'
         };
-        if (plan && plan !== 'free' && planNames[plan]) {
-          return `${planNames[plan]} • ${coins} كوينز`;
-        }
-        return `رصيد ${coins} كوينز`;
+        const baseTxt = (plan && plan !== 'free' && planNames[plan])
+          ? `${planNames[plan]} • ${coins} كوينز`
+          : `رصيد ${coins} كوينز`;
+        const priceNum = Number(amount || 0);
+        return priceNum > 0 ? `${baseTxt}  •  قيمة البطاقة: $${priceNum}` : baseTxt;
       }
 
-      async function renderCodeCardData(code, coins, plan) {
+      async function renderCodeCardData(code, coins, plan, amount) {
         const bg = await loadCardBgImage();
         if (document.fonts && document.fonts.ready) {
           try { await document.fonts.ready; } catch (e) {}
@@ -746,8 +747,8 @@
         // 1. Draw template background
         ctx.drawImage(bg, 0, 0, W, H);
 
-        // 2. Package / Coins label above the code (centered in empty middle area)
-        const label = getPlanLabelAr(coins, plan);
+        // 2. Package / Coins + Card Value label above the code
+        const label = getPlanLabelAr(coins, plan, amount);
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -792,10 +793,10 @@
         setTimeout(() => URL.revokeObjectURL(url), 2500);
       }
 
-      async function downloadCodeCard(code, coins, plan) {
+      async function downloadCodeCard(code, coins, plan, amount) {
         try {
           toast('جاري تجهيز صورة البطاقة...');
-          const { blob } = await renderCodeCardData(code, coins, plan);
+          const { blob } = await renderCodeCardData(code, coins, plan, amount);
           triggerBlobDownload(blob, `${code}.png`);
           toast(`🖼️ تم حفظ بطاقة الكود (${code}.png) بنجاح!`);
         } catch (err) {
@@ -806,7 +807,7 @@
       async function downloadBatchCards(items, zipName) {
         if (!items || !items.length) return;
         if (items.length === 1) {
-          return downloadCodeCard(items[0].code, items[0].coins, items[0].plan);
+          return downloadCodeCard(items[0].code, items[0].coins, items[0].plan, items[0].amount);
         }
         if (typeof JSZip === 'undefined') {
           toast('مكتبة ضغط الملفات قيد التحميل، حاول بعد لحظة');
@@ -816,7 +817,7 @@
           toast(`جاري تجهيز ${items.length} بطاقة كود كصور...`);
           const zip = new JSZip();
           for (const it of items) {
-            const { blob } = await renderCodeCardData(it.code, it.coins, it.plan);
+            const { blob } = await renderCodeCardData(it.code, it.coins, it.plan, it.amount);
             zip.file(`${it.code}.png`, blob);
           }
           const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -831,7 +832,8 @@
         const items = (lastGeneratedBatch.codes || []).map((c) => ({
           code: c,
           coins: lastGeneratedBatch.coins,
-          plan: lastGeneratedBatch.plan
+          plan: lastGeneratedBatch.plan,
+          amount: lastGeneratedBatch.amount
         }));
         await downloadBatchCards(items, `mojassamat-cards-${items.length}.zip`);
       }
@@ -842,7 +844,8 @@
         const pageItems = list.slice(startIdx, startIdx + codesPerPage).map((c) => ({
           code: c.code,
           coins: c.coins,
-          plan: c.plan
+          plan: c.plan,
+          amount: c.amount_sar
         }));
         if (!pageItems.length) {
           toast('لا توجد أكواد في الصفحة الحالية لتحميلها');
@@ -874,7 +877,7 @@
           const title = document.getElementById('generated-code-title');
           const ta = document.getElementById('generated-codes-textarea');
           const codesList = res.data.codes || [res.data.code];
-          lastGeneratedBatch = { codes: codesList, coins, plan };
+          lastGeneratedBatch = { codes: codesList, coins, plan, amount: amountSar };
           box.classList.remove('hidden');
           title.textContent = `تم إصدار ${codesList.length} كود تفعيل بنجاح ${res.data.emailSent ? '(وتم الإرسال للإيميل ✔)' : '(انسخها أو احفظها كصور لمتجرك)'}:`;
           ta.value = codesList.join('\n');
@@ -884,7 +887,7 @@
             dlTxt.textContent = codesList.length === 1 ? 'حفظ البطاقة كصورة (PNG)' : `حفظ ${codesList.length} بطاقة (ZIP)`;
           }
           try {
-            const { dataUrl } = await renderCodeCardData(codesList[0], coins, plan);
+            const { dataUrl } = await renderCodeCardData(codesList[0], coins, plan, amountSar);
             const prevImg = document.getElementById('generated-card-preview');
             if (prevImg) prevImg.src = dataUrl;
           } catch (e) {}
@@ -971,7 +974,7 @@
                   <td class="py-2.5 px-2 text-gray-400 text-[11px]">${dateStr}</td>
                   <td class="py-2.5 px-2">
                     <div class="flex items-center gap-1.5">
-                      <button onclick="AdminApp.downloadCodeCard('${c.code}', ${Number(c.coins || 0)}, '${c.plan || 'free'}')" class="bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1" title="حفظ بطاقة هذا الكود كصورة للمتجر">
+                      <button onclick="AdminApp.downloadCodeCard('${c.code}', ${Number(c.coins || 0)}, '${c.plan || 'free'}', ${Number(c.amount_sar || 0)})" class="bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1" title="حفظ بطاقة هذا الكود كصورة للمتجر">
                         <i class="fa-solid fa-image"></i>
                         <span>صورة</span>
                       </button>
