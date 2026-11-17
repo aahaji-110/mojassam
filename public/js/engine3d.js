@@ -2184,6 +2184,635 @@ ${polys}</svg>`;
     return group;
   }
 
+  /* ──────────────────────────────────────────────────────────────
+     10. Snap-Fit Cable Tag Generator ("كيبل تاق كبس بدون غراء")
+     ────────────────────────────────────────────────────────────── */
+  function clipPolyBetweenY(pts, yMin, yMax) {
+    if (!pts || pts.length < 3) return [];
+    const clipHalf = (poly, isMin, val) => {
+      const out = [];
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i];
+        const b = poly[(i + 1) % poly.length];
+        const inA = isMin ? (a.y >= val) : (a.y <= val);
+        const inB = isMin ? (b.y >= val) : (b.y <= val);
+        if (inA && inB) {
+          out.push(b);
+        } else if (inA && !inB) {
+          const t = (val - a.y) / ((b.y - a.y) || 1e-9);
+          out.push({ x: a.x + t * (b.x - a.x), y: val });
+        } else if (!inA && inB) {
+          const t = (val - a.y) / ((b.y - a.y) || 1e-9);
+          out.push({ x: a.x + t * (b.x - a.x), y: val });
+          out.push(b);
+        }
+      }
+      return out;
+    };
+    let res = clipHalf(pts, true, yMin);
+    if (res.length < 3) return [];
+    res = clipHalf(res, false, yMax);
+    return res.length >= 3 ? res : [];
+  }
+
+  function ptsToThreeShape(pts) {
+    const sh = new THREE.Shape();
+    sh.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) sh.lineTo(pts[i].x, pts[i].y);
+    sh.closePath();
+    return sh;
+  }
+
+  function extrudeFlatYUp(shapes, heightMm, yOffsetMm = 0) {
+    if (!shapes || shapes.length === 0) return null;
+    const g = new THREE.ExtrudeGeometry(shapes, {
+      depth: Math.max(0.2, heightMm),
+      bevelEnabled: true,
+      bevelThickness: Math.min(0.18, heightMm * 0.14),
+      bevelSize: 0.14,
+      bevelSegments: 2,
+      curveSegments: 16
+    });
+    g.rotateX(-Math.PI / 2);
+    if (yOffsetMm) g.translate(0, yOffsetMm, 0);
+    return g;
+  }
+
+  async function createCableTagGroup(opts = {}) {
+    const text = (opts.text || 'ELLA').trim() || 'ELLA';
+    const fontFamily = opts.fontFamily || 'Cairo';
+    const mode = opts.mode || 'snapfit'; // 'snapfit' | 'cclip'
+    const wireDiameter = Math.max(2.0, Math.min(10.0, Number(opts.wireDiameter || 3.5)));
+    const scaleMult = Math.max(0.6, Math.min(2.0, Number(opts.scaleMult || 1.0)));
+    const textHeight = Math.max(0.5, Math.min(3.0, Number(opts.textHeight || 1.2)));
+    const baseColor = opts.baseColor || '#f472b6';
+    const textColor = opts.textColor || '#ffffff';
+
+    if (document.fonts && document.fonts.load) {
+      try {
+        await document.fonts.load(`800 90px "${fontFamily}"`);
+        await document.fonts.ready;
+      } catch (e) {}
+    }
+
+    const isArabic = /[\u0600-\u06FF]/.test(text);
+    const fontPx = 92;
+    const mmPerPx = 0.125 * scaleMult;
+    const wireR = (wireDiameter * 0.5) + 0.14; // +0.14mm print tolerance
+
+    // 1. Measure & render crisp raised text
+    const textCanvas = document.createElement('canvas');
+    textCanvas.width = 1400;
+    textCanvas.height = 460;
+    const tctx = textCanvas.getContext('2d');
+    tctx.font = `800 ${fontPx}px "${fontFamily}", "Cairo", sans-serif`;
+    tctx.textAlign = 'center';
+    tctx.textBaseline = 'middle';
+    if (isArabic) tctx.direction = 'rtl';
+    tctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+    tctx.fillStyle = '#ffffff';
+    tctx.fillText(text, textCanvas.width / 2, textCanvas.height / 2);
+
+    const tBounds = getCanvasAlphaBounds(textCanvas);
+    const textWmm = tBounds.width * mmPerPx;
+    const textHmm = tBounds.height * mmPerPx;
+
+    // 2. Render organic bubble contour around the text (matching ELLA / ROY / BRAZIL style)
+    const silCanvas = document.createElement('canvas');
+    silCanvas.width = textCanvas.width;
+    silCanvas.height = textCanvas.height;
+    const sctx = silCanvas.getContext('2d');
+    sctx.font = tctx.font;
+    sctx.textAlign = 'center';
+    sctx.textBaseline = 'middle';
+    if (isArabic) sctx.direction = 'rtl';
+    sctx.lineJoin = 'round';
+    sctx.lineCap = 'round';
+
+    // Guarantee minimum vertical height so cable channel + snap-fit pins always fit inside cleanly
+    const minBodyHmm = mode === 'snapfit'
+      ? Math.max(13.5 * scaleMult, wireDiameter + 9.2)
+      : Math.max(10.0 * scaleMult, wireDiameter + 4.5);
+    const padPx = Math.max(46, Math.ceil(((minBodyHmm - textHmm) * 0.5) / mmPerPx) + 12);
+
+    sctx.strokeStyle = '#ffffff';
+    sctx.lineWidth = padPx * 1.45;
+    sctx.strokeText(text, silCanvas.width / 2, silCanvas.height / 2);
+    sctx.fillStyle = '#ffffff';
+    sctx.fillText(text, silCanvas.width / 2, silCanvas.height / 2);
+
+    // Bridge any gaps with a rounded capsule behind the text center
+    const sBounds = getCanvasAlphaBounds(silCanvas);
+    const capHpx = Math.max(sBounds.height * 0.72, minBodyHmm / mmPerPx);
+    const capX = tBounds.minX - padPx * 0.45;
+    const capW = tBounds.width + padPx * 0.9;
+    const capY = (tBounds.minY + tBounds.maxY) * 0.5 - capHpx * 0.5;
+    sctx.beginPath();
+    sctx.roundRect(capX, capY, capW, capHpx, capHpx * 0.48);
+    sctx.fill();
+
+    // Center both loops around (0, 0) in mm using the same center point
+    const cxPx = (tBounds.minX + tBounds.maxX) * 0.5;
+    const cyPx = (tBounds.minY + tBounds.maxY) * 0.5;
+
+    const silLoops = traceCanvasToShapes(silCanvas, 120, 0.7);
+    const outerLoop = silLoops.sort((a, b) => Math.abs(signedArea(b)) - Math.abs(signedArea(a)))[0];
+    if (!outerLoop || outerLoop.length < 3) {
+      throw new Error('تعذر توليد مجسم الكيبل تاق من النص المدخل');
+    }
+
+    const outerPts = outerLoop.map((p) => ({
+      x: (p.x - cxPx) * mmPerPx,
+      y: -(p.y - cyPx) * mmPerPx
+    }));
+    if (signedArea(outerPts) < 0) outerPts.reverse();
+
+    const textLoops = traceCanvasToShapes(textCanvas, 115, 0.5);
+    const textShapes = loopsToThreeShapes(textLoops, mmPerPx, cxPx, cyPx);
+
+    const minX = Math.min(...outerPts.map((p) => p.x));
+    const maxX = Math.max(...outerPts.map((p) => p.x));
+    const minY = Math.min(...outerPts.map((p) => p.y));
+    const maxY = Math.max(...outerPts.map((p) => p.y));
+    const spanX = maxX - minX;
+    const spanY = maxY - minY;
+
+    const group = new THREE.Group();
+    const baseMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.35, metalness: 0.08 });
+    const textMat = new THREE.MeshStandardMaterial({ color: textColor, roughness: 0.25, metalness: 0.12 });
+
+    if (mode === 'cclip') {
+      // One-Piece C-Clip + Top Nameplate
+      const plateThick = 2.0 * scaleMult;
+      const baseGeom = extrudeFlatYUp([ptsToThreeShape(outerPts)], plateThick, wireDiameter + 2.4);
+      const baseMesh = new THREE.Mesh(baseGeom, baseMat);
+      baseMesh.name = 'قاعدة الكيبل تاق';
+      baseMesh.userData.colorHex = baseColor;
+      group.add(baseMesh);
+
+      const textGeom = extrudeFlatYUp(textShapes, textHeight, wireDiameter + 2.4 + plateThick - 0.12);
+      if (textGeom) {
+        const textMesh = new THREE.Mesh(textGeom, textMat);
+        textMesh.name = `نص التاق (${text})`;
+        textMesh.userData.colorHex = textColor;
+        group.add(textMesh);
+      }
+
+      // C-Clip ring along X
+      const clipRIn = wireR;
+      const clipROut = wireR + 1.8;
+      const clipShape = new THREE.Shape();
+      const gapAngle = 0.65; // ~74 deg opening at bottom
+      clipShape.absarc(0, clipROut, clipROut, -Math.PI / 2 + gapAngle, Math.PI * 1.5 - gapAngle, false);
+      clipShape.absarc(0, clipROut, clipRIn, Math.PI * 1.5 - gapAngle, -Math.PI / 2 + gapAngle, true);
+      clipShape.closePath();
+
+      const clipLen = Math.max(10, spanX * 0.72);
+      const clipGeom = new THREE.ExtrudeGeometry(clipShape, { depth: clipLen, bevelEnabled: false, curveSegments: 24 });
+      clipGeom.rotateY(Math.PI / 2);
+      clipGeom.translate(-clipLen / 2, 0, 0);
+      const clipMesh = new THREE.Mesh(clipGeom, baseMat);
+      clipMesh.name = 'مشبك السلك';
+      clipMesh.userData.colorHex = baseColor;
+      group.add(clipMesh);
+    } else {
+      // Snap-Fit 2-Piece Mode (Top Half with Raised Text + Bottom Half with Snap Pins)
+      const halfThick = Math.max(2.6, wireR + 1.15);
+      const pinOffsetY = wireR + 2.25;
+      const pinR = 1.15;
+      const sockR = pinR + 0.15; // +0.15mm clearance for snug snap-fit without glue
+      const pinH = Math.min(1.65, halfThick - 0.8);
+
+      // Determine 2 or 4 snap-fit pin coordinates cleanly inside outerPts
+      const candidateX = spanX > 22 ? [-spanX * 0.28, spanX * 0.28] : [0];
+      const pinCoords = [];
+      for (const px of candidateX) {
+        pinCoords.push({ x: px, y: pinOffsetY });
+        pinCoords.push({ x: px, y: -pinOffsetY });
+      }
+
+      const buildHalfBody = (withSocketHoles) => {
+        const geoms = [];
+        const socketCutDepth = pinH + 0.25;
+
+        // 1) Solid top cap above the cable arch (from wireR to halfThick)
+        const capShape = ptsToThreeShape(outerPts);
+        if (withSocketHoles) {
+          // Punch socket holes only in the lower mating layer (0 .. socketCutDepth)
+          const lowerWingTop = clipPolyBetweenY(outerPts, wireR, maxY + 1);
+          const lowerWingBot = clipPolyBetweenY(outerPts, minY - 1, -wireR);
+          [lowerWingTop, lowerWingBot].forEach((wingPts) => {
+            if (!wingPts.length) return;
+            const wingSh = ptsToThreeShape(wingPts);
+            pinCoords.forEach((pc) => {
+              if ((pc.y > 0 && wingPts === lowerWingTop) || (pc.y < 0 && wingPts === lowerWingBot)) {
+                const hole = new THREE.Path();
+                hole.absarc(pc.x, pc.y, sockR, 0, Math.PI * 2, true);
+                wingSh.holes.push(hole);
+              }
+            });
+            const gWing = extrudeFlatYUp([wingSh], halfThick, 0);
+            if (gWing) geoms.push(gWing);
+          });
+        } else {
+          // Bottom half wings without holes
+          const wingTop = clipPolyBetweenY(outerPts, wireR, maxY + 1);
+          const wingBot = clipPolyBetweenY(outerPts, minY - 1, -wireR);
+          [wingTop, wingBot].forEach((wingPts) => {
+            if (!wingPts.length) return;
+            const gWing = extrudeFlatYUp([ptsToThreeShape(wingPts)], halfThick, 0);
+            if (gWing) geoms.push(gWing);
+          });
+        }
+
+        // 2) Smooth 6-step semi-cylindrical cable arch strips across [-wireR, +wireR]
+        const steps = 6;
+        const dy = (wireR * 2) / steps;
+        for (let i = 0; i < steps; i++) {
+          const y0 = -wireR + i * dy;
+          const y1 = y0 + dy;
+          const yMid = (y0 + y1) * 0.5;
+          const archBottom = Math.sqrt(Math.max(0, wireR * wireR - yMid * yMid));
+          const stripPts = clipPolyBetweenY(outerPts, y0 - 0.02, y1 + 0.02);
+          if (stripPts.length >= 3) {
+            const gStrip = extrudeFlatYUp([ptsToThreeShape(stripPts)], halfThick - archBottom, archBottom);
+            if (gStrip) geoms.push(gStrip);
+          }
+        }
+
+        // If withSocketHoles, add thin solid cap over the pin areas so the front face stays completely seamless!
+        if (withSocketHoles && halfThick > socketCutDepth + 0.45) {
+          const capPtsTop = clipPolyBetweenY(outerPts, wireR, maxY + 1);
+          const capPtsBot = clipPolyBetweenY(outerPts, minY - 1, -wireR);
+          [capPtsTop, capPtsBot].forEach((cp) => {
+            if (!cp.length) return;
+            const gCap = extrudeFlatYUp([ptsToThreeShape(cp)], halfThick - socketCutDepth, socketCutDepth);
+            if (gCap) geoms.push(gCap);
+          });
+        }
+
+        return mergeBufferGeometries(geoms);
+      };
+
+      // Top Half (Front with Raised Text, sockets on bottom)
+      const topHalfGeom = buildHalfBody(true);
+      const topHalfMesh = new THREE.Mesh(topHalfGeom, baseMat);
+      topHalfMesh.name = 'القطعة الأمامية (بالكبس)';
+      topHalfMesh.userData.colorHex = baseColor;
+      group.add(topHalfMesh);
+
+      const textGeom = extrudeFlatYUp(textShapes, textHeight, halfThick - 0.08);
+      if (textGeom) {
+        const textMesh = new THREE.Mesh(textGeom, textMat);
+        textMesh.name = `النص البارز (${text})`;
+        textMesh.userData.colorHex = textColor;
+        group.add(textMesh);
+      }
+
+      // Bottom Half (Back with Snap Pins facing UP, placed side-by-side on the print bed!)
+      const gapZ = spanY + 5.5;
+      const botGeoms = [buildHalfBody(false)];
+      pinCoords.forEach((pc) => {
+        const pinG = new THREE.CylinderGeometry(pinR * 0.92, pinR, pinH, 24);
+        pinG.translate(pc.x, halfThick + pinH * 0.5 - 0.08, -pc.y);
+        botGeoms.push(pinG);
+      });
+      const botHalfGeom = mergeBufferGeometries(botGeoms);
+      botHalfGeom.translate(0, 0, gapZ);
+      const botHalfMesh = new THREE.Mesh(botHalfGeom, baseMat);
+      botHalfMesh.name = 'القطعة الخلفية (أزرار الكبس)';
+      botHalfMesh.userData.colorHex = baseColor;
+      group.add(botHalfMesh);
+    }
+
+    // Center on X & Z and ground on Y = 0
+    const box = new THREE.Box3().setFromObject(group);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    group.children.forEach((ch) => {
+      ch.geometry.translate(-center.x, -box.min.y, -center.z);
+      ch.geometry.computeBoundingBox();
+      ch.castShadow = true;
+      ch.receiveShadow = true;
+    });
+
+    group.userData.isMultiColorGroup = true;
+    return group;
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     11. Saudi License Plate Generator ("لوحة سيارة سعودية - طويلة ومربعة")
+     ────────────────────────────────────────────────────────────── */
+  let _saudiEmblemCache = null;
+  async function getSaudiEmblemPaths() {
+    if (_saudiEmblemCache) return _saudiEmblemCache;
+    try {
+      const resp = await fetch('/fonts/saudi-emblem.json');
+      if (resp.ok) {
+        _saudiEmblemCache = await resp.json();
+        return _saudiEmblemCache;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function drawSvgPathList(ctx, dList, ox, oy, sx, sy) {
+    if (!dList) return;
+    ctx.save();
+    ctx.translate(ox, oy);
+    ctx.scale(sx, sy);
+    for (const d of dList) {
+      const p = new Path2D(d);
+      ctx.fill(p);
+    }
+    ctx.restore();
+  }
+
+  async function createSaudiPlateGroup(opts = {}) {
+    const plateType = opts.plateType || 'long'; // 'long' | 'square'
+    const numAr = (opts.numAr || '١٢٣٤').trim();
+    const numEn = (opts.numEn || '1234').trim();
+    const letAr = (opts.letAr || 'أ ب ح').trim();
+    const letEn = (opts.letEn || 'J B A').trim().toUpperCase();
+    const scaleMult = Math.max(0.5, Math.min(4.0, Number(opts.scaleMult || 1.0)));
+    const hasHole = opts.hasHole !== false;
+    const baseColor = opts.baseColor || '#f8fafc';
+    const fgColor = opts.fgColor || '#111827';
+
+    // Ensure FE-Schrift + Arabic geometric fonts are loaded
+    if (document.fonts && document.fonts.load) {
+      try {
+        await Promise.all([
+          document.fonts.load('700 120px "FE-Schrift"'),
+          document.fonts.load('800 120px "Cairo"'),
+          document.fonts.load('700 120px "Tajawal"')
+        ]);
+        await document.fonts.ready;
+      } catch (e) {}
+    }
+
+    const emblemData = await getSaudiEmblemPaths();
+
+    // Exact dimensions from the user's 3MF files (لوحة_طويل.3mf & اللوحة_مربع.3mf)
+    const widthMm = (plateType === 'long' ? 100.0 : 70.0) * scaleMult;
+    const heightMm = (plateType === 'long' ? 21.4 : 30.2) * scaleMult;
+    const cornerR = (plateType === 'long' ? 2.0 : 2.2) * scaleMult;
+    const baseThick = 1.8 * scaleMult;
+    const fgThick = 1.05 * scaleMult;
+
+    // 1. Base Plate Shape (rounded rectangle + optional keychain hole)
+    const hw = widthMm * 0.5;
+    const hh = heightMm * 0.5;
+    const baseShape = new THREE.Shape();
+    baseShape.moveTo(-hw + cornerR, -hh);
+    baseShape.lineTo(hw - cornerR, -hh);
+    baseShape.quadraticCurveTo(hw, -hh, hw, -hh + cornerR);
+    baseShape.lineTo(hw, hh - cornerR);
+    baseShape.quadraticCurveTo(hw, hh, hw - cornerR, hh);
+    baseShape.lineTo(-hw + cornerR, hh);
+    baseShape.quadraticCurveTo(-hw, hh, -hw, hh - cornerR);
+    baseShape.lineTo(-hw, -hh + cornerR);
+    baseShape.quadraticCurveTo(-hw, -hh, -hw + cornerR, -hh);
+    baseShape.closePath();
+
+    const holeR = 1.25 * scaleMult;
+    const holeX = plateType === 'long' ? -hw + 3.2 * scaleMult : hw - 3.2 * scaleMult;
+    const holeY = 0;
+    if (hasHole) {
+      const holePath = new THREE.Path();
+      holePath.absarc(holeX, holeY, holeR, 0, Math.PI * 2, true);
+      baseShape.holes.push(holePath);
+    }
+
+    const baseGeom = new THREE.ExtrudeGeometry(baseShape, {
+      depth: baseThick,
+      bevelEnabled: true,
+      bevelThickness: 0.14 * scaleMult,
+      bevelSize: 0.12 * scaleMult,
+      bevelSegments: 2,
+      curveSegments: 20
+    });
+    baseGeom.rotateX(-Math.PI / 2);
+
+    // 2. High-Resolution Raised Foreground Artwork Canvas
+    const W = 2400;
+    const H = Math.round((W * heightMm) / widthMm);
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    const strokeW = plateType === 'long' ? 22 : 28;
+    const pad = strokeW * 0.95;
+    const innerR = Math.round((cornerR / widthMm) * W);
+
+    // Outer raised border
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = strokeW;
+    ctx.beginPath();
+    ctx.roundRect(pad, pad, W - pad * 2, H - pad * 2, innerR);
+    ctx.stroke();
+
+    const drawArabicTrafficText = (str, cx, cy, maxW, maxH) => {
+      if (!str) return;
+      // Add subtle spacing between separated Arabic plate letters
+      const chars = Array.from(str.replace(/\s+/g, ''));
+      const spaced = chars.join(' ');
+      let fs = Math.round(maxH * 0.72);
+      ctx.font = `800 ${fs}px "Cairo", "Tajawal", sans-serif`;
+      while (ctx.measureText(spaced).width > maxW * 0.88 && fs > 28) {
+        fs -= 4;
+        ctx.font = `800 ${fs}px "Cairo", "Tajawal", sans-serif`;
+      }
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.direction = 'rtl';
+      ctx.fillText(spaced, cx, cy + fs * 0.04);
+      ctx.restore();
+    };
+
+    const drawEnglishTrafficText = (str, cx, cy, maxW, maxH) => {
+      if (!str) return;
+      const chars = Array.from(str.replace(/\s+/g, ''));
+      const spaced = chars.join(' ');
+      let fs = Math.round(maxH * 0.76);
+      ctx.font = `700 ${fs}px "FE-Schrift", "Arial Narrow", sans-serif`;
+      while (ctx.measureText(spaced).width > maxW * 0.88 && fs > 28) {
+        fs -= 4;
+        ctx.font = `700 ${fs}px "FE-Schrift", "Arial Narrow", sans-serif`;
+      }
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.direction = 'ltr';
+      ctx.fillText(spaced, cx, cy + fs * 0.03);
+      ctx.restore();
+    };
+
+    if (plateType === 'long') {
+      // Long Plate Layout (matching لوحة_طويل.3mf):
+      // Left cells: 0..0.442*W | Center KSA box: 0.442..0.558*W | Right cells: 0.558..W
+      const midL = Math.round(W * 0.442);
+      const midR = Math.round(W * 0.558);
+      const midY = Math.round(H * 0.5);
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = strokeW * 0.85;
+      // Vertical lines bounding center KSA box
+      ctx.beginPath();
+      ctx.moveTo(midL, pad);
+      ctx.lineTo(midL, H - pad);
+      ctx.moveTo(midR, pad);
+      ctx.lineTo(midR, H - pad);
+      // Horizontal lines left & right
+      ctx.moveTo(pad, midY);
+      ctx.lineTo(midL, midY);
+      ctx.moveTo(midR, midY);
+      ctx.lineTo(W - pad, midY);
+      ctx.stroke();
+
+      // Draw authentic Saudi Emblem + السعودية + KSA in center box
+      if (emblemData) {
+        // Original paths span x:785..940 (w=155), y:126..395 (h=269)
+        const boxW = midR - midL - strokeW;
+        const boxH = H - pad * 2 - strokeW;
+        const s = Math.min((boxW * 0.76) / 155, (boxH * 0.84) / 269);
+        const ox = (midL + midR) * 0.5 - 862.5 * s;
+        const oy = H * 0.5 - 260.5 * s;
+        ctx.fillStyle = '#ffffff';
+        drawSvgPathList(ctx, emblemData.palmSwords, ox, oy, s, s);
+        drawSvgPathList(ctx, emblemData.saudiyaBlack, ox, oy, s, s);
+        drawSvgPathList(ctx, emblemData.ksaBlack, ox, oy, s, s);
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        drawSvgPathList(ctx, emblemData.saudiyaHoles, ox, oy, s, s);
+        drawSvgPathList(ctx, emblemData.ksaHoles, ox, oy, s, s);
+        ctx.restore();
+      }
+
+      const leftPadOffset = hasHole ? W * 0.045 : 0;
+      const leftCX = (pad + leftPadOffset + midL) * 0.5;
+      const leftW = midL - pad - leftPadOffset;
+      const rightCX = (midR + W - pad) * 0.5;
+      const rightW = (W - pad) - midR;
+      const cellH = midY - pad;
+
+      drawArabicTrafficText(numAr, leftCX, (pad + midY) * 0.5, leftW, cellH);
+      drawEnglishTrafficText(numEn, leftCX, (midY + H - pad) * 0.5, leftW, cellH);
+      drawArabicTrafficText(letAr, rightCX, (pad + midY) * 0.5, rightW, cellH);
+      drawEnglishTrafficText(letEn, rightCX, (midY + H - pad) * 0.5, rightW, cellH);
+    } else {
+      // Square Plate Layout (matching اللوحة_مربع.3mf):
+      // 2x2 grid on Left (~87.5% width) + Vertical KSA Strip on Far Right (~12.5% width)
+      const ksaX = Math.round(W * 0.875);
+      const midX = Math.round(W * 0.485);
+      const midY = Math.round(H * 0.5);
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = strokeW * 0.88;
+      ctx.beginPath();
+      ctx.moveTo(midX, pad);
+      ctx.lineTo(midX, H - pad);
+      ctx.moveTo(ksaX, pad);
+      ctx.lineTo(ksaX, H - pad);
+      ctx.moveTo(pad, midY);
+      ctx.lineTo(ksaX, midY);
+      ctx.stroke();
+
+      // Far-right KSA vertical strip: Palm+Swords at top + K, S, A stacked
+      const stripCX = (ksaX + W - pad) * 0.5;
+      const stripW = (W - pad) - ksaX;
+      if (emblemData) {
+        // Palm & swords span x:806..916 (w=110), y:126..258 (h=132)
+        const s = Math.min((stripW * 0.72) / 110, (H * 0.18) / 132);
+        const ox = stripCX - 861 * s;
+        const oy = pad + H * 0.04 - 126 * s;
+        ctx.fillStyle = '#ffffff';
+        drawSvgPathList(ctx, emblemData.palmSwords, ox, oy, s, s);
+      }
+      const ksaFs = Math.round(stripW * 0.62);
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `700 ${ksaFs}px "FE-Schrift", "Arial Narrow", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('K', stripCX, H * 0.41);
+      ctx.fillText('S', stripCX, H * 0.61);
+      ctx.fillText('A', stripCX, H * 0.81);
+      ctx.restore();
+
+      // Cut keychain hole cleanly out of foreground canvas if near edge
+      if (hasHole) {
+        const holePxX = ((holeX + hw) / widthMm) * W;
+        const holePxY = ((hh - holeY) / heightMm) * H;
+        const holePxR = (holeR / widthMm) * W + 16;
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(holePxX, holePxY, holePxR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      const leftW = midX - pad;
+      const rightW = ksaX - midX;
+      const cellH = midY - pad;
+
+      drawArabicTrafficText(numAr, (pad + midX) * 0.5, (pad + midY) * 0.5, leftW, cellH);
+      drawEnglishTrafficText(numEn, (pad + midX) * 0.5, (midY + H - pad) * 0.5, leftW, cellH);
+      drawArabicTrafficText(letAr, (midX + ksaX) * 0.5, (pad + midY) * 0.5, rightW, cellH);
+      drawEnglishTrafficText(letEn, (midX + ksaX) * 0.5, (midY + H - pad) * 0.5, rightW, cellH);
+    }
+
+    // If long plate has keychain hole on left, also punch it from foreground canvas
+    if (plateType === 'long' && hasHole) {
+      const holePxX = ((holeX + hw) / widthMm) * W;
+      const holePxY = ((hh - holeY) / heightMm) * H;
+      const holePxR = (holeR / widthMm) * W + 14;
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(holePxX, holePxY, holePxR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const fgLoops = traceCanvasToShapes(canvas, 128, 0.45);
+    const scaleMmPerPx = widthMm / W;
+    const fgShapes = loopsToThreeShapes(fgLoops, scaleMmPerPx, W * 0.5, H * 0.5);
+    const fgGeom = extrudeFlatYUp(fgShapes, fgThick, baseThick - 0.08);
+
+    const group = new THREE.Group();
+    const baseMesh = new THREE.Mesh(baseGeom, new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.35, metalness: 0.05 }));
+    baseMesh.name = 'قاعدة اللوحة السعودية';
+    baseMesh.userData.colorHex = baseColor;
+    group.add(baseMesh);
+
+    if (fgGeom) {
+      const fgMesh = new THREE.Mesh(fgGeom, new THREE.MeshStandardMaterial({ color: fgColor, roughness: 0.25, metalness: 0.1 }));
+      fgMesh.name = `تفاصيل اللوحة (${letEn} ${numEn})`;
+      fgMesh.userData.colorHex = fgColor;
+      group.add(fgMesh);
+    }
+
+    const box = new THREE.Box3().setFromObject(group);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    group.children.forEach((ch) => {
+      ch.geometry.translate(-center.x, -box.min.y, -center.z);
+      ch.geometry.computeBoundingBox();
+      ch.castShadow = true;
+      ch.receiveShadow = true;
+    });
+
+    group.userData.isMultiColorGroup = true;
+    return group;
+  }
+
   return {
     traceCanvasToShapes,
     loopsToThreeShapes,
@@ -2192,6 +2821,8 @@ ${polys}</svg>`;
     stickMeshToTarget,
     createPrimitiveGeometry,
     createKeychainGroup,
+    createCableTagGroup,
+    createSaudiPlateGroup,
     create3DQRGroup,
     analyzePrintability,
     exportToSTL,

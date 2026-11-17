@@ -10,6 +10,13 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    @font-face {
+      font-family: 'FE-Schrift';
+      src: url('/fonts/FE-FONT.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
     :root {
       --bg-dark: #1b1d21;
       --panel-bg: #26292e;
@@ -318,6 +325,18 @@
       <button onclick="MJApp.openModal('keychain-modal')" class="tool-btn" title="صانع الميداليات وتاق الشاحن وتاق الشنطة بالعربي">
         <i class="fa-solid fa-key !text-pink-400"></i>
         <span data-i18n="keychainBtn">ميدالية / تاق</span>
+      </button>
+
+      <!-- 7b. Snap-Fit Cable Tag Maker ("كيبل تاق كبس بدون غراء") -->
+      <button onclick="MJApp.openCableTagModal()" class="tool-btn !border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20" title="صانع الكيبل تاق: تاق يركب على أسلاك الشواحن والكيابل بالكبس بدون غراء">
+        <i class="fa-solid fa-plug-circle-bolt !text-cyan-400"></i>
+        <span data-i18n="cableTagBtn">كيبل تاق</span>
+      </button>
+
+      <!-- 7c. Saudi License Plate Maker ("لوحة سيارة سعودية - طويلة ومربعة") -->
+      <button onclick="MJApp.openSaudiPlateModal()" class="tool-btn !border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20" title="صانع لوحة سيارة سعودية (طويلة أو مربعة) بخط المرور السعودي">
+        <i class="fa-solid fa-car-side !text-emerald-400"></i>
+        <span data-i18n="saudiPlateBtn">لوحة سيارة سعودية</span>
       </button>
 
       <!-- 8. Universal File Format Converter (PNG <-> SVG <-> STL <-> OBJ <-> 3MF) -->
@@ -1485,6 +1504,211 @@
             طلب إلغاء الحساب وإعادة المبلغ
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 12B: Snap-Fit Cable Tag Maker ("صانع الكيبل تاق كبس بدون غراء") -->
+  <div id="cable-tag-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-cyan-500/40 rounded-2xl max-w-lg w-full p-5 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-plug-circle-bolt text-cyan-400"></i>
+          <span>صانع الكيبل تاق (كبس بدون غراء — No Glue Snap-Fit)</span>
+        </h3>
+        <button onclick="MJApp.closeModal('cable-tag-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div class="bg-cyan-950/35 border border-cyan-500/30 rounded-xl p-3 text-[11px] text-cyan-100 leading-relaxed">
+          <i class="fa-solid fa-circle-info text-cyan-400 ml-1"></i>
+          يطبع التاق قطعتين (واجهة بالاسم البارز + قاعدة بأزرار الكبس) مع مجرى للسلك في المنتصف؛ يلتف حول الكيبل ويثبت بالكبس بدون أي غراء!
+        </div>
+
+        <div>
+          <label class="block text-gray-300 font-bold mb-1">النص / الاسم على الكيبل تاق (عربي أو إنجليزي):</label>
+          <input id="ct-text" type="text" value="ELLA" placeholder="مثال: ELLA أو محمد أو iPhone" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:border-cyan-500 outline-none" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">نوع التاق:</label>
+            <select id="ct-mode" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-2.5 py-2 text-white">
+              <option value="snapfit">كبس قطعتين بدون غراء (نفس الصورة) ⭐</option>
+              <option value="cclip">كليب قطعة واحدة (C-Clip)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">نوع الخط:</label>
+            <select id="ct-font" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-2.5 py-2 text-white">
+              <option value="Cairo">Cairo (عربي / إنجليزي عريض) ⭐</option>
+              <option value="Changa">Changa (سميك وواضح)</option>
+              <option value="Tajawal">Tajawal (ناعم)</option>
+              <option value="Fredoka">Fredoka (إنجليزي دائري)</option>
+              <option value="FE-Schrift">FE-Schrift (هندسي)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">مقاس / قطر الكيبل (ملم):</label>
+            <div class="flex gap-1.5">
+              <select id="ct-wire-preset" onchange="document.getElementById('ct-wire-mm').value = this.value" class="flex-1 bg-[#1b1d21] border border-[#3c424d] rounded-xl px-2 py-2 text-white">
+                <option value="3.0">3.0 مم (شاحن آيفون/عادي)</option>
+                <option value="3.5" selected>3.5 مم (USB-C قياسي)</option>
+                <option value="4.2">4.2 مم (كيبل مجدول)</option>
+                <option value="5.5">5.5 مم (شاشة / باور)</option>
+              </select>
+              <input id="ct-wire-mm" type="number" value="3.5" min="2" max="10" step="0.1" class="w-16 bg-[#1b1d21] border border-[#3c424d] rounded-xl px-2 py-2 text-center text-white font-mono" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">حجم التاق وارتفاع النص:</label>
+            <div class="grid grid-cols-2 gap-1.5">
+              <select id="ct-scale" class="bg-[#1b1d21] border border-[#3c424d] rounded-xl px-2 py-2 text-white">
+                <option value="0.85">صغير (0.85x)</option>
+                <option value="1.0" selected>قياسي (1x)</option>
+                <option value="1.25">كبير (1.25x)</option>
+              </select>
+              <input id="ct-text-h" type="number" value="1.2" min="0.6" max="3.0" step="0.2" title="ارتفاع النص البارز (ملم)" class="bg-[#1b1d21] border border-[#3c424d] rounded-xl px-2 py-2 text-center text-white font-mono" />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">لون جسم التاق:</label>
+            <div class="flex items-center gap-2">
+              <input id="ct-base-color" type="color" value="#f472b6" class="w-10 h-9 rounded-lg bg-transparent border border-[#3c424d] cursor-pointer" />
+              <div class="flex gap-1">
+                <button type="button" onclick="document.getElementById('ct-base-color').value='#f472b6'" class="w-5 h-5 rounded-full bg-pink-400 border border-white/30" title="وردي"></button>
+                <button type="button" onclick="document.getElementById('ct-base-color').value='#2563eb'" class="w-5 h-5 rounded-full bg-blue-600 border border-white/30" title="أزرق"></button>
+                <button type="button" onclick="document.getElementById('ct-base-color').value='#dc2626'" class="w-5 h-5 rounded-full bg-red-600 border border-white/30" title="أحمر"></button>
+                <button type="button" onclick="document.getElementById('ct-base-color').value='#eab308'" class="w-5 h-5 rounded-full bg-yellow-500 border border-white/30" title="أصفر"></button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">لون النص البارز:</label>
+            <div class="flex items-center gap-2">
+              <input id="ct-text-color" type="color" value="#ffffff" class="w-10 h-9 rounded-lg bg-transparent border border-[#3c424d] cursor-pointer" />
+              <div class="flex gap-1">
+                <button type="button" onclick="document.getElementById('ct-text-color').value='#ffffff'" class="w-5 h-5 rounded-full bg-white border border-gray-500" title="أبيض"></button>
+                <button type="button" onclick="document.getElementById('ct-text-color').value='#111827'" class="w-5 h-5 rounded-full bg-gray-900 border border-white/30" title="أسود"></button>
+                <button type="button" onclick="document.getElementById('ct-text-color').value='#16a34a'" class="w-5 h-5 rounded-full bg-green-600 border border-white/30" title="أخضر"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="MJApp.generateCableTag()" class="w-full bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white font-extrabold py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>إنشاء الكيبل تاق ثلاثي الأبعاد</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 12C: Saudi License Plate Maker ("صانع لوحة السيارة السعودية - طويلة ومربعة") -->
+  <div id="saudi-plate-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#23262b] border border-emerald-500/40 rounded-2xl max-w-xl w-full p-5 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-[#383d47] pb-3 mb-4">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-car-side text-emerald-400"></i>
+          <span>صانع لوحة السيارة السعودية (بخط المرور السعودي)</span>
+        </h3>
+        <button onclick="MJApp.closeModal('saudi-plate-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <!-- Plate Type Selector -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <button type="button" id="sp-type-long" onclick="MJApp.setSaudiPlateType('long')" class="p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/15 text-white font-extrabold flex flex-col items-center gap-1 transition">
+            <div class="w-20 h-5 rounded border-2 border-current flex items-center justify-center text-[9px] font-mono">1234 | KSA | ABJ</div>
+            <span>لوحة طويلة (100 × 21.4 مم)</span>
+          </button>
+          <button type="button" id="sp-type-square" onclick="MJApp.setSaudiPlateType('square')" class="p-2.5 rounded-xl border border-[#3c424d] bg-[#1b1d21] text-gray-300 font-bold flex flex-col items-center gap-1 hover:border-emerald-500/60 transition">
+            <div class="w-16 h-7 rounded border-2 border-current flex items-center justify-center text-[9px] font-mono">1234 | ABJ | KSA</div>
+            <span>لوحة مربعة (70 × 30.2 مم)</span>
+          </button>
+        </div>
+
+        <!-- Live 2D Plate Preview -->
+        <div class="bg-[#141619] border border-[#343944] rounded-xl p-3 flex flex-col items-center">
+          <div class="text-[10px] text-gray-400 mb-1.5">معاينة تخطيط اللوحة (الخانة العلوية عربي • السفلية إنجليزي بخط المرور السعودي):</div>
+          <div id="sp-live-preview" class="w-full flex items-center justify-center"></div>
+        </div>
+
+        <!-- Numbers & Letters Inputs (Top = Arabic, Bottom = English) -->
+        <div class="grid grid-cols-2 gap-3 bg-[#1b1d21] border border-[#343944] rounded-xl p-3">
+          <div class="space-y-2">
+            <div class="text-emerald-400 font-extrabold text-[11px] flex items-center justify-between">
+              <span>جهة اليسار (الأرقام)</span>
+              <span class="text-[10px] text-gray-400">حتى 4 أرقام</span>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-[10px] mb-0.5">الأرقام العربية (فوق):</label>
+              <input id="sp-num-ar" type="text" maxlength="7" value="١٢٣٤" oninput="MJApp.syncSaudiPlateFromArabicNum()" dir="rtl" class="w-full bg-[#141619] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-center text-white font-extrabold text-sm tracking-widest outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label class="block text-gray-400 text-[10px] mb-0.5">الأرقام الإنجليزية (تحت - خط المرور):</label>
+              <input id="sp-num-en" type="text" maxlength="7" value="1234" oninput="MJApp.syncSaudiPlateFromEnglishNum()" dir="ltr" style="font-family: 'FE-Schrift', monospace;" class="w-full bg-[#141619] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-center text-amber-300 font-bold text-sm tracking-widest outline-none focus:border-emerald-500" />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-emerald-400 font-extrabold text-[11px] flex items-center justify-between">
+              <span>جهة اليمين (الأحرف)</span>
+              <span class="text-[10px] text-gray-400">حتى 3 أحرف</span>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-[10px] mb-0.5">الأحرف العربية (فوق):</label>
+              <input id="sp-let-ar" type="text" maxlength="7" value="أ ب ح" oninput="MJApp.syncSaudiPlateFromArabicLet()" dir="rtl" class="w-full bg-[#141619] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-center text-white font-extrabold text-sm tracking-widest outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label class="block text-gray-400 text-[10px] mb-0.5">الأحرف الإنجليزية (تحت - خط المرور):</label>
+              <input id="sp-let-en" type="text" maxlength="7" value="J B A" oninput="MJApp.renderSaudiPlatePreview()" dir="ltr" style="font-family: 'FE-Schrift', monospace;" class="w-full bg-[#141619] border border-[#3c424d] rounded-lg px-2.5 py-1.5 text-center text-amber-300 font-bold text-sm tracking-widest uppercase outline-none focus:border-emerald-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Official Saudi Traffic Letters Quick Picker -->
+        <div>
+          <div class="text-[10px] text-gray-400 mb-1">اختصار الأحرف المعتمدة في المرور السعودي (انقر لإضافتها بالترتيب):</div>
+          <div id="sp-quick-letters" class="flex flex-wrap gap-1 justify-center"></div>
+        </div>
+
+        <!-- Size, Keychain Hole & Colors -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">الحجم (المقياس):</label>
+            <select id="sp-scale" class="w-full bg-[#1b1d21] border border-[#3c424d] rounded-xl px-2 py-2 text-white">
+              <option value="1.0" selected>ميدالية 1x (100مم)</option>
+              <option value="1.5">متوسط 1.5x (150مم)</option>
+              <option value="2.0">لوحة مكتب 2x (200مم)</option>
+              <option value="2.5">كبير 2.5x (250مم)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-300 font-bold mb-1">لون اللوحة / الخط:</label>
+            <div class="flex items-center gap-1.5">
+              <input id="sp-base-color" type="color" value="#f8fafc" onchange="MJApp.renderSaudiPlatePreview()" title="لون خلفية اللوحة" class="w-9 h-9 rounded-lg bg-transparent border border-[#3c424d] cursor-pointer" />
+              <input id="sp-fg-color" type="color" value="#111827" onchange="MJApp.renderSaudiPlatePreview()" title="لون الإطار والأحرف والشعار" class="w-9 h-9 rounded-lg bg-transparent border border-[#3c424d] cursor-pointer" />
+            </div>
+          </div>
+          <div class="flex flex-col justify-end">
+            <label class="flex items-center gap-2 bg-[#1b1d21] border border-[#3c424d] rounded-xl px-2.5 py-2 cursor-pointer text-white font-bold">
+              <input id="sp-hole" type="checkbox" checked class="accent-emerald-500 w-4 h-4" />
+              <span>فتحة ميدالية</span>
+            </label>
+          </div>
+        </div>
+
+        <button onclick="MJApp.generateSaudiPlate()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2">
+          <i class="fa-solid fa-car-side"></i>
+          <span>إنشاء اللوحة ثلاثية الأبعاد وإضافتها</span>
+        </button>
       </div>
     </div>
   </div>

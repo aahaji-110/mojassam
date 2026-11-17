@@ -928,6 +928,209 @@ window.MJApp = (function () {
     }
   }
 
+  /* ──────────────────────────────────────────────────────────────
+     3c. Snap-Fit Cable Tag Maker ("صانع الكيبل تاق كبس بدون غراء")
+     ────────────────────────────────────────────────────────────── */
+  function openCableTagModal() {
+    if (!checkAuthOrGate('صناعة الكيبل تاق')) return;
+    openModal('cable-tag-modal');
+  }
+
+  async function generateCableTag() {
+    if (!checkAuthOrGate('صناعة الكيبل تاق')) return;
+    const text = (document.getElementById('ct-text')?.value || '').trim();
+    if (!text) {
+      showToast('أدخل النص المطلوب للكيبل تاق', true);
+      return;
+    }
+    try {
+      showToast('جاري بناء الكيبل تاق ثلاثي الأبعاد...');
+      const group = await window.MJEngine.createCableTagGroup({
+        text,
+        mode: document.getElementById('ct-mode')?.value || 'snapfit',
+        fontFamily: document.getElementById('ct-font')?.value || 'Cairo',
+        wireDiameter: Number(document.getElementById('ct-wire-mm')?.value || 3.5),
+        scaleMult: Number(document.getElementById('ct-scale')?.value || 1.0),
+        textHeight: Number(document.getElementById('ct-text-h')?.value || 1.2),
+        baseColor: document.getElementById('ct-base-color')?.value || '#f472b6',
+        textColor: document.getElementById('ct-text-color')?.value || '#ffffff'
+      });
+      registerSceneObject(group, `كيبل تاق (${text})`, 0);
+      closeModal('cable-tag-modal');
+      showToast(`✨ تم إنشاء الكيبل تاق (${text}) جاهزاً للطباعة بدون غراء!`);
+    } catch (err) {
+      showToast(err.message || 'تعذر إنشاء الكيبل تاق', true);
+    }
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     3d. Saudi License Plate Maker ("صانع لوحة السيارة السعودية")
+     ────────────────────────────────────────────────────────────── */
+  const SAUDI_LETTER_MAP = {
+    'أ': 'A', 'ا': 'A', 'إ': 'A', 'آ': 'A',
+    'ب': 'B', 'ح': 'J', 'د': 'D', 'ر': 'R',
+    'س': 'S', 'ص': 'X', 'ط': 'T', 'ع': 'E',
+    'ق': 'G', 'ك': 'K', 'ل': 'L', 'م': 'Z',
+    'ن': 'N', 'ه': 'H', 'ة': 'H', 'و': 'U',
+    'ى': 'V', 'ي': 'V'
+  };
+  const OFFICIAL_SAUDI_LETTERS = ['أ', 'ب', 'ح', 'د', 'ر', 'س', 'ص', 'ط', 'ع', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ى'];
+  const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+  let currentSaudiPlateType = 'long';
+
+  function openSaudiPlateModal() {
+    if (!checkAuthOrGate('صناعة لوحة سيارة سعودية')) return;
+    openModal('saudi-plate-modal');
+    const quickWrap = document.getElementById('sp-quick-letters');
+    if (quickWrap && !quickWrap.dataset.ready) {
+      quickWrap.dataset.ready = '1';
+      quickWrap.innerHTML = OFFICIAL_SAUDI_LETTERS.map((ch) => `
+        <button type="button" onclick="MJApp.appendSaudiQuickLetter('${ch}')" class="px-2 py-1 rounded bg-[#141619] hover:bg-emerald-600 text-white border border-[#3c424d] text-xs font-extrabold transition">
+          ${ch} <span class="text-[9px] text-emerald-300 font-mono">${SAUDI_LETTER_MAP[ch]}</span>
+        </button>
+      `).join('');
+    }
+    renderSaudiPlatePreview();
+  }
+
+  function setSaudiPlateType(type) {
+    currentSaudiPlateType = type === 'square' ? 'square' : 'long';
+    const bLong = document.getElementById('sp-type-long');
+    const bSq = document.getElementById('sp-type-square');
+    if (bLong && bSq) {
+      bLong.className = currentSaudiPlateType === 'long'
+        ? 'p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/15 text-white font-extrabold flex flex-col items-center gap-1 transition'
+        : 'p-2.5 rounded-xl border border-[#3c424d] bg-[#1b1d21] text-gray-300 font-bold flex flex-col items-center gap-1 hover:border-emerald-500/60 transition';
+      bSq.className = currentSaudiPlateType === 'square'
+        ? 'p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/15 text-white font-extrabold flex flex-col items-center gap-1 transition'
+        : 'p-2.5 rounded-xl border border-[#3c424d] bg-[#1b1d21] text-gray-300 font-bold flex flex-col items-center gap-1 hover:border-emerald-500/60 transition';
+    }
+    renderSaudiPlatePreview();
+  }
+
+  function syncSaudiPlateFromArabicNum() {
+    const arEl = document.getElementById('sp-num-ar');
+    const enEl = document.getElementById('sp-num-en');
+    if (!arEl || !enEl) return;
+    const raw = arEl.value.replace(/\s+/g, '');
+    const en = Array.from(raw).map((c) => {
+      const idx = AR_DIGITS.indexOf(c);
+      if (idx >= 0) return String(idx);
+      return /[0-9]/.test(c) ? c : '';
+    }).join('').slice(0, 4);
+    enEl.value = en;
+    renderSaudiPlatePreview();
+  }
+
+  function syncSaudiPlateFromEnglishNum() {
+    const arEl = document.getElementById('sp-num-ar');
+    const enEl = document.getElementById('sp-num-en');
+    if (!arEl || !enEl) return;
+    const en = enEl.value.replace(/[^0-9]/g, '').slice(0, 4);
+    enEl.value = en;
+    arEl.value = Array.from(en).map((d) => AR_DIGITS[Number(d)]).join('');
+    renderSaudiPlatePreview();
+  }
+
+  function syncSaudiPlateFromArabicLet() {
+    const arEl = document.getElementById('sp-let-ar');
+    const enEl = document.getElementById('sp-let-en');
+    if (!arEl || !enEl) return;
+    const chars = Array.from(arEl.value.replace(/[\sـ]+/g, '')).slice(0, 3);
+    // In Saudi plates, Arabic RTL (right-to-left) maps to LTR English reversed so each letter sits directly beneath its Arabic counterpart
+    const enChars = chars.map((c) => SAUDI_LETTER_MAP[c] || '').filter(Boolean).reverse();
+    enEl.value = enChars.join(' ');
+    renderSaudiPlatePreview();
+  }
+
+  function appendSaudiQuickLetter(ch) {
+    const arEl = document.getElementById('sp-let-ar');
+    if (!arEl) return;
+    const existing = Array.from(arEl.value.replace(/[\sـ]+/g, ''));
+    const next = existing.length >= 3 ? [ch] : [...existing, ch];
+    arEl.value = next.join(' ');
+    syncSaudiPlateFromArabicLet();
+  }
+
+  function renderSaudiPlatePreview() {
+    const wrap = document.getElementById('sp-live-preview');
+    if (!wrap) return;
+    const numAr = (document.getElementById('sp-num-ar')?.value || '١٢٣٤').trim();
+    const numEn = (document.getElementById('sp-num-en')?.value || '1234').trim();
+    const letAr = (document.getElementById('sp-let-ar')?.value || 'أ ب ح').trim();
+    const letEn = (document.getElementById('sp-let-en')?.value || 'J B A').trim().toUpperCase();
+    const bg = document.getElementById('sp-base-color')?.value || '#f8fafc';
+    const fg = document.getElementById('sp-fg-color')?.value || '#111827';
+
+    if (currentSaudiPlateType === 'long') {
+      wrap.innerHTML = `
+        <div style="background:${bg}; color:${fg}; border-color:${fg};" class="w-full max-w-[360px] h-[76px] rounded-lg border-[3px] grid grid-cols-[1fr_44px_1fr] overflow-hidden shadow-md">
+          <div class="grid grid-rows-2 border-l-2" style="border-color:${fg}">
+            <div class="border-b-2 flex items-center justify-center font-extrabold text-sm tracking-widest" style="border-color:${fg}">${numAr}</div>
+            <div class="flex items-center justify-center font-bold text-sm tracking-widest" style="font-family:'FE-Schrift',monospace">${numEn}</div>
+          </div>
+          <div class="flex flex-col items-center justify-center text-[8px] font-extrabold leading-tight border-l-2" style="border-color:${fg}">
+            <i class="fa-solid fa-tree text-xs mb-0.5"></i>
+            <span>السعودية</span>
+            <span style="font-family:'FE-Schrift',monospace" class="text-[10px]">KSA</span>
+          </div>
+          <div class="grid grid-rows-2">
+            <div class="border-b-2 flex items-center justify-center font-extrabold text-sm tracking-widest" style="border-color:${fg}">${letAr}</div>
+            <div class="flex items-center justify-center font-bold text-sm tracking-widest" style="font-family:'FE-Schrift',monospace">${letEn}</div>
+          </div>
+        </div>
+      `;
+    } else {
+      wrap.innerHTML = `
+        <div style="background:${bg}; color:${fg}; border-color:${fg};" class="w-full max-w-[260px] h-[112px] rounded-lg border-[3px] grid grid-cols-[1fr_1fr_34px] overflow-hidden shadow-md">
+          <div class="grid grid-rows-2 border-l-2" style="border-color:${fg}">
+            <div class="border-b-2 flex items-center justify-center font-extrabold text-base tracking-widest" style="border-color:${fg}">${numAr}</div>
+            <div class="flex items-center justify-center font-bold text-base tracking-widest" style="font-family:'FE-Schrift',monospace">${numEn}</div>
+          </div>
+          <div class="grid grid-rows-2 border-l-2" style="border-color:${fg}">
+            <div class="border-b-2 flex items-center justify-center font-extrabold text-base tracking-widest" style="border-color:${fg}">${letAr}</div>
+            <div class="flex items-center justify-center font-bold text-base tracking-widest" style="font-family:'FE-Schrift',monospace">${letEn}</div>
+          </div>
+          <div class="flex flex-col items-center justify-around py-1 text-[11px] font-bold" style="font-family:'FE-Schrift',monospace">
+            <i class="fa-solid fa-tree text-xs"></i>
+            <span>K</span><span>S</span><span>A</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  async function generateSaudiPlate() {
+    if (!checkAuthOrGate('صناعة لوحة سيارة سعودية')) return;
+    const numAr = (document.getElementById('sp-num-ar')?.value || '').trim();
+    const numEn = (document.getElementById('sp-num-en')?.value || '').trim();
+    const letAr = (document.getElementById('sp-let-ar')?.value || '').trim();
+    const letEn = (document.getElementById('sp-let-en')?.value || '').trim().toUpperCase();
+    if (!numEn && !letEn && !numAr && !letAr) {
+      showToast('أدخل حروف وأرقام اللوحة أولاً', true);
+      return;
+    }
+    try {
+      showToast('جاري إنشاء اللوحة السعودية ثلاثية الأبعاد بخط المرور...');
+      const group = await window.MJEngine.createSaudiPlateGroup({
+        plateType: currentSaudiPlateType,
+        numAr,
+        numEn,
+        letAr,
+        letEn,
+        scaleMult: Number(document.getElementById('sp-scale')?.value || 1.0),
+        hasHole: document.getElementById('sp-hole')?.checked !== false,
+        baseColor: document.getElementById('sp-base-color')?.value || '#f8fafc',
+        fgColor: document.getElementById('sp-fg-color')?.value || '#111827'
+      });
+      registerSceneObject(group, `لوحة سعودية (${letEn} ${numEn})`, 0);
+      closeModal('saudi-plate-modal');
+      showToast(`✨ تم إنشاء اللوحة السعودية (${letEn} ${numEn}) بخط المرور السعودي بنجاح!`);
+    } catch (err) {
+      showToast(err.message || 'تعذر إنشاء اللوحة السعودية', true);
+    }
+  }
+
   function populatePrimitivesMenu() {
     const basicEl = document.getElementById('primitive-list-basic');
     const calibEl = document.getElementById('primitive-list-calib');
@@ -2270,6 +2473,16 @@ window.MJApp = (function () {
     applyDualNamePreset,
     updateDualNamePreview,
     generateDualNameToScene,
+    openCableTagModal,
+    generateCableTag,
+    openSaudiPlateModal,
+    setSaudiPlateType,
+    syncSaudiPlateFromArabicNum,
+    syncSaudiPlateFromEnglishNum,
+    syncSaudiPlateFromArabicLet,
+    appendSaudiQuickLetter,
+    renderSaudiPlatePreview,
+    generateSaudiPlate,
     togglePrimitiveMenu,
     addPrimitive,
     openStickSurfaceModal,
