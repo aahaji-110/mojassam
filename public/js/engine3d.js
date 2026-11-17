@@ -2316,12 +2316,12 @@ ${polys}</svg>`;
     const cyPx = (tBounds.minY + tBounds.maxY) * 0.5;
 
     const silLoops = traceCanvasToShapes(silCanvas, 120, 0.7);
-    const outerLoop = silLoops.sort((a, b) => Math.abs(signedArea(b)) - Math.abs(signedArea(a)))[0];
-    if (!outerLoop || outerLoop.length < 3) {
+    const outerLoop = silLoops.sort((a, b) => Math.abs(b.area) - Math.abs(a.area))[0];
+    if (!outerLoop || !outerLoop.pts || outerLoop.pts.length < 3) {
       throw new Error('تعذر توليد مجسم الكيبل تاق من النص المدخل');
     }
 
-    const outerPts = outerLoop.map((p) => ({
+    const outerPts = outerLoop.pts.map((p) => ({
       x: (p.x - cxPx) * mmPerPx,
       y: -(p.y - cyPx) * mmPerPx
     }));
