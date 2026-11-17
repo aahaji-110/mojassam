@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
     body { font-family: 'Cairo', sans-serif; background: #141619; color: #e5e7eb; }
     .tab-btn.active { background: #10b981; color: #09130e; font-weight: 800; }
@@ -251,14 +252,26 @@
             ⚡ توليد الأكواد الآن
           </button>
 
-          <div id="generated-code-display" class="hidden bg-[#141619] border border-emerald-500/40 rounded-xl p-3 space-y-2">
-            <div class="flex items-center justify-between">
-              <span id="generated-code-title" class="text-emerald-400 font-extrabold text-xs">الأكواد الصادرة (جاهزة للنسخ واللصق في متجرك):</span>
-              <button type="button" onclick="AdminApp.copyGeneratedCodes()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg font-extrabold text-[11px]">
-                📋 نسخ جميع الأكواد
-              </button>
+          <div id="generated-code-display" class="hidden bg-[#141619] border border-emerald-500/40 rounded-xl p-3 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span id="generated-code-title" class="text-emerald-400 font-extrabold text-xs">الأكواد الصادرة (جاهزة للنسخ والحفظ كصور للمتجر):</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="AdminApp.downloadGeneratedCards()" class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-lg font-extrabold text-[11px] flex items-center gap-1">
+                  <i class="fa-solid fa-image"></i>
+                  <span id="btn-dl-gen-cards-txt">حفظ البطاقات كصور</span>
+                </button>
+                <button type="button" onclick="AdminApp.copyGeneratedCodes()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg font-extrabold text-[11px]">
+                  📋 نسخ جميع الأكواد
+                </button>
+              </div>
             </div>
-            <textarea id="generated-codes-textarea" readonly rows="5" dir="ltr" class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg p-2 font-mono text-sm font-bold text-emerald-300"></textarea>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-center">
+              <textarea id="generated-codes-textarea" readonly rows="5" dir="ltr" class="w-full bg-[#1e2127] border border-[#363b46] rounded-lg p-2 font-mono text-sm font-bold text-emerald-300"></textarea>
+              <div class="flex flex-col items-center justify-center bg-[#1e2127] border border-[#363b46] rounded-lg p-2">
+                <span class="text-[10px] text-gray-400 mb-1">معاينة بطاقة الكود للمتجر:</span>
+                <img id="generated-card-preview" alt="معاينة بطاقة الكود" class="w-full max-w-[230px] rounded-lg border border-emerald-500/30 shadow-md" />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -291,6 +304,7 @@
             <button id="codes-tab-active" onclick="AdminApp.setCodesFilter('active')" class="px-3 py-1 text-xs rounded-lg font-bold bg-emerald-600 text-white transition">الأكواد الفعالة فقط ⭐</button>
             <button id="codes-tab-used" onclick="AdminApp.setCodesFilter('used')" class="px-3 py-1 text-xs rounded-lg font-bold bg-[#141619] text-gray-300 border border-[#323741] hover:border-emerald-500 transition">المستخدمة</button>
             <button id="codes-tab-all" onclick="AdminApp.setCodesFilter('all')" class="px-3 py-1 text-xs rounded-lg font-bold bg-[#141619] text-gray-300 border border-[#323741] hover:border-emerald-500 transition">الكل</button>
+            <button onclick="AdminApp.downloadCurrentPageCards()" class="px-2.5 py-1 text-xs rounded-lg font-bold bg-sky-600/20 text-sky-300 hover:bg-sky-600 hover:text-white border border-sky-500/40 transition" title="تحميل جميع أكواد الصفحة الحالية كصور بطاقات للمتجر (ZIP)">🖼️ حفظ الصفحة كصور</button>
             <button onclick="AdminApp.cleanCancelledCodes()" class="px-2.5 py-1 text-xs rounded-lg font-bold bg-rose-600/20 text-rose-300 hover:bg-rose-600 hover:text-white border border-rose-500/40 transition" title="حذف وتنظيف أي أكواد ملغية">تنظيف الملغي 🗑️</button>
           </div>
         </div>
@@ -688,6 +702,155 @@
         document.getElementById('gen-code-plan').value = p.plan;
       }
 
+      let lastGeneratedBatch = { codes: [], coins: 50, plan: 'free' };
+      let _cardBgImgPromise = null;
+
+      function loadCardBgImage() {
+        if (!_cardBgImgPromise) {
+          _cardBgImgPromise = new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('تعذر تحميل خلفية البطاقة'));
+            img.src = '/assets/code-card-bg.png';
+          });
+        }
+        return _cardBgImgPromise;
+      }
+
+      function getPlanLabelAr(coins, plan) {
+        const planNames = {
+          daily: 'اشتراك يومي',
+          weekly: 'اشتراك أسبوعي',
+          monthly: 'اشتراك شهري',
+          yearly: 'اشتراك سنوي'
+        };
+        if (plan && plan !== 'free' && planNames[plan]) {
+          return `${planNames[plan]} • ${coins} كوينز`;
+        }
+        return `رصيد ${coins} كوينز`;
+      }
+
+      async function renderCodeCardData(code, coins, plan) {
+        const bg = await loadCardBgImage();
+        if (document.fonts && document.fonts.ready) {
+          try { await document.fonts.ready; } catch (e) {}
+        }
+        const W = bg.naturalWidth || 1024;
+        const H = bg.naturalHeight || 645;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        // 1. Draw template background
+        ctx.drawImage(bg, 0, 0, W, H);
+
+        // 2. Package / Coins label above the code (centered in empty middle area)
+        const label = getPlanLabelAr(coins, plan);
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '700 28px "Cairo", sans-serif';
+        ctx.fillStyle = '#6ee7b7';
+        ctx.fillText(label, W / 2, H * 0.408);
+
+        // 3. Subtle pill box behind the activation code
+        const pillW = Math.min(W * 0.72, 660);
+        const pillH = 88;
+        const pillX = (W - pillW) / 2;
+        const pillY = H * 0.525 - pillH / 2;
+        ctx.fillStyle = 'rgba(12, 22, 18, 0.72)';
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.55)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillW, pillH, 18);
+        ctx.fill();
+        ctx.stroke();
+
+        // 4. Activation Code in crisp bold monospace
+        ctx.font = '800 46px "Courier New", Consolas, monospace';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(16, 185, 129, 0.45)';
+        ctx.shadowBlur = 14;
+        ctx.fillText(String(code || '').toUpperCase(), W / 2, H * 0.528);
+        ctx.restore();
+
+        const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+        const dataUrl = canvas.toDataURL('image/png');
+        return { blob, dataUrl };
+      }
+
+      function triggerBlobDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2500);
+      }
+
+      async function downloadCodeCard(code, coins, plan) {
+        try {
+          toast('جاري تجهيز صورة البطاقة...');
+          const { blob } = await renderCodeCardData(code, coins, plan);
+          triggerBlobDownload(blob, `${code}.png`);
+          toast(`🖼️ تم حفظ بطاقة الكود (${code}.png) بنجاح!`);
+        } catch (err) {
+          toast(err.message || 'تعذر إنشاء صورة الكود');
+        }
+      }
+
+      async function downloadBatchCards(items, zipName) {
+        if (!items || !items.length) return;
+        if (items.length === 1) {
+          return downloadCodeCard(items[0].code, items[0].coins, items[0].plan);
+        }
+        if (typeof JSZip === 'undefined') {
+          toast('مكتبة ضغط الملفات قيد التحميل، حاول بعد لحظة');
+          return;
+        }
+        try {
+          toast(`جاري تجهيز ${items.length} بطاقة كود كصور...`);
+          const zip = new JSZip();
+          for (const it of items) {
+            const { blob } = await renderCodeCardData(it.code, it.coins, it.plan);
+            zip.file(`${it.code}.png`, blob);
+          }
+          const zipBlob = await zip.generateAsync({ type: 'blob' });
+          triggerBlobDownload(zipBlob, zipName);
+          toast(`📦 تم تحميل ${items.length} بطاقة كصور داخل ملف ZIP جاهزة للمتجر!`);
+        } catch (err) {
+          toast(err.message || 'تعذر إنشاء ملف الصور');
+        }
+      }
+
+      async function downloadGeneratedCards() {
+        const items = (lastGeneratedBatch.codes || []).map((c) => ({
+          code: c,
+          coins: lastGeneratedBatch.coins,
+          plan: lastGeneratedBatch.plan
+        }));
+        await downloadBatchCards(items, `mojassamat-cards-${items.length}.zip`);
+      }
+
+      async function downloadCurrentPageCards() {
+        const list = getFilteredCodes();
+        const startIdx = (codesCurrentPage - 1) * codesPerPage;
+        const pageItems = list.slice(startIdx, startIdx + codesPerPage).map((c) => ({
+          code: c.code,
+          coins: c.coins,
+          plan: c.plan
+        }));
+        if (!pageItems.length) {
+          toast('لا توجد أكواد في الصفحة الحالية لتحميلها');
+          return;
+        }
+        await downloadBatchCards(pageItems, `mojassamat-page-${codesCurrentPage}.zip`);
+      }
+
       async function generateCode() {
         const quantity = Math.min(200, Math.max(1, Number(document.getElementById('gen-code-qty')?.value || 1)));
         const packageId = document.getElementById('gen-code-pkg-preset')?.value || 'custom';
@@ -711,9 +874,21 @@
           const title = document.getElementById('generated-code-title');
           const ta = document.getElementById('generated-codes-textarea');
           const codesList = res.data.codes || [res.data.code];
+          lastGeneratedBatch = { codes: codesList, coins, plan };
           box.classList.remove('hidden');
-          title.textContent = `تم إصدار ${codesList.length} كود تفعيل بنجاح ${res.data.emailSent ? '(وتم الإرسال للإيميل ✔)' : '(انسخها والصقها في متجرك الخارجي)'}:`;
+          title.textContent = `تم إصدار ${codesList.length} كود تفعيل بنجاح ${res.data.emailSent ? '(وتم الإرسال للإيميل ✔)' : '(انسخها أو احفظها كصور لمتجرك)'}:`;
           ta.value = codesList.join('\n');
+
+          const dlTxt = document.getElementById('btn-dl-gen-cards-txt');
+          if (dlTxt) {
+            dlTxt.textContent = codesList.length === 1 ? 'حفظ البطاقة كصورة (PNG)' : `حفظ ${codesList.length} بطاقة (ZIP)`;
+          }
+          try {
+            const { dataUrl } = await renderCodeCardData(codesList[0], coins, plan);
+            const prevImg = document.getElementById('generated-card-preview');
+            if (prevImg) prevImg.src = dataUrl;
+          } catch (e) {}
+
           toast(`تم توليد ${codesList.length} كود تفعيل بنجاح!`);
           loadOverview();
         }
@@ -795,10 +970,16 @@
                   <td class="py-2.5 px-2">${statusBadge}</td>
                   <td class="py-2.5 px-2 text-gray-400 text-[11px]">${dateStr}</td>
                   <td class="py-2.5 px-2">
-                    <button onclick="AdminApp.deleteCode('${c.code}')" class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1" title="حذف الكود نهائياً من الموقع لمنع الزحمة">
-                      <i class="fa-solid fa-trash-can"></i>
-                      <span>حذف نهائي</span>
-                    </button>
+                    <div class="flex items-center gap-1.5">
+                      <button onclick="AdminApp.downloadCodeCard('${c.code}', ${Number(c.coins || 0)}, '${c.plan || 'free'}')" class="bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/30 px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1" title="حفظ بطاقة هذا الكود كصورة للمتجر">
+                        <i class="fa-solid fa-image"></i>
+                        <span>صورة</span>
+                      </button>
+                      <button onclick="AdminApp.deleteCode('${c.code}')" class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1" title="حذف الكود نهائياً من الموقع لمنع الزحمة">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>حذف نهائي</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               `;
@@ -1027,6 +1208,9 @@
         applyGenCodePreset,
         generateCode,
         copyGeneratedCodes,
+        downloadCodeCard,
+        downloadGeneratedCards,
+        downloadCurrentPageCards,
         copySingleCode,
         deleteCode,
         cleanCancelledCodes,
